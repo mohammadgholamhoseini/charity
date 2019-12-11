@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ac7ae49f-f868-43fd-a0a2-c47f6f1d0681" name="Default Changelist" comment="" />
+    <list default="true" id="ac7ae49f-f868-43fd-a0a2-c47f6f1d0681" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/../.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../public/css/dropzone.min.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../public/js/dropzone.min.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../app/Http/Controllers/Admin/PhotoController.php" beforeDir="false" afterPath="$PROJECT_DIR$/../app/Http/Controllers/Admin/PhotoController.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../public/images/252970.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../resources/views/admin/charity/create.blade.php" beforeDir="false" afterPath="$PROJECT_DIR$/../resources/views/admin/charity/create.blade.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../resources/views/admin/layout/master.blade.php" beforeDir="false" afterPath="$PROJECT_DIR$/../resources/views/admin/layout/master.blade.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../resources/views/admin/photo/create.blade.php" beforeDir="false" afterPath="$PROJECT_DIR$/../resources/views/admin/photo/create.blade.php" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -44,6 +54,12 @@
       <replace>/admin/img/</replace>
       <replace>/dist/img/</replace>
     </replaceStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/../resources/views/admin/charity/create.blade.php" root0="SKIP_INSPECTION" root1="FORCE_HIGHLIGHTING" root2="SKIP_INSPECTION" />
   </component>
   <component name="PhpWorkspaceProjectConfiguration">
     <include_path>
@@ -136,14 +152,17 @@
     </include_path>
   </component>
   <component name="ProjectId" id="1UO0kvH9UdXjwoFPrUvBPqfjjlh" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../digistyle" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../public/css" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="nodejs_package_manager_path" value="npm" />
@@ -151,11 +170,11 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\xampp\htdocs\Laravel-course\charity\public\css" />
+      <recent name="C:\xampp\htdocs\Laravel-course\charity\public\js" />
       <recent name="C:\xampp\htdocs\Laravel-course\charity\resources\views\admin" />
       <recent name="C:\xampp\htdocs\Laravel-course\charity\resources\views\admin\category" />
       <recent name="C:\xampp\htdocs\Laravel-course\charity\public" />
-      <recent name="C:\xampp\htdocs\Laravel-course\charity\public\admin" />
-      <recent name="C:\xampp\htdocs\Laravel-course\charity\public\admin\fonts" />
     </key>
   </component>
   <component name="RunManager">
@@ -200,6 +219,8 @@
       <workItem from="1575990082089" duration="52000" />
       <workItem from="1575990152803" duration="57000" />
       <workItem from="1575990328568" duration="5460000" />
+      <workItem from="1576083007081" duration="2177000" />
+      <workItem from="1576085223539" duration="3937000" />
     </task>
     <servers />
   </component>
@@ -207,14 +228,19 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
+    <state x="362" y="71" key="#Inspections" timestamp="1576089162383">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="362" y="71" key="#Inspections/0.0.1536.824@0.0.1536.824" timestamp="1576089162383" />
     <state x="500" y="167" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog" timestamp="1575995565279">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="500" y="167" key="#com.jetbrains.php.actions.copyPaste.importReferences.PhpImportReferencesDialog/0.0.1536.824@0.0.1536.824" timestamp="1575995565279" />
-    <state x="550" y="167" key="FileChooserDialogImpl" timestamp="1575994264919">
+    <state x="550" y="167" key="FileChooserDialogImpl" timestamp="1576088085343">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="550" y="167" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1575994264919" />
+    <state x="550" y="167" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1576088085343" />
+    <state x="1375" y="418" key="FileChooserDialogImpl/0.0.3840.2060@0.0.3840.2060" timestamp="1576084744825" />
     <state x="-26" y="118" width="979" height="706" key="SettingsEditor" timestamp="1575217670261">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -223,9 +249,9 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="471" y="236" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1575212494355" />
-    <state x="431" y="145" width="672" height="678" key="search.everywhere.popup" timestamp="1575995531779">
+    <state x="431" y="145" width="672" height="678" key="search.everywhere.popup" timestamp="1576088858005">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="431" y="145" width="672" height="678" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1575995531779" />
+    <state x="431" y="145" width="672" height="678" key="search.everywhere.popup/0.0.1536.824@0.0.1536.824" timestamp="1576088858005" />
   </component>
 </project>

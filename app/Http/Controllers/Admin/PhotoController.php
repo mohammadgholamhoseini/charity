@@ -40,14 +40,14 @@ class PhotoController extends Controller
     public function store(Request $request)
     {
         $image = $request->file('file');
-        $file_name = $image->getClientOriginalName();
+        $file_name = time().$image->getClientOriginalName();
         $image->move(public_path('/images'),$file_name);
         $photo = new Photo();
-        $photo->original_name = $file_name;
-        $photo->path = '/images'.$file_name;
+        $photo->original_name = $image->getClientOriginalName();
+        $photo->path = '/images/'.$file_name;
         $photo->user_id = Auth::id();
         $photo->save();
-        return response()->json(['success'=>$file_name]);
+        return response()->json(['success'=>$file_name,'photo_id'=>$photo->id]);
     }
 
     /**
@@ -94,12 +94,14 @@ class PhotoController extends Controller
     {
         $photo = Photo::findOrFail($id);
         $file_name = $photo->original_name;
-        $path = public_path().'/images/'.$file_name;
+        $path = public_path().$photo->path;
         if(file_exists($path)){
             unlink($path);
             $photo->delete();
             Session::flash('delete', 'عکس مورد نظر با موفقیت حذف گردید.');
             return redirect('/admin/photos');
+        }else{
+            dd($path);
         }
     }
 }

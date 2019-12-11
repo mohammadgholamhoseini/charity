@@ -27,27 +27,9 @@
                         },
                         acceptedFiles: ".jpeg,.jpg,.png,.gif",
                         addRemoveLinks: true,
+                        dictRemoveFile: 'Remove file',
                         timeout: 5000,
-                        removedfile: function(file)
-                        {
-                            var name = file.upload.filename;
-                            $.ajax({
-                                headers: {
-                                    'X-CSRF-TOKEN': $('meta[name="_token"]').attr('content')
-                                },
-                                type: 'POST',
-                                url: '{{ route('photos.destroy') }}',
-                                data: {filename: name},
-                                success: function (data){
-                                    console.log("File has been successfully removed!!");
-                                },
-                                error: function(e) {
-                                    console.log(e);
-                                }});
-                            var fileRef;
-                            return (fileRef = file.previewElement) != null ?
-                                fileRef.parentNode.removeChild(file.previewElement) : void 0;
-                        },
+
                         success: function(file, response)
                         {
                             console.log(response);
