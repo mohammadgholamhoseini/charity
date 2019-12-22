@@ -16,7 +16,8 @@
 
 @endsection
 @section('scripts')
-            <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.5.1/min/dropzone.min.js">
+            <script src="{{asset('js/dropzone.min.js')}}" type="application/javascript"></script>
+            <script>
                 Dropzone.options.dropzone =
                     {
                         maxFilesize: 12,

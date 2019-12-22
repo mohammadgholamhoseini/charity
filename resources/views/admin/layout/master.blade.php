@@ -352,12 +352,14 @@
                         <i class="fa fa-fw fa-list-alt"></i>
                         <span>دسته بندی ها</span>
                     </a>
-
+                </li>
+                <li>
                     <a href="{{route('charities.index')}}">
                         <i class="fa fa-fw fa-list-alt"></i>
                         <span>خیریه ها</span>
                     </a>
-
+                </li>
+                <li>
                     <a href="{{route('photos.index')}}">
                         <i class="fa fa-fw fa-list-alt"></i>
                         <span>فایل ها</span>

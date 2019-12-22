@@ -22,4 +22,5 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::resource('/categories','Admin\CategoryController');
     Route::resource('/charities','Admin\CharityController');
     Route::resource('/photos','Admin\PhotoController');
+    Route::post('/photos/upload', 'Admin\PhotoController@upload')->name('photos.upload');
 });

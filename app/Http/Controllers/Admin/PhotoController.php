@@ -31,12 +31,15 @@ class PhotoController extends Controller
         return view('admin.photo.create');
     }
 
+   
+
     /**
      * Store a newly created resource in storage.
      *
      * @param Request $request
      * @return \Illuminate\Http\Response
      */
+    
     public function store(Request $request)
     {
         $image = $request->file('file');

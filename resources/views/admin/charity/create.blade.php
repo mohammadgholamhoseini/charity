@@ -11,7 +11,7 @@
         </h1>
         <div class="row">
             <div class="col-md-9">
-                <form method="POST" action="{{route('categories.store')}}" style="margin-right: 275px">
+                <form method="POST" action="{{route('charities.store')}}" style="margin-right: 275px">
                     @csrf
                     <div class="form-group">
                         <label>عنوان</label>
@@ -59,9 +59,21 @@
                         <textarea class="form-control" name="meta_key"></textarea>
                     </div>
                     <div class="form-group">
+                    <label>دسته بندی ها</label>
+                        <select multiple name="category">
+                            @foreach($categories as $category)
+                            <option class="form-controll"  value="{{$category->id}}">{{$category->name}}</option>
+                            @endforeach
+                            
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>تصویر محصول</label>
                         <input type="hidden" name="photo_id[]" id="product_photo">
                         <div class="dropzone" id="photo"></div>
+                    </div>
+                    <div class="form-group">
+                    <input type="submit" class="btn btn-success" value="ثبت" style="float:left">
                     </div>
                 </form>
 
@@ -72,6 +84,7 @@
 @endsection
 @section('scripts')
     <script src="{{asset('js/dropzone.min.js')}}" type="application/javascript"></script>
+    
     <script>
         Dropzone.autoDiscover= false;
         var photos = [];

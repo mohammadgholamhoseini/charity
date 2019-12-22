@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Charity;
+use App\Category;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CharityRequest;
 use Illuminate\Http\Request;
 
 class CharityController extends Controller
@@ -26,7 +28,8 @@ class CharityController extends Controller
      */
     public function create()
     {
-        return view('admin.charity.create');
+        $categories = Category::all();
+        return view('admin.charity.create',compact('categories'));
     }
 
     /**
@@ -35,9 +38,9 @@ class CharityController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(CharityRequest $request)
     {
-        //
+        return($request->all());     
     }
 
     /**

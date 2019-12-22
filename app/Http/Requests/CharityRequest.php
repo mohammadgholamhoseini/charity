@@ -3,10 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-
-class CategoryRequest extends FormRequest
+class CharityRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -36,13 +34,20 @@ class CategoryRequest extends FormRequest
     {
         return [
             'name'=>'required',
+            'owner'=>'required',
+            'members'=>'required|numeric',
+            'email'=>'required',
+            'address'=>'required',
+            'phone'=>'required|numeric|min:11',
+            'category_id'=>'required',
+            'user_id'=>'required',
+            'meta_title'=>'required',
             'description'=>'required',
             'meta_desc'=>'required',
             'meta_key'=>'required',
             'slug'=>Rule::unique('categories')->ignore(request()->category),
         ];
     }
-
     public function messages()
     {
         return [
