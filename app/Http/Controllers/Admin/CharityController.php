@@ -7,6 +7,7 @@ use App\Category;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CharityRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CharityController extends Controller
 {
@@ -38,9 +39,31 @@ class CharityController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(CharityRequest $request)
+    public function store(Request $request)
     {
-        return($request->all());     
+        dd($request->all());
+        $charity = new Charity();
+        $charity->name = $request->input('name');
+        $charity->owner = $request->input('owner');
+        $charity->members = $request->input('members');
+        $charity->description = $request->input('description');
+        $charity->email = $request->input('email');
+        $charity->address = $request->input('address');
+        $charity->phone = $request->input('phone');
+        $charity->account_number = $request->input('account_number');
+
+        if ($request->input('slug')){
+            $charity->slug = make_slug(($request->input('slug')));
+        }
+        else{
+            $charity->slug = make_slug(($request->input('name')));
+        }
+        $charity->meta_title = $request->input('meta_title');
+        $charity->meta_desc = $request->input('meta_desc');
+        $charity->mata_key = $request->input('mata_key');
+        $charity->category_id = $request->input('category');
+        $charity->user_id = Auth::id();
+        $charity->photo_id = $request->input('photo_id');
     }
 
     /**

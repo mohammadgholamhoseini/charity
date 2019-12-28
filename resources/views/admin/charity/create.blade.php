@@ -26,6 +26,10 @@
                         <input type="number" class="form-control" name="members">
                     </div>
                     <div class="form-group">
+                        <label>شماره حساب</label>
+                        <input type="text" class="form-control" name="account_number">
+                    </div>
+                    <div class="form-group">
                         <label>توضیحات</label>
                         <textarea class="form-control" name="description"></textarea>
                     </div>
@@ -56,7 +60,7 @@
                     </div>
                     <div class="form-group">
                         <label>متا-عنوان</label>
-                        <textarea class="form-control" name="meta_key"></textarea>
+                        <textarea class="form-control" name="meta_title"></textarea>
                     </div>
                     <div class="form-group">
                     <label>دسته بندی ها</label>
@@ -64,7 +68,7 @@
                             @foreach($categories as $category)
                             <option class="form-controll"  value="{{$category->id}}">{{$category->name}}</option>
                             @endforeach
-                            
+
                         </select>
                     </div>
                     <div class="form-group">
@@ -84,7 +88,7 @@
 @endsection
 @section('scripts')
     <script src="{{asset('js/dropzone.min.js')}}" type="application/javascript"></script>
-    
+
     <script>
         Dropzone.autoDiscover= false;
         var photos = [];
