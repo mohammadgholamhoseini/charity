@@ -1,0 +1,27 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.log
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+
+# Uploads
+backend/uploads/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.sw?
+.DS_Store
+
+# Env
+.env
+.env.local

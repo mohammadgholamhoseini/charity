@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:charity_db;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+
+server:
+  port: 8085
+
+jwt:
+  secret: ${JWT_SECRET:changeThisSecretKeyToAVeryLongRandomStringAtLeast256BitsLongForProduction}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+telegram:
+  bot-token: REPLACE_WITH_YOUR_BOT_TOKEN
+  channel: "@your_channel_username"
+  enabled: false
+
+cors:
+  allowed-origins: http://localhost:5173
