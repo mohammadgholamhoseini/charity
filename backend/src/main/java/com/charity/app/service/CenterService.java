@@ -200,14 +200,6 @@ public class CenterService {
         return centerRepository.save(c);
     }
 
-    @Transactional
-    public Center reject(Long centerId) {
-        Center c = centerRepository.findById(centerId)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        c.setStatus(Center.Status.REJECTED);
-        return centerRepository.save(c);
-    }
-
     @Transactional(readOnly = true)
     public Page<Center> listPending(Pageable pageable) {
         return centerRepository.findByStatus(Center.Status.PENDING, pageable);
@@ -223,6 +215,23 @@ public class CenterService {
         return centerRepository.findByStatus(status, pageable).map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Page<CenterResponse> listAllResponse(Pageable pageable) {
+        return centerRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CenterResponse> listPendingResponse(Pageable pageable) {
+        return centerRepository.findByStatus(Center.Status.PENDING, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public CenterResponse getByIdResponse(Long id) {
+        Center c = centerRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
+        return toResponse(c);
+    }
+
     private CenterResponse toResponse(Center c) {
         CenterResponse r = new CenterResponse();
         r.setId(c.getId());
@@ -235,6 +244,7 @@ public class CenterService {
         r.setSheba(c.getSheba());
         r.setLogoUrl(c.getLogoUrl());
         r.setStatus(c.getStatus().name());
+        if (c.getUser() != null) r.setEmail(c.getUser().getEmail());
         if (c.getProvince() != null) {
             r.setProvince(new CenterResponse.ProvinceInfo(c.getProvince().getId(), c.getProvince().getName()));
         }
@@ -255,6 +265,11 @@ public class CenterService {
         String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).orElseThrow();
         return centerRepository.findByUserId(user.getId()).orElseThrow();
+    }
+
+    @Transactional(readOnly = true)
+    public CenterResponse currentCenterResponse() {
+        return toResponse(currentCenter());
     }
 
     @Transactional(readOnly = true)

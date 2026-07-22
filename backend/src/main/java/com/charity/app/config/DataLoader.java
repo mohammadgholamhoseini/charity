@@ -28,8 +28,6 @@ public class DataLoader implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final NoticeRepository noticeRepository;
-    private final ProvinceRepository provinceRepository;
-    private final CityRepository cityRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -37,7 +35,6 @@ public class DataLoader implements CommandLineRunner {
     public void run(String... args) {
         seedCategories();
         seedNotices();
-        seedProvinces();
         seedAdmin();
     }
 
@@ -67,31 +64,6 @@ public class DataLoader implements CommandLineRunner {
             );
             categoryRepository.saveAll(cats);
             log.info("Seeded {} categories", cats.size());
-        }
-    }
-
-    private void seedProvinces() {
-        if (provinceRepository.count() == 0) {
-            Object[][] data = {
-                    {"تهران", new String[]{"تهران", "شهریار", "اسلامشهر", "قدس", "ری", "پاکدشت", "ورامین"}},
-                    {"اصفهان", new String[]{"اصفهان", "کاشان", "خمینی‌شهر", "نجف‌آباد", "شاهین‌شهر"}},
-                    {"خراسان رضوی", new String[]{"مشهد", "نیشابور", "سبزوار", "تربت حیدریه", "قوچان"}},
-                    {"فارس", new String[]{"شیراز", "مرودشت", "جهرم", "کازرون", "فسا"}},
-                    {"خوزستان", new String[]{"اهواز", "آبادان", "دزفول", "خرمشهر", "بندر ماهشهر"}},
-                    {"آذربایجان شرقی", new String[]{"تبریز", "مراغه", "میانه", "مرند", "اهر"}},
-                    {"البرز", new String[]{"کرج", "فردیس", "نظرآباد", "هشتگرد", "محمدشهر"}},
-                    {"همدان", new String[]{"همدان", "ملایر", "نهاوند", "اسدآباد", "بهار"}}
-            };
-            int total = 0;
-            for (Object[] row : data) {
-                Province p = Province.builder().name((String) row[0]).build();
-                p = provinceRepository.save(p);
-                for (String cname : (String[]) row[1]) {
-                    cityRepository.save(City.builder().name(cname).province(p).build());
-                    total++;
-                }
-            }
-            log.info("Seeded {} provinces and {} cities", data.length, total);
         }
     }
 

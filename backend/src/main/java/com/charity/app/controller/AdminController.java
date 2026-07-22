@@ -1,9 +1,9 @@
 package com.charity.app.controller;
 
-import com.charity.app.model.Center;
 import com.charity.app.model.City;
 import com.charity.app.model.Province;
 import com.charity.app.payload.CategoryRequest;
+import com.charity.app.payload.CenterResponse;
 import com.charity.app.payload.CreateCenterByAdminRequest;
 import com.charity.app.payload.CharityCaseResponse;
 import com.charity.app.payload.NoticeRequest;
@@ -70,55 +70,50 @@ public class AdminController {
     }
 
     @GetMapping("/centers/pending")
-    public ResponseEntity<Page<Center>> pendingCenters(
+    public ResponseEntity<Page<CenterResponse>> pendingCenters(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(centerService.listPending(pageable));
+        return ResponseEntity.ok(centerService.listPendingResponse(pageable));
     }
 
     @GetMapping("/centers")
-    public ResponseEntity<Page<Center>> allCenters(
+    public ResponseEntity<Page<CenterResponse>> allCenters(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(centerService.listAll(pageable));
+        return ResponseEntity.ok(centerService.listAllResponse(pageable));
     }
 
     @GetMapping("/centers/{id}")
-    public ResponseEntity<Center> centerDetail(@PathVariable Long id) {
-        return ResponseEntity.ok(centerService.getById(id));
+    public ResponseEntity<CenterResponse> centerDetail(@PathVariable Long id) {
+        return ResponseEntity.ok(centerService.getByIdResponse(id));
     }
 
     @PostMapping("/centers/{id}/approve")
-    public ResponseEntity<Center> approve(@PathVariable Long id) {
-        return ResponseEntity.ok(centerService.approve(id));
+    public ResponseEntity<CenterResponse> approve(@PathVariable Long id) {
+        return ResponseEntity.ok(toCenterResponse(centerService.approve(id)));
     }
 
     @PostMapping("/centers")
-    public ResponseEntity<Center> createCenter(@Valid @RequestBody CreateCenterByAdminRequest request) {
-        return ResponseEntity.ok(centerService.createByAdmin(request));
-    }
-
-    @PostMapping("/centers/{id}/reject")
-    public ResponseEntity<Center> rejectCenter(@PathVariable Long id) {
-        return ResponseEntity.ok(centerService.reject(id));
+    public ResponseEntity<CenterResponse> createCenter(@Valid @RequestBody CreateCenterByAdminRequest request) {
+        return ResponseEntity.ok(toCenterResponse(centerService.createByAdmin(request)));
     }
 
     @PutMapping("/centers/{id}")
-    public ResponseEntity<Center> updateCenter(@PathVariable Long id,
+    public ResponseEntity<CenterResponse> updateCenter(@PathVariable Long id,
                                                @Valid @RequestBody UpdateCenterByAdminRequest request) {
-        return ResponseEntity.ok(centerService.updateByAdmin(id, request));
+        return ResponseEntity.ok(toCenterResponse(centerService.updateByAdmin(id, request)));
     }
 
     @PostMapping("/centers/{id}/deactivate")
-    public ResponseEntity<Center> deactivateCenter(@PathVariable Long id) {
-        return ResponseEntity.ok(centerService.deactivate(id));
+    public ResponseEntity<CenterResponse> deactivateCenter(@PathVariable Long id) {
+        return ResponseEntity.ok(toCenterResponse(centerService.deactivate(id)));
     }
 
     @PostMapping("/centers/{id}/activate")
-    public ResponseEntity<Center> activateCenter(@PathVariable Long id) {
-        return ResponseEntity.ok(centerService.activate(id));
+    public ResponseEntity<CenterResponse> activateCenter(@PathVariable Long id) {
+        return ResponseEntity.ok(toCenterResponse(centerService.activate(id)));
     }
 
     @DeleteMapping("/centers/{id}")
@@ -184,9 +179,9 @@ public class AdminController {
     }
 
     @PutMapping("/centers/{id}/categories")
-    public ResponseEntity<Center> setCenterCategories(@PathVariable Long id,
-                                                      @RequestBody List<Long> categoryIds) {
-        return ResponseEntity.ok(centerService.setCategories(id, categoryIds));
+    public ResponseEntity<CenterResponse> setCenterCategories(@PathVariable Long id,
+                                                       @RequestBody List<Long> categoryIds) {
+        return ResponseEntity.ok(toCenterResponse(centerService.setCategories(id, categoryIds)));
     }
 
     @GetMapping("/categories")
@@ -235,5 +230,9 @@ public class AdminController {
 
     private CharityCaseResponse toResponse(com.charity.app.model.CharityCase c) {
         return caseService.getPublic(c.getId());
+    }
+
+    private CenterResponse toCenterResponse(com.charity.app.model.Center c) {
+        return centerService.getByIdResponse(c.getId());
     }
 }

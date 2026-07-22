@@ -2,6 +2,7 @@ package com.charity.app.controller;
 
 import com.charity.app.model.Center;
 import com.charity.app.model.User;
+import com.charity.app.payload.CenterResponse;
 import com.charity.app.payload.CreateCaseRequest;
 import com.charity.app.payload.UpdateCaseRequest;
 import com.charity.app.payload.CharityCaseResponse;
@@ -38,15 +39,15 @@ public class CenterController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<Center> me() {
-        return ResponseEntity.ok(centerService.currentCenter());
+    public ResponseEntity<CenterResponse> me() {
+        return ResponseEntity.ok(centerService.currentCenterResponse());
     }
 
     @PutMapping("/me")
-    public ResponseEntity<Center> updateProfile(@Valid @RequestBody UpdateCenterProfileRequest request) {
+    public ResponseEntity<CenterResponse> updateProfile(@Valid @RequestBody UpdateCenterProfileRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.getUserByUsername(username);
-        return ResponseEntity.ok(centerService.updateOwnProfile(user, request));
+        return ResponseEntity.ok(toCenterResponse(centerService.updateOwnProfile(user, request)));
     }
 
     @PostMapping("/cases")
@@ -97,21 +98,25 @@ public class CenterController {
     }
 
     @PostMapping("/me/logo")
-    public ResponseEntity<Center> uploadLogo(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<CenterResponse> uploadLogo(@RequestParam("file") MultipartFile file) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.getUserByUsername(username);
         String filename = fileStorageService.store(file);
-        return ResponseEntity.ok(centerService.setLogo(user, filename));
+        return ResponseEntity.ok(toCenterResponse(centerService.setLogo(user, filename)));
     }
 
     @PutMapping("/me/logo")
-    public ResponseEntity<Center> setLogoUrl(@RequestBody Map<String, String> body) {
+    public ResponseEntity<CenterResponse> setLogoUrl(@RequestBody Map<String, String> body) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.getUserByUsername(username);
-        return ResponseEntity.ok(centerService.setLogo(user, body.get("logoUrl")));
+        return ResponseEntity.ok(toCenterResponse(centerService.setLogo(user, body.get("logoUrl"))));
     }
 
     private CharityCaseResponse toResponse(com.charity.app.model.CharityCase c) {
         return caseService.getPublic(c.getId());
+    }
+
+    private CenterResponse toCenterResponse(Center c) {
+        return centerService.getByIdResponse(c.getId());
     }
 }

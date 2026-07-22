@@ -8,6 +8,7 @@ public class CenterResponse {
     private String fullName;
     private String description;
     private String contactPhone;
+    private String email;
     private String address;
     private String cardNumber;
     private String sheba;
@@ -30,6 +31,8 @@ public class CenterResponse {
     public void setDescription(String description) { this.description = description; }
     public String getContactPhone() { return contactPhone; }
     public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
     public String getCardNumber() { return cardNumber; }

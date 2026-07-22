@@ -17,7 +17,7 @@ spring:
     open-in-view: false
 
 server:
-  port: 8085
+  port: 8082
 
 jwt:
   secret: ${JWT_SECRET:changeThisSecretKeyToAVeryLongRandomStringAtLeast256BitsLongForProduction}
@@ -29,7 +29,7 @@ telegram:
   enabled: ${TELEGRAM_ENABLED:false}
 
 cors:
-  allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+  allowed-origins: ${CORS_ORIGINS:http://127.0.0.1:5173}
 
 file:
   upload-dir: ${FILE_UPLOAD_DIR:./uploads}
