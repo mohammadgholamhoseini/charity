@@ -24,7 +24,8 @@ async function submit() {
     const redirect = route.query.redirect || (role === 'ADMIN' ? '/dashboard/admin/cases' : '/dashboard')
     router.push(redirect)
   } catch (e) {
-    error.value = 'نام کاربری یا رمز عبور اشتباه است.'
+    const msg = e.response?.data?.message || e.message || 'خطای ناشناخته'
+    error.value = 'نام کاربری یا رمز عبور اشتباه است. (' + msg + ')'
   } finally {
     loading.value = false
   }

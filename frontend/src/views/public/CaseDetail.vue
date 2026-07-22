@@ -28,11 +28,6 @@ const statusMeta = computed(() => {
     default: return { label: item.value?.status, cls: 'bg-slate-100 text-slate-500', icon: Clock }
   }
 })
-const progress = computed(() => {
-  if (!item.value?.amountNeeded) return 0
-  return Math.min(100, Math.round(((item.value.amountCollected || 0) / item.value.amountNeeded) * 100))
-})
-
 async function load() {
   loading.value = true
   try {
@@ -94,10 +89,6 @@ onMounted(load)
               <div class="font-bold text-emerald-600 dark:text-emerald-400">{{ nf(item.amountCollected) }}</div>
             </div>
           </div>
-          <div class="h-2.5 rounded-full bg-white/70 dark:bg-slate-800 overflow-hidden">
-            <div class="h-full rounded-full bg-gradient-to-l from-brand-500 to-emerald-400 transition-all duration-700" :style="{ width: progress + '%' }"></div>
-          </div>
-          <div class="text-xs text-slate-500 dark:text-slate-400 mt-2">٪{{ nf(progress) }} تأمین شده</div>
         </div>
 
         <!-- Detail entries -->

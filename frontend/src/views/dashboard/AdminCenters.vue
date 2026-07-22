@@ -50,14 +50,6 @@ async function approve(id) {
     msg.value = e.response?.data?.message || 'خطا در تایید مرکز.'
   }
 }
-async function reject(id) {
-  try {
-    await api.post(`/admin/centers/${id}/reject`)
-    await load()
-  } catch (e) {
-    msg.value = e.response?.data?.message || 'خطا در رد مرکز.'
-  }
-}
 async function deactivate(id) {
   if (!confirm('غیرفعال کردن مرکز باعث مخفی شدن تمام درخواست‌های فعال آن می‌شود. ادامه می‌دهید؟')) return
   try {
@@ -221,7 +213,7 @@ const statusColor = {
               <div class="font-bold text-slate-800 dark:text-white">{{ c.name }}</div>
             </div>
             <div class="text-sm text-slate-400 dark:text-slate-500 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span class="inline-flex items-center gap-1"><Mail :size="13" /> {{ c.user?.email }}</span>
+              <span class="inline-flex items-center gap-1"><Mail :size="13" /> {{ c.email }}</span>
               <span v-if="c.contactPhone" class="inline-flex items-center gap-1"><Phone :size="13" /> {{ c.contactPhone }}</span>
             </div>
             <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1.5 flex-wrap">
@@ -246,10 +238,7 @@ const statusColor = {
              <button v-if="c.status === 'INACTIVE'" @click="activate(c.id)" class="text-sm inline-flex items-center gap-1 bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-3 py-1.5 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/60">
                <Check :size="13" /> فعال‌سازی
              </button>
-             <button v-if="c.status !== 'REJECTED'" @click="reject(c.id)" class="text-sm inline-flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40">
-               <X :size="13" /> رد
-             </button>
-             <button @click="remove(c.id)" class="text-sm inline-flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40">
+              <button @click="remove(c.id)" class="text-sm inline-flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40">
                <FileText :size="13" /> حذف
              </button>
            </div>

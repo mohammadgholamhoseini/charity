@@ -30,7 +30,7 @@ async function load() {
     const cities = citiesRes.data || []
     provinces.value = res.data.map((p) => ({
       ...p,
-      cities: cities.filter((c) => c.provinceId === p.id)
+      cities: cities.filter((c) => c.province?.id === p.id)
     }))
   } catch (e) {
     err.value = 'خطا در بارگذاری استان‌ها.'

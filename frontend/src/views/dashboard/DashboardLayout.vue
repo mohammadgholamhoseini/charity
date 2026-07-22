@@ -66,7 +66,7 @@ function logout() {
         <span class="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">خوش‌آمدید، <b class="text-slate-700 dark:text-slate-200">{{ auth.user?.username }}</b></span>
         <div class="flex items-center gap-2 mr-auto sm:mr-0">
           <span class="chip bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300">
-            {{ isAdmin ? 'ادمین' : 'مرکز خیریه' }}
+            {{ isAdmin ? 'ادمین' : (auth.user?.fullName || auth.user?.username) }}
           </span>
           <span class="grid place-items-center w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white text-sm font-bold">
             {{ (auth.user?.username || '؟').charAt(0) }}
