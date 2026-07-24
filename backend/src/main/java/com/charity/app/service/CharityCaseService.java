@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
@@ -29,7 +30,7 @@ public class CharityCaseService {
     private final CenterRepository centerRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
-    private final TelegramService telegramService;
+    private final List<MessagingService> messagingServices;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -67,12 +68,7 @@ public class CharityCaseService {
         c.setDetails(req.getDetails());
         c = caseRepository.save(c);
 
-        Integer msgId = telegramService.publishCase(c);
-        if (msgId != null) {
-            c.setTelegramPosted(true);
-            c.setTelegramMessageId(msgId);
-            c = caseRepository.save(c);
-        }
+        c = publishToMessagingServices(c);
         return toResponse(c);
     }
 
@@ -143,6 +139,26 @@ public class CharityCaseService {
         docs.addAll(filenames);
         c.setDocuments(docs);
         return caseRepository.save(c);
+    }
+
+    @Transactional
+    public CharityCase publishToMessagingServices(CharityCase c) {
+        for (MessagingService service : messagingServices) {
+            if (!service.isEnabled()) continue;
+            Integer msgId = service.publishCase(c);
+            if (msgId != null) {
+                String name = service.getName();
+                if ("telegram".equals(name)) {
+                    c.setTelegramPosted(true);
+                    c.setTelegramMessageId(msgId);
+                } else if ("bale".equals(name)) {
+                    c.setBalePosted(true);
+                    c.setBaleMessageId(msgId);
+                }
+                c = caseRepository.save(c);
+            }
+        }
+        return c;
     }
 
     private static final java.util.List<CharityCase.Status> VISIBLE =

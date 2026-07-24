@@ -20,13 +20,18 @@ server:
   port: 8082
 
 jwt:
-  secret: ${JWT_SECRET:changeThisSecretKeyToAVeryLongRandomStringAtLeast256BitsLongForProduction}
+  secret: ${JWT_SECRET:}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
 telegram:
-  bot-token: ${TELEGRAM_BOT_TOKEN:REPLACE_WITH_YOUR_BOT_TOKEN}
-  channel: ${TELEGRAM_CHANNEL:@your_channel_username}
+  bot-token: ${TELEGRAM_BOT_TOKEN:}
+  channel: ${TELEGRAM_CHANNEL:}
   enabled: ${TELEGRAM_ENABLED:false}
+
+bale:
+  bot-token: ${BALE_BOT_TOKEN:}
+  channel: ${BALE_CHANNEL:}
+  enabled: ${BALE_ENABLED:false}
 
 cors:
   allowed-origins: ${CORS_ORIGINS:http://127.0.0.1:5173}

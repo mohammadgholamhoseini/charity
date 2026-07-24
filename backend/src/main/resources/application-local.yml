@@ -28,5 +28,10 @@ telegram:
   channel: "@your_channel_username"
   enabled: false
 
+bale:
+  bot-token: REPLACE_WITH_YOUR_BOT_TOKEN
+  channel: "@your_bale_channel"
+  enabled: false
+
 cors:
   allowed-origins: http://localhost:5173,http://127.0.0.1:5173

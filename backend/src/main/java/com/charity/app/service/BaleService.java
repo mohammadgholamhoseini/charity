@@ -16,17 +16,17 @@ import java.util.Map;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TelegramService implements MessagingService {
+public class BaleService implements MessagingService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${telegram.bot-token}")
+    @Value("${bale.bot-token}")
     private String botToken;
 
-    @Value("${telegram.channel}")
+    @Value("${bale.channel}")
     private String channel;
 
-    @Value("${telegram.enabled:false}")
+    @Value("${bale.enabled:false}")
     private boolean enabled;
 
     @Value("${app.base-url:http://localhost:${server.port:8085}}")
@@ -34,7 +34,7 @@ public class TelegramService implements MessagingService {
 
     @Override
     public String getName() {
-        return "telegram";
+        return "bale";
     }
 
     @Override
@@ -43,13 +43,13 @@ public class TelegramService implements MessagingService {
     }
 
     private String apiUrl() {
-        return "https://api.telegram.org/bot" + botToken;
+        return "https://tapi.bale.ai/bot" + botToken;
     }
 
     @Override
     public Integer publishCase(CharityCase c) {
         if (!isEnabled()) {
-            log.warn("Telegram disabled or token not set. Skipping publish for case {}", c.getId());
+            log.warn("Bale disabled or token not set. Skipping publish for case {}", c.getId());
             return null;
         }
         try {
@@ -62,7 +62,7 @@ public class TelegramService implements MessagingService {
                 try {
                     sendPhoto(channel, imageUrl, "📸 " + c.getTitle());
                 } catch (Exception e) {
-                    log.error("Failed to send image {} to Telegram", imageUrl, e);
+                    log.error("Failed to send image {} to Bale", imageUrl, e);
                 }
             }
 
@@ -72,14 +72,14 @@ public class TelegramService implements MessagingService {
                     try {
                         sendDocument(channel, doc, "📎 " + doc);
                     } catch (Exception e) {
-                        log.error("Failed to send document {} to Telegram", doc, e);
+                        log.error("Failed to send document {} to Bale", doc, e);
                     }
                 }
             }
 
             return msgId;
         } catch (Exception e) {
-            log.error("Error publishing case {} to telegram", c.getId(), e);
+            log.error("Error publishing case {} to Bale", c.getId(), e);
             return null;
         }
     }
@@ -127,7 +127,7 @@ public class TelegramService implements MessagingService {
             Map result = (Map) response.get("result");
             return (Integer) result.get("message_id");
         }
-        log.error("Telegram sendMessage failed: {}", response);
+        log.error("Bale sendMessage failed: {}", response);
         return null;
     }
 

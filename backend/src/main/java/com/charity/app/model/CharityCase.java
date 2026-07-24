@@ -72,6 +72,13 @@ public class CharityCase {
     @Column(name = "telegram_message_id")
     private Integer telegramMessageId;
 
+    @Column(name = "bale_posted")
+    @Builder.Default
+    private boolean balePosted = false;
+
+    @Column(name = "bale_message_id")
+    private Integer baleMessageId;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
