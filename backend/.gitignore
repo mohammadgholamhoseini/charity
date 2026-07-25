@@ -6,9 +6,3 @@ target/
 *.war
 *.log
 uploads/
-
-# Environment / Secrets (keep .env.example committed)
-.env
-.env.*
-!.env.example
-application-local.yml

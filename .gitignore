@@ -24,4 +24,4 @@ backend/uploads/
 
 # Env
 .env
-.env.local
+.env.*
