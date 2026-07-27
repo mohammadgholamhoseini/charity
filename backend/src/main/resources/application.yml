@@ -14,7 +14,6 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
     open-in-view: false
 
@@ -31,9 +30,9 @@ telegram:
   enabled: ${TELEGRAM_ENABLED:false}
 
 bale:
-  bot-token: ${BALE_BOT_TOKEN:}
-  channel: ${BALE_CHANNEL:}
-  enabled: ${BALE_ENABLED:false}
+  bot-token: ${BALE_BOT_TOKEN:573415822:G7Y6X1umfpGT_eU4_9lNDfp0AnvV4aIebhM}
+  channel: ${BALE_CHANNEL:@yariju}
+  enabled: ${BALE_ENABLED:true}
 
 cors:
   allowed-origins: ${CORS_ORIGINS:http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173}

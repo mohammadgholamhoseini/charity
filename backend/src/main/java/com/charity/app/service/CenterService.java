@@ -281,6 +281,7 @@ public class CenterService {
     @Transactional(readOnly = true)
     public java.util.Map<String, Object> getPublicProfile(Long id) {
         Center c = centerRepository.findById(id)
+                .filter(center -> center.getStatus() == Center.Status.APPROVED)
                 .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
         java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
         map.put("id", c.getId());

@@ -53,14 +53,16 @@ public class PublicController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long provinceId,
             @RequestParam(required = false) Long cityId,
-            @RequestParam(required = false) Long centerId) {
+            @RequestParam(required = false) Long centerId,
+            @RequestParam(required = false) String status) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(caseService.publicList(pageable, q, categoryId, provinceId, cityId, centerId));
+        return ResponseEntity.ok(caseService.publicList(
+                pageable, q, categoryId, provinceId, cityId, centerId, status));
     }
 
     @GetMapping("/cases/{id}")
     public ResponseEntity<CharityCaseResponse> getCase(@PathVariable Long id) {
-        return ResponseEntity.ok(caseService.getPublic(id));
+        return ResponseEntity.ok(caseService.getVisible(id));
     }
 
     @GetMapping("/categories")
@@ -117,4 +119,3 @@ public class PublicController {
         }
     }
 }
-

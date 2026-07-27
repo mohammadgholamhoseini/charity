@@ -35,6 +35,7 @@ public class Center {
     @JoinTable(name = "center_categories",
             joinColumns = @JoinColumn(name = "center_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"))
+    @Builder.Default
     private Set<Category> categories = new HashSet<>();
 
     @Column(name = "full_name")

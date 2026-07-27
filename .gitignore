@@ -25,3 +25,5 @@ backend/uploads/
 # Env
 .env
 .env.*
+
+ISSUES.md

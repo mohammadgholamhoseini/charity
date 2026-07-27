@@ -166,23 +166,28 @@ public class CharityCaseService {
 
     @Transactional(readOnly = true)
     public Page<CharityCaseResponse> publicList(Pageable pageable, String q, Long categoryId,
-                                                Long provinceId, Long cityId, Long centerId) {
+                                                Long provinceId, Long cityId, Long centerId,
+                                                String status) {
+        List<CharityCase.Status> visibleStatuses = resolveVisibleStatuses(status);
         Page<CharityCase> page;
         boolean hasLocation = provinceId != null || cityId != null;
         if (centerId != null) {
-            page = caseRepository.findByCenterIdIn(java.util.List.of(centerId), VISIBLE, pageable);
+            page = caseRepository.findByCenterIdIn(java.util.List.of(centerId), visibleStatuses, pageable);
         } else if (categoryId != null && hasLocation) {
-            page = caseRepository.findByCategoryIdAndVisibleWithLocation(categoryId, VISIBLE, provinceId, cityId, pageable);
+            page = caseRepository.findByCategoryIdAndVisibleWithLocation(
+                    categoryId, visibleStatuses, provinceId, cityId, pageable);
         } else if (categoryId != null) {
-            page = caseRepository.findByCategoryIdAndVisible(categoryId, VISIBLE, pageable);
+            page = caseRepository.findByCategoryIdAndVisible(categoryId, visibleStatuses, pageable);
         } else if (q != null && !q.isBlank() && hasLocation) {
-            page = caseRepository.searchVisibleWithLocation(q, VISIBLE, provinceId, cityId, pageable);
+            page = caseRepository.searchVisibleWithLocation(
+                    q, visibleStatuses, provinceId, cityId, pageable);
         } else if (q != null && !q.isBlank()) {
-            page = caseRepository.searchVisible(q, VISIBLE, pageable);
+            page = caseRepository.searchVisible(q, visibleStatuses, pageable);
         } else if (hasLocation) {
-            page = caseRepository.findVisibleWithLocation(VISIBLE, provinceId, cityId, pageable);
+            page = caseRepository.findVisibleWithLocation(
+                    visibleStatuses, provinceId, cityId, pageable);
         } else {
-            page = caseRepository.findVisible(VISIBLE, pageable);
+            page = caseRepository.findVisible(visibleStatuses, pageable);
         }
         return page.map(this::toResponse);
     }
@@ -215,6 +220,14 @@ public class CharityCaseService {
     }
 
     @Transactional(readOnly = true)
+    public CharityCaseResponse getVisible(Long id) {
+        CharityCase c = caseRepository.findById(id)
+                .filter(item -> VISIBLE.contains(item.getStatus()))
+                .orElseThrow(() -> new NoSuchElementException("درخواست یافت نشد"));
+        return toResponse(c);
+    }
+
+    @Transactional(readOnly = true)
     public void ensureOwnedByCurrentCenter(Long caseId) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).orElseThrow();
@@ -234,6 +247,21 @@ public class CharityCaseService {
             return CharityCase.Urgency.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
             return CharityCase.Urgency.MEDIUM;
+        }
+    }
+
+    private List<CharityCase.Status> resolveVisibleStatuses(String status) {
+        if (status == null || status.isBlank()) {
+            return VISIBLE;
+        }
+        try {
+            CharityCase.Status requested = CharityCase.Status.valueOf(status.toUpperCase());
+            if (!VISIBLE.contains(requested)) {
+                throw new IllegalArgumentException("وضعیت درخواستی قابل نمایش نیست");
+            }
+            return List.of(requested);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("وضعیت نامعتبر است");
         }
     }
 

@@ -68,20 +68,18 @@ public class DataLoader implements CommandLineRunner {
     }
 
     private void seedAdmin() {
-        User admin = userRepository.findByUsername("admin").orElse(null);
-        if (admin == null) {
-            admin = User.builder()
-                    .username("admin")
-                    .email("admin@charity.local")
-                    .role(Role.ADMIN)
-                    .enabled(true)
-                    .build();
-            log.info("Seeded default admin (username=admin, password=admin123). Change in production!");
+        if (userRepository.findByUsername("admin").isPresent()) {
+            return;
         }
-        admin.setPassword(passwordEncoder.encode("admin123"));
-        admin.setEmail("admin@charity.local");
-        admin.setRole(Role.ADMIN);
-        admin.setEnabled(true);
+
+        User admin = User.builder()
+                .username("admin")
+                .password(passwordEncoder.encode("admin123"))
+                .email("admin@charity.local")
+                .role(Role.ADMIN)
+                .enabled(true)
+                .build();
         userRepository.save(admin);
+        log.info("Seeded default admin (username=admin, password=admin123). Change in production!");
     }
 }
