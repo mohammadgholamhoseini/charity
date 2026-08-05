@@ -3,7 +3,7 @@ spring:
     name: charity-backend
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/charity?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=Asia/Tehran&characterEncoding=utf8&allowPublicKeyRetrieval=true}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/charity?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=Asia/Tehran&characterEncoding=utf8&allowPublicKeyRetrieval=true}
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver

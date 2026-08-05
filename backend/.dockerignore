@@ -1,8 +1,4 @@
-target
-.git
+target/
+.git/
 .gitignore
-.idea
-*.iml
-.env
-uploads
-README.md
+*.md

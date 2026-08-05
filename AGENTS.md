@@ -28,7 +28,20 @@ Backend: Spring Boot 3.3.5, Java 21, Maven, Lombok (`@Getter @Setter @Builder @N
 
 ## Docker
 
-`compose.yaml` runs MySQL 8.4 (port **3307**, not 3306) + backend (8082) + frontend (nginx, port 80). Copy `.env` from `.env.example` — `.env` is gitignored.
+```bash
+# All services up on different ports
+docker compose up --build
+```
+
+| Service | Container | Port | DB |
+|---------|-----------|------|----|
+| `backend-master` | master branch | 81 | MySQL |
+| `backend-dev` | dev branch | 8081 | H2 |
+| `frontend-master` | master branch (nginx) | 80 | — |
+| `frontend-dev` | dev branch (nginx) | 8080 | — |
+| `mysql` | — | 3307 | MySQL |
+
+Images are tagged by service name: `charity-backend:master`, `charity-backend:dev`, `charity-frontend:master`, `charity-frontend:dev`.
 
 ## Frontend
 
