@@ -17,14 +17,12 @@ services:
       retries: 5
 
   backend-master:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.master
+    image: charity-backend:master
     ports:
       - "81:8082"
     env_file: .env
     environment:
-      SPRING_PROFILE: default
+      SPRING_PROFILES_ACTIVE: default
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-charity}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-charity_user}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-root}
@@ -33,28 +31,22 @@ services:
         condition: service_healthy
 
   backend-dev:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
+    image: charity-backend:dev
     ports:
       - "8081:8082"
     env_file: .env
     environment:
-      SPRING_PROFILE: local
+      SPRING_PROFILES_ACTIVE: local
 
   frontend-master:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.master
+    image: charity-frontend:master
     ports:
       - "80:80"
     depends_on:
       - backend-master
 
   frontend-dev:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
+    image: charity-frontend:dev
     ports:
       - "8080:80"
     depends_on:
