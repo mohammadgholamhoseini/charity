@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../api/client'
+import PageHeader from '../components/PageHeader.vue'
+import UiAlert from '../components/UiAlert.vue'
 import { User as UserIcon, Lock, Save, Loader2, CheckCircle2, ArrowRight, ImageUp } from '@lucide/vue'
 
 const auth = useAuthStore()
@@ -173,20 +175,13 @@ onMounted(loadProfile)
       <ArrowRight :size="14" /> بازگشت به سایت
     </RouterLink>
 
-    <div class="flex items-center gap-2.5 mb-6">
-      <span class="grid place-items-center w-10 h-10 rounded-2xl bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300">
-        <UserIcon :size="20" />
-      </span>
-      <h1 class="text-2xl font-bold text-slate-800 dark:text-white">پروفایل من</h1>
-    </div>
+    <PageHeader eyebrow="حساب کاربری" title="پروفایل من" description="اطلاعات هویتی و راه‌های ارتباطی حساب خود را به‌روز نگه دارید." />
 
     <p v-if="loading" class="text-slate-400">در حال بارگذاری...</p>
 
     <div v-else class="card p-6 sm:p-8 space-y-5">
-      <p v-if="msg" class="text-brand-700 dark:text-brand-300 text-sm font-medium bg-brand-50 dark:bg-brand-900/20 rounded-xl py-2.5 px-3 flex items-center gap-1.5">
-        <CheckCircle2 :size="16" /> {{ msg }}
-      </p>
-      <p v-if="err" class="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 rounded-xl py-2.5 px-3">{{ err }}</p>
+      <UiAlert v-if="msg" type="success">{{ msg }}</UiAlert>
+      <UiAlert v-if="err" type="error">{{ err }}</UiAlert>
 
       <!-- Admin -->
       <template v-if="isAdmin">

@@ -1,13 +1,26 @@
 <script setup>
-import { RouterView, RouterLink, useRouter } from 'vue-router'
+import { RouterView, RouterLink, useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { computed } from 'vue'
-import { LogOut, LayoutDashboard, FileText, PlusCircle, Building2, Tags, Megaphone, Menu, X, MapPin } from '@lucide/vue'
+import { computed, ref, watch } from 'vue'
+import {
+  Building2,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  MapPin,
+  Megaphone,
+  Menu,
+  PlusCircle,
+  Tags,
+  User,
+  X
+} from '@lucide/vue'
 import BrandLogo from '../../components/BrandLogo.vue'
-import { ref } from 'vue'
+import ThemeToggle from '../../components/ThemeToggle.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const isAdmin = computed(() => auth.isAdmin)
 const mobileOpen = ref(false)
 
@@ -28,67 +41,86 @@ function logout() {
   auth.logout()
   router.push('/')
 }
+
+watch(() => route.fullPath, () => { mobileOpen.value = false })
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-surface dark:bg-[#0a152e]">
-    <!-- Desktop sidebar -->
-    <aside class="w-64 bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 p-5 hidden md:flex flex-col sticky top-0 h-screen">
-      <RouterLink to="/" class="mb-8 px-2">
-        <BrandLogo full dark :mark="34" />
+  <div class="min-h-screen bg-[var(--semantic-bg)] md:flex">
+    <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-l border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#0b222c] md:flex">
+      <RouterLink to="/" class="rounded-xl px-2 py-1">
+        <BrandLogo full :mark="40" tagline="پنل مدیریت" />
       </RouterLink>
 
-      <div class="text-xs font-medium text-slate-400 px-3 mb-2">منو</div>
-      <nav class="space-y-1 flex-1">
-        <RouterLink to="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/30 hover:text-brand-700 dark:hover:text-brand-300 transition" exact-active-class="bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium">
-          <LayoutDashboard :size="18" /> داشبورد
+      <div class="mt-8 rounded-2xl bg-brand-50 p-4 dark:bg-brand-950/70">
+        <div class="text-xs font-bold text-brand-700 dark:text-brand-300">{{ isAdmin ? 'مدیریت سامانه' : 'مرکز خیریه' }}</div>
+        <div class="mt-1 truncate font-black text-slate-900 dark:text-white">{{ auth.user?.fullName || auth.user?.username }}</div>
+      </div>
+
+      <nav class="mt-7 flex-1 space-y-1" aria-label="منوی داشبورد">
+        <RouterLink
+          to="/dashboard"
+          class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-brand-50 hover:text-brand-800 dark:text-slate-300 dark:hover:bg-brand-950 dark:hover:text-brand-200"
+          exact-active-class="bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200"
+        >
+          <LayoutDashboard :size="18" /> نمای کلی
         </RouterLink>
-        <RouterLink v-for="l in links" :key="l.to" :to="l.to"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/30 hover:text-brand-700 dark:hover:text-brand-300 transition"
-          active-class="bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium">
-          <component :is="l.icon" :size="18" /> {{ l.label }}
+        <RouterLink
+          v-for="link in links"
+          :key="link.to"
+          :to="link.to"
+          class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-brand-50 hover:text-brand-800 dark:text-slate-300 dark:hover:bg-brand-950 dark:hover:text-brand-200"
+          active-class="bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200"
+        >
+          <component :is="link.icon" :size="18" /> {{ link.label }}
         </RouterLink>
       </nav>
 
-      <button @click="logout" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition mt-2">
-        <LogOut :size="18" /> خروج
-      </button>
+      <div class="space-y-1 border-t border-slate-100 pt-4 dark:border-slate-800">
+        <RouterLink to="/profile" class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800">
+          <User :size="18" /> پروفایل من
+        </RouterLink>
+        <button class="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30" @click="logout">
+          <LogOut :size="18" /> خروج
+        </button>
+      </div>
     </aside>
 
-    <!-- Main -->
-    <div class="flex-1 min-w-0 flex flex-col">
-      <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-100 dark:border-slate-800 h-16 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30">
-        <button @click="mobileOpen = !mobileOpen" class="md:hidden grid place-items-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
-          <Menu v-if="!mobileOpen" :size="20" /><X v-else :size="20" />
-        </button>
-        <span class="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">خوش‌آمدید، <b class="text-slate-700 dark:text-slate-200">{{ auth.user?.username }}</b></span>
-        <div class="flex items-center gap-2 mr-auto sm:mr-0">
-          <span class="chip bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300">
-            {{ isAdmin ? 'ادمین' : (auth.user?.fullName || auth.user?.username) }}
-          </span>
-          <span class="grid place-items-center w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white text-sm font-bold">
-            {{ (auth.user?.username || '؟').charAt(0) }}
-          </span>
+    <div class="min-w-0 flex-1">
+      <header class="glass sticky top-0 z-40 flex h-[72px] items-center justify-between border-b px-4 sm:px-6">
+        <div class="flex items-center gap-3">
+          <button class="icon-btn md:hidden" :aria-expanded="mobileOpen" aria-label="منوی داشبورد" @click="mobileOpen = !mobileOpen">
+            <X v-if="mobileOpen" :size="20" />
+            <Menu v-else :size="20" />
+          </button>
+          <div>
+            <div class="text-xs text-slate-400">فضای کاری</div>
+            <div class="text-sm font-bold text-slate-800 dark:text-slate-100">{{ isAdmin ? 'مدیریت یاری‌جو' : 'پنل مرکز خیریه' }}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <ThemeToggle />
+          <RouterLink to="/profile" class="hidden min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:flex">
+            <span class="grid h-8 w-8 place-items-center rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300"><User :size="16" /></span>
+            {{ auth.user?.fullName || auth.user?.username }}
+          </RouterLink>
         </div>
       </header>
 
-      <!-- Mobile drawer -->
-      <transition name="slide">
-        <nav v-if="mobileOpen" class="md:hidden bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 py-3 space-y-1">
-          <RouterLink to="/dashboard" @click="mobileOpen=false" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 dark:text-slate-300">
-            <LayoutDashboard :size="18" /> داشبورد
-          </RouterLink>
-          <RouterLink v-for="l in links" :key="l.to" :to="l.to" @click="mobileOpen=false"
-            class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 dark:text-slate-300">
-            <component :is="l.icon" :size="18" /> {{ l.label }}
-          </RouterLink>
-          <button @click="logout" class="flex w-full items-center gap-3 px-3 py-3 rounded-xl text-red-500">
-            <LogOut :size="18" /> خروج
-          </button>
-        </nav>
+      <transition name="drawer">
+        <div v-if="mobileOpen" class="fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-sm md:hidden" @click.self="mobileOpen = false">
+          <nav class="absolute right-0 top-[72px] h-[calc(100%-72px)] w-[min(86vw,320px)] overflow-y-auto border-l border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-800 dark:bg-[#0b222c]">
+            <RouterLink to="/dashboard" class="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 dark:text-slate-200"><LayoutDashboard :size="18" /> نمای کلی</RouterLink>
+            <RouterLink v-for="link in links" :key="link.to" :to="link.to" class="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <component :is="link.icon" :size="18" /> {{ link.label }}
+            </RouterLink>
+            <RouterLink to="/profile" class="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 dark:text-slate-200"><User :size="18" /> پروفایل من</RouterLink>
+            <button class="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-red-600 dark:text-red-300" @click="logout"><LogOut :size="18" /> خروج</button>
+          </nav>
+        </div>
       </transition>
 
-      <main class="p-4 sm:p-6 flex-1">
+      <main class="dashboard-content p-4 sm:p-6 lg:p-8">
         <RouterView />
       </main>
     </div>
@@ -96,6 +128,12 @@ function logout() {
 </template>
 
 <style scoped>
-.slide-enter-active, .slide-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
-.slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-8px); }
+.drawer-enter-active,
+.drawer-leave-active { transition: opacity 0.18s ease; }
+.drawer-enter-active nav,
+.drawer-leave-active nav { transition: transform 0.2s ease; }
+.drawer-enter-from,
+.drawer-leave-to { opacity: 0; }
+.drawer-enter-from nav,
+.drawer-leave-to nav { transform: translateX(100%); }
 </style>

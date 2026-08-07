@@ -41,7 +41,7 @@ async function submit() {
     <div class="w-full max-w-md card p-8 relative animate-fade-up">
       <div class="text-center mb-7">
         <div class="inline-flex justify-center mb-4">
-          <BrandLogo full dark :mark="64" tagline="سامانهٔ کمک‌رسانی" />
+          <BrandLogo full :mark="64" tagline="پیوند امن برای یاری آگاهانه" />
         </div>
         <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white">ورود به پنل</h1>
         <p class="text-slate-400 text-sm mt-1">برای مراکز خیریه و ادمین</p>
@@ -71,7 +71,7 @@ async function submit() {
           </div>
         </div>
 
-        <p v-if="error" class="text-red-500 text-sm text-center bg-red-50 dark:bg-red-900/20 rounded-xl py-2.5">{{ error }}</p>
+        <p v-if="error" role="alert" class="text-red-600 dark:text-red-300 text-sm text-center bg-red-50 dark:bg-red-950/40 rounded-xl py-2.5 px-3">{{ error }}</p>
 
         <button :disabled="loading" type="submit" class="btn-primary w-full">
           <LogIn v-if="!loading" :size="18" />

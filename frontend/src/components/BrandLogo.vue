@@ -1,65 +1,62 @@
 <script setup>
-/*
-  BrandLogo — امضای بصری «یاری جو»
-  قلب ساخته‌شده از دو کف دست: نیمهٔ چپ سرمه‌ای (نیازمند) و نیمهٔ راست
-  مرجانی (یاری‌رسان) که کنار هم قلبِ پیوند را می‌سازند.
-  با `full` نشان+واژه‌مارک، بدون آن فقط نشان (مهر).
-  با `dark` برای بافت تیره.
-*/
+import { computed } from 'vue'
+
 const props = defineProps({
   full: { type: Boolean, default: false },
-  dark: { type: Boolean, default: false },
-  mark: { type: Number, default: 38 },
-  text: { type: String, default: 'یاری جو' },
+  inverse: { type: Boolean, default: false },
+  mono: { type: Boolean, default: false },
+  mark: { type: Number, default: 40 },
+  text: { type: String, default: 'یاری‌جو' },
   tagline: { type: String, default: '' }
 })
 
-const left = props.dark ? '#86a9e8' : '#204e9d'
-const right = props.dark ? '#ff9779' : '#ff704d'
+const primary = computed(() => props.mono ? 'currentColor' : props.inverse ? '#7bc7b3' : '#196f5d')
+const accent = computed(() => props.mono ? 'currentColor' : '#ef861c')
 </script>
 
 <template>
   <span class="inline-flex items-center gap-2.5" :aria-label="props.text">
-    <span
-      class="grid place-items-center shrink-0"
-      :style="{ width: props.mark + 'px', height: props.mark + 'px' }"
+    <svg
+      :width="props.mark"
+      :height="props.mark"
+      viewBox="0 0 72 72"
+      fill="none"
+      role="img"
+      aria-hidden="true"
+      class="shrink-0 overflow-visible"
     >
-      <svg :width="props.mark" :height="props.mark" viewBox="0 0 64 64" fill="none">
-        <!-- نیمهٔ چپ — کف دستِ نیازمند (سرمه‌ای) -->
-        <path
-          d="M32 53 C20 44 9 35 9 24 C9 16 15 10 23 10 C28 10 31 13 32 16 Z"
-          :fill="left"
-        />
-        <!-- نیمهٔ راست — کف دستِ یاری‌رسان (مرجانی) -->
-        <path
-          d="M32 53 C44 44 55 35 55 24 C55 16 49 10 41 10 C36 10 33 13 32 16 Z"
-          :fill="right"
-        />
-        <!-- انگشتان نیمهٔ چپ -->
-        <g :stroke="left" stroke-width="2.6" stroke-linecap="round">
-          <path d="M11 21 L8 16" />
-          <path d="M14 14 L12 9" />
-          <path d="M18 11 L18 6" />
-        </g>
-        <!-- انگشتان نیمهٔ راست -->
-        <g :stroke="right" stroke-width="2.6" stroke-linecap="round">
-          <path d="M53 21 L56 16" />
-          <path d="M50 14 L52 9" />
-          <path d="M46 11 L46 6" />
-        </g>
-      </svg>
-    </span>
+      <path
+        d="M36 62C29 55 15 46 11 34C7 22 14 12 24 12C31 12 35 17 36 22C37 17 41 12 48 12C58 12 65 22 61 34C57 46 43 55 36 62Z"
+        :fill="primary"
+        opacity=".14"
+      />
+      <path
+        d="M35.8 59.2C28.6 51.9 17.2 44.7 13.5 34.1C10.5 25.5 15.3 17.4 23.5 17.4C29.7 17.4 34 22.1 35.8 27.2"
+        :stroke="primary"
+        stroke-width="6"
+        stroke-linecap="round"
+      />
+      <path
+        d="M36.2 59.2C43.4 51.9 54.8 44.7 58.5 34.1C61.5 25.5 56.7 17.4 48.5 17.4C42.3 17.4 38 22.1 36.2 27.2"
+        :stroke="accent"
+        stroke-width="6"
+        stroke-linecap="round"
+      />
+      <path d="M25 36C29 39 32.5 40.5 36 40.5C39.5 40.5 43 39 47 36" :stroke="primary" stroke-width="4" stroke-linecap="round" />
+      <path d="M36 27V47" :stroke="accent" stroke-width="4" stroke-linecap="round" />
+      <circle cx="36" cy="53" r="2.8" :fill="accent" />
+    </svg>
 
     <span v-if="props.full" class="flex flex-col leading-none select-none">
       <span
         class="font-display font-black tracking-tight whitespace-nowrap"
-        :class="props.dark ? 'text-white' : 'text-slate-900 dark:text-white'"
-        :style="{ fontSize: (props.mark * 0.5) + 'px' }"
+        :class="props.inverse ? 'text-white' : 'text-slate-900 dark:text-white'"
+        :style="{ fontSize: (props.mark * 0.48) + 'px' }"
       >{{ props.text }}</span>
       <span
         v-if="props.tagline"
-        class="font-sans text-[10px] mt-1 tracking-wide whitespace-nowrap"
-        :class="props.dark ? 'text-accent-300/90' : 'text-slate-500 dark:text-slate-400'"
+        class="mt-1 whitespace-nowrap text-[10px] font-medium tracking-wide"
+        :class="props.inverse ? 'text-white/65' : 'text-slate-500 dark:text-slate-400'"
       >{{ props.tagline }}</span>
     </span>
   </span>

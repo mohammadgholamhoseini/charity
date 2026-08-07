@@ -1,10 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import api from '../../api/client'
-import { Building2, MapPin, Loader2, Search } from '@lucide/vue'
+import PageHeader from '../../components/PageHeader.vue'
+import EmptyState from '../../components/EmptyState.vue'
+import AppPagination from '../../components/AppPagination.vue'
+import { ArrowLeft, Building2, MapPin, Search, ShieldCheck } from '@lucide/vue'
 
-const router = useRouter()
 const centers = ref([])
 const total = ref(0)
 const page = ref(0)
@@ -13,18 +15,20 @@ const q = ref('')
 const provinceId = ref(null)
 const provinces = ref([])
 const loading = ref(true)
+const error = ref('')
 
 async function loadProvinces() {
   try {
-    const res = await api.get('/public/provinces')
-    provinces.value = res.data
-  } catch (e) {}
+    const response = await api.get('/public/provinces')
+    provinces.value = response.data
+  } catch {}
 }
 
 async function load() {
   loading.value = true
+  error.value = ''
   try {
-    const res = await api.get('/public/centers', {
+    const response = await api.get('/public/centers', {
       params: {
         page: page.value,
         size,
@@ -32,15 +36,14 @@ async function load() {
         q: q.value || undefined
       }
     })
-    centers.value = res.data.content
-    total.value = res.data.totalElements
+    centers.value = response.data.content
+    total.value = response.data.totalElements
+  } catch {
+    error.value = 'فهرست مراکز دریافت نشد. لطفاً دوباره تلاش کنید.'
+    centers.value = []
   } finally {
     loading.value = false
   }
-}
-
-function goCenter(id) {
-  router.push(`/center/${id}`)
 }
 
 function fileUrl(name) {
@@ -52,83 +55,64 @@ function search() {
   load()
 }
 
-onMounted(() => { loadProvinces(); load() })
+onMounted(() => {
+  loadProvinces()
+  load()
+})
+watch(page, load)
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 py-12" dir="rtl">
-    <div class="flex items-center gap-2.5 mb-2">
-      <span class="grid place-items-center w-10 h-10 rounded-2xl bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300">
-        <Building2 :size="20" />
-      </span>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white">مراکز خیریه</h1>
-    </div>
-    <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">مراکز همکار را مشاهده کرده و با انتخاب هر مرکز، جزئیات و درخواست‌های آن را ببینید.</p>
+  <div class="page-shell">
+    <PageHeader
+      eyebrow="شبکه اعتماد"
+      title="مراکز خیریه"
+      description="پروفایل مراکز، حوزه‌های فعالیت و درخواست‌های ثبت‌شده هر مرکز را یک‌جا ببینید."
+    />
 
-    <!-- filters -->
-    <div class="flex flex-wrap gap-3 mb-8">
-      <div class="relative flex-1 min-w-[200px]">
-        <Search :size="18" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          v-model="q"
-          @keyup.enter="search"
-          type="text"
-          placeholder="جستجوی نام مرکز..."
-          class="input w-full pr-10"
-        />
+    <div class="card mb-8 flex flex-col gap-3 p-4 sm:flex-row sm:p-5">
+      <div class="relative flex-1">
+        <Search :size="18" class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input v-model="q" class="input pr-11" placeholder="جستجوی نام مرکز..." @keyup.enter="search" />
       </div>
-      <select v-model="provinceId" @change="page = 0; load()" class="input w-full sm:w-48 bg-white dark:bg-slate-900">
+      <select v-model="provinceId" class="input sm:w-56" @change="search">
         <option :value="null">همه استان‌ها</option>
-        <option v-for="p in provinces" :key="p.id" :value="p.id">{{ p.name }}</option>
+        <option v-for="province in provinces" :key="province.id" :value="province.id">{{ province.name }}</option>
       </select>
+      <button class="btn-primary text-sm" @click="search"><Search :size="17" /> جستجو</button>
     </div>
 
-    <div v-if="loading" class="grid md:grid-cols-3 gap-5">
-      <div v-for="i in 6" :key="i" class="card h-56 animate-pulse bg-slate-100 dark:bg-slate-800/50"></div>
+    <div v-if="loading" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div v-for="index in 6" :key="index" class="card h-64 animate-pulse bg-slate-100 dark:bg-slate-800/50"></div>
     </div>
+    <EmptyState v-else-if="error" title="خطا در دریافت مراکز" :description="error">
+      <button class="btn-primary text-sm" @click="load">تلاش دوباره</button>
+    </EmptyState>
+    <EmptyState v-else-if="!centers.length" title="مرکزی پیدا نشد" description="نام یا استان دیگری را جستجو کنید." :icon="Building2" />
 
-    <div v-else-if="!centers.length" class="text-center py-16 card">
-      <div class="text-5xl mb-3">🏢</div>
-      <p class="text-slate-500 dark:text-slate-400">مرکزی با این جستجو یافت نشد.</p>
-    </div>
-
-    <div v-else class="grid md:grid-cols-3 gap-5 stagger">
-      <button
-        v-for="c in centers"
-        :key="c.id"
-        @click="goCenter(c.id)"
-        class="card p-5 text-right hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col group"
-      >
-        <div class="flex items-center gap-3 mb-3">
-          <div class="shrink-0 w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 grid place-items-center overflow-hidden">
-            <img v-if="c.logoUrl" :src="fileUrl(c.logoUrl)" alt="لوگو" class="w-full h-full object-cover" />
-            <Building2 v-else :size="24" class="text-brand-500" />
+    <div v-else class="stagger grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <RouterLink v-for="center in centers" :key="center.id" :to="`/center/${center.id}`" class="group card flex flex-col p-5 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+        <div class="flex items-center gap-4">
+          <div class="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-slate-100 bg-brand-50 dark:border-slate-800 dark:bg-brand-950">
+            <img v-if="center.logoUrl" :src="fileUrl(center.logoUrl)" :alt="`لوگوی ${center.name}`" class="h-full w-full object-cover" />
+            <Building2 v-else :size="27" class="text-brand-600 dark:text-brand-300" />
           </div>
           <div class="min-w-0">
-            <h3 class="font-bold text-slate-800 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-300 transition line-clamp-1">
-              {{ c.name }}
-            </h3>
-            <p v-if="c.province" class="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-              <MapPin :size="12" /> {{ c.province.name }}<template v-if="c.city"> / {{ c.city.name }}</template>
+            <div class="flex items-center gap-1.5 text-xs font-bold text-brand-700 dark:text-brand-300"><ShieldCheck :size="14" /> مرکز همکار</div>
+            <h2 class="mt-1 line-clamp-1 text-lg font-black text-slate-900 group-hover:text-brand-700 dark:text-white dark:group-hover:text-brand-300">{{ center.name }}</h2>
+            <p v-if="center.province" class="mt-1 flex items-center gap-1 text-xs text-slate-400">
+              <MapPin :size="13" /> {{ center.province.name }}<template v-if="center.city">، {{ center.city.name }}</template>
             </p>
           </div>
         </div>
-
-        <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 flex-1">
-          {{ c.description || 'بدون توضیحات' }}
-        </p>
-
-        <div class="flex flex-wrap gap-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-          <span v-for="cat in (c.categories || []).slice(0, 3)" :key="cat.id"
-            class="chip bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300">{{ cat.name }}</span>
+        <p class="mt-4 line-clamp-3 flex-1 text-sm leading-7 text-slate-500 dark:text-slate-400">{{ center.description || 'اطلاعات کامل این مرکز و درخواست‌های آن را در صفحه مرکز مشاهده کنید.' }}</p>
+        <div class="mt-4 flex flex-wrap gap-1.5 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <span v-for="category in (center.categories || []).slice(0, 3)" :key="category.id" class="chip bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200">{{ category.name }}</span>
+          <span class="mr-auto grid h-9 w-9 place-items-center rounded-xl bg-slate-50 text-brand-700 transition group-hover:bg-brand-600 group-hover:text-white dark:bg-slate-800 dark:text-brand-300"><ArrowLeft :size="16" /></span>
         </div>
-      </button>
+      </RouterLink>
     </div>
 
-    <div v-if="total > size" class="flex justify-center gap-2 mt-10">
-      <button :disabled="page === 0" @click="page--" class="btn-ghost disabled:opacity-40">قبلی</button>
-      <span class="px-4 py-2 text-slate-500 dark:text-slate-400 text-sm self-center">صفحه {{ page + 1 }}</span>
-      <button :disabled="(page + 1) * size >= total" @click="page++" class="btn-ghost disabled:opacity-40">بعدی</button>
-    </div>
+    <AppPagination :page="page" :total="total" :size="size" @update:page="page = $event" />
   </div>
 </template>

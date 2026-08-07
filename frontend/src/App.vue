@@ -16,8 +16,9 @@ watch(
 
 <template>
   <div class="min-h-screen flex flex-col">
+    <a href="#main-content" class="skip-link">پرش به محتوای اصلی</a>
     <SiteHeader v-if="!isDashboard" />
-    <main class="flex-1" :class="{ 'pb-0': isDashboard }">
+    <main id="main-content" class="flex-1" :class="{ 'pb-0': isDashboard }" tabindex="-1">
       <RouterView v-slot="{ Component }">
         <transition name="page" mode="out-in">
           <component :is="Component" />

@@ -201,7 +201,7 @@ const statusColor = {
       <div v-for="i in 3" :key="i" class="card h-28 animate-pulse bg-slate-100 dark:bg-slate-800/50"></div>
     </div>
     <div v-else-if="!centers.length" class="text-center py-16 card">
-      <div class="text-5xl mb-3">🏥</div>
+      <Building2 :size="42" class="mx-auto mb-3 text-brand-500" />
       <p class="text-slate-500 dark:text-slate-400">مرکزی ثبت نشده است.</p>
     </div>
     <div v-else class="space-y-3 stagger">
@@ -209,7 +209,7 @@ const statusColor = {
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div class="flex-1">
             <div class="flex items-center gap-2">
-              <span class="grid place-items-center w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300">🏢</span>
+              <span class="grid place-items-center w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-300"><Building2 :size="17" /></span>
               <div class="font-bold text-slate-800 dark:text-white">{{ c.name }}</div>
             </div>
             <div class="text-sm text-slate-400 dark:text-slate-500 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">

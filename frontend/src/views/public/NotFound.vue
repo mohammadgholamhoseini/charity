@@ -6,7 +6,7 @@ import BrandLogo from '../../components/BrandLogo.vue'
   <div class="max-w-4xl mx-auto px-4 py-24 text-center">
     <div class="relative inline-block mb-6">
       <div class="animate-float">
-        <BrandLogo dark :mark="112" />
+        <BrandLogo :mark="112" />
       </div>
       <div class="absolute -top-4 -right-4 w-20 h-20 bg-accent-500/20 rounded-full blur-xl"></div>
     </div>

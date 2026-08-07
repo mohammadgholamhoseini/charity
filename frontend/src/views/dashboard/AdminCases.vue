@@ -2,7 +2,11 @@
 import { ref, onMounted } from 'vue'
 import api from '../../api/client'
 import EditCaseModal from './EditCaseModal.vue'
-import { Pencil, Trash2, CheckCircle2, FileText, Loader2 } from '@lucide/vue'
+import PageHeader from '../../components/PageHeader.vue'
+import EmptyState from '../../components/EmptyState.vue'
+import StatusBadge from '../../components/StatusBadge.vue'
+import UiAlert from '../../components/UiAlert.vue'
+import { Pencil, Trash2, CheckCircle2, FileText } from '@lucide/vue'
 
 const cases = ref([])
 const loading = ref(true)
@@ -63,16 +67,6 @@ async function remove(id) {
   }
 }
 
-const statusLabel = {
-  PENDING: 'در انتظار', PUBLISHED: 'منتشر', COMPLETED: 'تکمیل', REJECTED: 'رد شده'
-}
-const statusColor = {
-  PENDING: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  PUBLISHED: 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300',
-  COMPLETED: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-  REJECTED: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-300'
-}
-
 const filters = [
   { v: '', label: 'همه' },
   { v: 'PENDING', label: 'در انتظار' },
@@ -83,11 +77,8 @@ const filters = [
 
 <template>
   <div>
-    <div class="flex items-center gap-2.5 mb-5">
-      <span class="grid place-items-center w-10 h-10 rounded-2xl bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300"><FileText :size="20" /></span>
-      <h1 class="text-2xl font-bold text-slate-800 dark:text-white">مدیریت درخواست‌ها</h1>
-    </div>
-    <p v-if="msg" class="text-brand-700 dark:text-brand-300 text-sm mb-3 bg-brand-50 dark:bg-brand-900/20 rounded-xl py-2.5 px-3">{{ msg }}</p>
+    <PageHeader eyebrow="نظارت محتوا" title="مدیریت درخواست‌ها" description="وضعیت، محتوای درخواست و اطلاعات مرکز ثبت‌کننده را بررسی و مدیریت کنید." />
+    <UiAlert v-if="msg" class="mb-4">{{ msg }}</UiAlert>
 
     <div class="flex gap-2 mb-5 flex-wrap">
       <button v-for="f in filters" :key="f.v" @click="filter=f.v; load()"
@@ -100,10 +91,7 @@ const filters = [
     <div v-if="loading" class="space-y-3">
       <div v-for="i in 4" :key="i" class="card h-20 animate-pulse bg-slate-100 dark:bg-slate-800/50"></div>
     </div>
-    <div v-else-if="!cases.length" class="text-center py-16 card">
-      <div class="text-5xl mb-3">📋</div>
-      <p class="text-slate-500 dark:text-slate-400">موردی یافت نشد.</p>
-    </div>
+    <EmptyState v-else-if="!cases.length" title="درخواستی در این وضعیت نیست" description="فیلتر دیگری را انتخاب کنید." :icon="FileText" />
     <div v-else class="space-y-3 stagger">
       <div v-for="c in cases" :key="c.id" class="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -111,14 +99,14 @@ const filters = [
           <div class="text-sm text-slate-400 dark:text-slate-500 mt-1">{{ c.categoryName }} | {{ new Intl.NumberFormat('fa-IR').format(c.amountNeeded) }} تومان</div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <span :class="statusColor[c.status]" class="chip font-medium">{{ statusLabel[c.status] }}</span>
-          <button v-if="c.status !== 'COMPLETED'" @click="openEdit(c)" class="text-sm inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+          <StatusBadge :status="c.status" />
+          <button v-if="c.status !== 'COMPLETED'" @click="openEdit(c)" class="action-button bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
             <Pencil :size="13" /> ویرایش
           </button>
-          <button v-if="c.status !== 'COMPLETED'" @click="remove(c.id)" class="text-sm inline-flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40">
+          <button v-if="c.status !== 'COMPLETED'" @click="remove(c.id)" class="action-button bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">
             <Trash2 :size="13" /> حذف
           </button>
-          <button v-if="c.status === 'PUBLISHED'" @click="complete(c.id)" class="text-sm inline-flex items-center gap-1 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700">
+          <button v-if="c.status === 'PUBLISHED'" @click="complete(c.id)" class="action-button bg-emerald-600 text-white hover:bg-emerald-700">
             <CheckCircle2 :size="13" /> تأمین شده
           </button>
         </div>

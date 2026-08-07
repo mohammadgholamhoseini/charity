@@ -106,7 +106,7 @@ onMounted(load)
       <div v-for="i in 3" :key="i" class="card h-20 animate-pulse bg-slate-100 dark:bg-slate-800/50"></div>
     </div>
     <div v-else-if="!categories.length" class="text-center py-16 card">
-      <div class="text-5xl mb-3">🏷️</div>
+      <Tags :size="42" class="mx-auto mb-3 text-brand-500" />
       <p class="text-slate-500 dark:text-slate-400">دسته‌بندی‌ای ثبت نشده است.</p>
     </div>
     <div v-else class="space-y-3 stagger">

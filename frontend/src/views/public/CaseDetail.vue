@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import api from '../../api/client'
-import { ArrowRight, Building2, Phone, FileText, ShieldAlert, Heart, CheckCircle2, Clock } from '@lucide/vue'
+import { ArrowRight, Building2, Phone, FileText, ShieldAlert, Heart, CheckCircle2, Clock, HandHeart } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -54,7 +54,7 @@ onMounted(load)
       <!-- Hero image -->
       <div class="relative h-60 bg-gradient-to-br from-brand-200 to-brand-300 dark:from-brand-900/50 dark:to-brand-900/40">
         <img v-if="item.imageUrl" :src="item.imageUrl" class="w-full h-full object-cover" alt="" />
-        <div v-else class="w-full h-full grid place-items-center text-7xl opacity-80">🏥</div>
+        <div v-else class="w-full h-full grid place-items-center text-brand-700 dark:text-brand-300"><HandHeart :size="72" stroke-width="1.4" /></div>
         <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
         <div class="absolute bottom-4 right-4 flex items-center gap-2">
           <span v-if="item.categoryName" class="chip bg-white/85 backdrop-blur text-brand-700 shadow-sm">{{ item.categoryName }}</span>

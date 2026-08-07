@@ -16,7 +16,7 @@ const cards = computed(() => {
     ]
   }
   return [
-    { to: '/dashboard/cases/new', icon: PlusCircle, title: 'ثبت درخواست جدید', desc: 'مشخصات بیمار نیازمند را ثبت کنید', color: 'from-brand-500 to-brand-600' },
+      { to: '/dashboard/cases/new', icon: PlusCircle, title: 'ثبت درخواست جدید', desc: 'نیاز، مبلغ و مستندات را شفاف ثبت کنید', color: 'from-brand-500 to-brand-600' },
     { to: '/dashboard/cases', icon: FileText, title: 'درخواست‌های من', desc: 'پیگیری وضعیت درخواست‌های ثبت‌شده', color: 'from-brand-500 to-brand-600' }
   ]
 })
@@ -26,7 +26,7 @@ const cards = computed(() => {
   <div>
     <div class="mb-7">
       <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white">داشبورد</h1>
-      <p class="text-slate-500 dark:text-slate-400 mt-1">خوش‌آمدید به پنل مدیریت یاری جو.</p>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">مسیرهای اصلی پنل یاری‌جو را از اینجا مدیریت کنید.</p>
     </div>
 
     <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 stagger">
