@@ -16,7 +16,7 @@ charity/
 - **Java 21** + **Spring Boot 3.2**
 - **Spring Data JPA** + Hibernate
 - **Spring Security** + JWT authentication
-- **PostgreSQL**
+- **MySQL** (prod) / **H2** (local dev)
 - **Maven**
 
 ### Frontend
@@ -44,20 +44,18 @@ charity/
 
 - Java 21+
 - Node.js 18+
-- PostgreSQL
 - Maven
+- Docker (optional, for the containerized setup below)
 
 ### Backend Setup
 
 ```bash
 cd backend
-cp src/main/resources/application.yml.example src/main/resources/application.yml
-# Edit application.yml with your database credentials
-mvn clean install
-mvn spring-boot:run
+# Local dev uses H2 in-memory (no MySQL needed):
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The API server starts at `http://localhost:8080`.
+The API server starts at `http://localhost:8082` (default) / `8085` (local profile). The API is also exposed via docker as `81` (master) and `8081` (dev).
 
 ### Frontend Setup
 
@@ -68,6 +66,23 @@ npm run dev
 ```
 
 The development server starts at `http://localhost:5173`.
+
+### Docker (per-branch images)
+
+The docker setup runs **two branches at the same time** — `master` on port 80 and `development` on port 8080 — each with its own prebuilt image. `compose.yaml` is image-based, so images are built per branch with a `git worktree` script:
+
+```bash
+./docker-build.sh all           # or: ./docker-build.sh dev|master
+docker compose up -d
+```
+
+| Service         | Branch       | Port | DB |
+|-----------------|--------------|------|----|
+| frontend-master | master       | 80   | —  |
+| frontend-dev    | development  | 8080 | —  |
+| backend-master  | master       | 81   | MySQL |
+| backend-dev     | development  | 8081 | H2  |
+| mysql           | —            | 3307 | MySQL |
 
 ### Authentication
 

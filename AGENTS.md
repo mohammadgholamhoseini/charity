@@ -28,20 +28,27 @@ Backend: Spring Boot 3.3.5, Java 21, Maven, Lombok (`@Getter @Setter @Builder @N
 
 ## Docker
 
+`compose.yaml` is **image-based** (no `build:`), so `docker compose build` does nothing. Images are built **per branch** via `./docker-build.sh`, which uses a `git worktree` so each branch builds its own image at the same time without pushing or switching branches.
+
 ```bash
-# All services up on different ports
-docker compose up --build
+# Build images, then start services
+./docker-build.sh all           # or: ./docker-build.sh dev|master
+docker compose up -d
 ```
 
-| Service | Container | Port | DB |
-|---------|-----------|------|----|
-| `backend-master` | master branch | 81 | MySQL |
-| `backend-dev` | dev branch | 8081 | H2 |
-| `frontend-master` | master branch (nginx) | 80 | — |
-| `frontend-dev` | dev branch (nginx) | 8080 | — |
+`docker-build.sh` auto-detects the Docker binary (`docker`, or Windows `docker.exe` when run from WSL, converting paths with `wslpath`). Tags: `charity-backend:dev|master`, `charity-frontend:dev|master`.
+
+| Service | Branch | Port | DB |
+|---------|--------|------|----|
+| `backend-master` | master | 81 | MySQL |
+| `backend-dev` | development | 8081 | H2 |
+| `frontend-master` | master (nginx) | 80 | — |
+| `frontend-dev` | development (nginx) | 8080 | — |
 | `mysql` | — | 3307 | MySQL |
 
-Images are tagged by service name: `charity-backend:master`, `charity-backend:dev`, `charity-frontend:master`, `charity-frontend:dev`.
+Profiles are selected via `SPRING_PROFILES_ACTIVE` (`default` for master/MySQL, `local` for dev/H2) — the misspelt `SPRING_PROFILE` in older compose did not activate the profile.
+
+To publish local `development` changes: commit them, then `./docker-build.sh dev` and `docker compose up -d frontend-dev backend-dev`. The `master` image is only rebuilt when the `master` branch actually changes.
 
 ## Frontend
 
