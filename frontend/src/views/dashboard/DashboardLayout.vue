@@ -2,7 +2,8 @@
 import { RouterView, RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { computed } from 'vue'
-import { LogOut, LayoutDashboard, FileText, PlusCircle, Building2, Tags, Megaphone, HeartHandshake, Menu, X, MapPin } from '@lucide/vue'
+import { LogOut, LayoutDashboard, FileText, PlusCircle, Building2, Tags, Megaphone, Menu, X, MapPin } from '@lucide/vue'
+import BrandLogo from '../../components/BrandLogo.vue'
 import { ref } from 'vue'
 
 const auth = useAuthStore()
@@ -30,14 +31,11 @@ function logout() {
 </script>
 
 <template>
-  <div class="min-h-screen flex bg-surface dark:bg-[#0a1411]">
+  <div class="min-h-screen flex bg-surface dark:bg-[#0a152e]">
     <!-- Desktop sidebar -->
     <aside class="w-64 bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 p-5 hidden md:flex flex-col sticky top-0 h-screen">
-      <RouterLink to="/" class="flex items-center gap-2.5 mb-8 px-2">
-        <span class="grid place-items-center w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-600/30">
-          <HeartHandshake :size="20" />
-        </span>
-        <span class="font-extrabold text-lg text-slate-800 dark:text-white">همدلی</span>
+      <RouterLink to="/" class="mb-8 px-2">
+        <BrandLogo full dark :mark="34" />
       </RouterLink>
 
       <div class="text-xs font-medium text-slate-400 px-3 mb-2">منو</div>

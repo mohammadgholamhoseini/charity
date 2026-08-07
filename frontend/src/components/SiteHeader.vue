@@ -1,6 +1,7 @@
 <script setup>
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { HeartHandshake, Menu, X, LogIn, User as UserIcon, LogOut, LayoutDashboard } from '@lucide/vue'
+import { Menu, X, LogIn, User as UserIcon, LogOut, LayoutDashboard } from '@lucide/vue'
+import BrandLogo from './BrandLogo.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 
@@ -56,13 +57,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
   <header class="sticky top-0 z-50 glass border-b border-slate-200/50 dark:border-slate-800/50">
     <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
       <!-- Logo -->
-      <RouterLink to="/" class="flex items-center gap-2.5 group shrink-0">
-        <span class="grid place-items-center w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-600/30 group-hover:scale-105 transition">
-          <HeartHandshake :size="22" />
-        </span>
-        <span class="font-extrabold text-lg tracking-tight text-slate-800 dark:text-white">
-          همدلی
-        </span>
+      <RouterLink to="/" class="group shrink-0">
+        <BrandLogo full dark :mark="38" tagline="سامانهٔ کمک‌رسانی" />
       </RouterLink>
 
       <!-- Desktop nav -->

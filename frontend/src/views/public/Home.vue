@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '../../api/client'
 import CaseCard from '../../components/CaseCard.vue'
+import BrandLogo from '../../components/BrandLogo.vue'
 import { HandHeart, Users, CheckCircle2 } from '@lucide/vue'
 
 const cases = ref([])
@@ -100,43 +101,61 @@ watch(page, load)
 
 <template>
   <div>
-    <!-- Minimal Hero -->
-    <section class="relative overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-emerald-800 text-white">
-      <div class="absolute -top-24 -right-20 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl"></div>
-      <div class="relative max-w-6xl mx-auto px-4 pt-14 pb-12">
-        <h1 class="text-3xl md:text-4xl font-extrabold mb-3 leading-tight">
-          دستان مهربانی را به هم برسانیم
-        </h1>
-        <p class="text-brand-50/90 max-w-xl mb-5 leading-7 text-sm md:text-base">
-          مراکز خیریه درخواست‌های کمک را ثبت می‌کنند و ما آن‌ها را با دست‌های یاری‌رسان پیوند می‌دهیم.
-        </p>
+    <!-- Hero — مهر یاری جو -->
+    <section class="relative overflow-hidden bg-brand-950 text-white">
+      <div class="absolute inset-0 girih text-white/5 pointer-events-none"></div>
+      <div class="absolute -top-32 -left-32 w-96 h-96 bg-accent-500/15 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-40 -right-24 w-[28rem] h-[28rem] bg-brand-500/25 rounded-full blur-3xl"></div>
 
-        <!-- compact stats -->
-        <div class="flex flex-wrap gap-6 mt-6">
-          <div class="flex items-center gap-2">
-            <span class="grid place-items-center w-9 h-9 rounded-xl bg-white/15"><HandHeart :size="18" /></span>
-            <div>
-              <div class="text-lg font-extrabold leading-none">{{ new Intl.NumberFormat('fa-IR').format(stats.active) }}</div>
-              <div class="text-xs text-brand-50/80">درخواست فعال</div>
+      <div class="relative max-w-6xl mx-auto px-4 pt-16 pb-14">
+        <div class="flex flex-col md:flex-row items-center gap-10">
+          <div class="flex-1 text-center md:text-right">
+            <span class="inline-flex items-center gap-2 chip bg-accent-500/15 text-accent-300 border border-accent-500/25 mb-5">
+              <HandHeart :size="14" />
+              پل میان دست‌های یاری‌رسان و نیازمندان
+            </span>
+            <h1 class="font-display font-black text-4xl md:text-5xl leading-tight mb-4">
+              یاری‌جو،<br />
+              <span class="text-accent-400">جویندهٔ یاری</span> دیگران را می‌بیند
+            </h1>
+            <p class="text-brand-100/80 max-w-xl mx-auto md:mx-0 mb-6 leading-8 text-sm md:text-base">
+              مراکز خیریه درخواست‌های کمک را شفاف ثبت می‌کنند و یاری‌جو آن‌ها را به دست‌های یاری‌رسان پیوند می‌دهد؛ تا هیچ نیازمندی تنها نماند.
+            </p>
+
+            <div class="flex flex-wrap justify-center md:justify-start gap-6 mt-6">
+              <div class="flex items-center gap-2">
+                <span class="grid place-items-center w-9 h-9 rounded-xl bg-white/10"><HandHeart :size="18" /></span>
+                <div>
+                  <div class="text-lg font-extrabold leading-none">{{ new Intl.NumberFormat('fa-IR').format(stats.active) }}</div>
+                  <div class="text-xs text-brand-100/70">درخواست فعال</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="grid place-items-center w-9 h-9 rounded-xl bg-white/10"><CheckCircle2 :size="18" /></span>
+                <div>
+                  <div class="text-lg font-extrabold leading-none">{{ new Intl.NumberFormat('fa-IR').format(stats.completed) }}</div>
+                  <div class="text-xs text-brand-100/70">کمک انجام‌شده</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="grid place-items-center w-9 h-9 rounded-xl bg-white/10"><Users :size="18" /></span>
+                <div>
+                  <div class="text-lg font-extrabold leading-none">{{ new Intl.NumberFormat('fa-IR').format(stats.centers) }}</div>
+                  <div class="text-xs text-brand-100/70">مرکز همکار</div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="grid place-items-center w-9 h-9 rounded-xl bg-white/15"><CheckCircle2 :size="18" /></span>
-            <div>
-              <div class="text-lg font-extrabold leading-none">{{ new Intl.NumberFormat('fa-IR').format(stats.completed) }}</div>
-              <div class="text-xs text-brand-50/80">کمک انجام‌شده</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="grid place-items-center w-9 h-9 rounded-xl bg-white/15"><Users :size="18" /></span>
-            <div>
-              <div class="text-lg font-extrabold leading-none">{{ new Intl.NumberFormat('fa-IR').format(stats.centers) }}</div>
-              <div class="text-xs text-brand-50/80">مرکز همکار</div>
+
+          <div class="shrink-0 animate-float" aria-hidden="true">
+            <div class="relative grid place-items-center">
+              <div class="absolute inset-0 rounded-full bg-accent-500/10 blur-2xl scale-110"></div>
+              <BrandLogo dark :mark="240" />
             </div>
           </div>
         </div>
       </div>
-      <svg class="block w-full text-[var(--color-surface)] dark:text-[#0a1411] -mb-1" viewBox="0 0 1440 60" preserveAspectRatio="none">
+      <svg class="block w-full text-[var(--color-surface)] dark:text-[#0a152e] -mb-px" viewBox="0 0 1440 60" preserveAspectRatio="none">
         <path fill="currentColor" d="M0,60 C480,0 960,0 1440,60 L1440,60 L0,60 Z"></path>
       </svg>
     </section>

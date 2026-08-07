@@ -44,7 +44,7 @@ onMounted(load)
 
     <!-- Profile card -->
     <div class="card overflow-hidden">
-      <div class="relative h-36 bg-gradient-to-br from-brand-500 via-brand-600 to-emerald-700">
+      <div class="relative h-36 bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700">
         <div class="absolute -bottom-10 right-6 w-20 h-20 rounded-3xl bg-white dark:bg-slate-900 grid place-items-center text-3xl shadow-lg border-4 border-white dark:border-slate-900 overflow-hidden">
           <img v-if="center.logoUrl" :src="fileUrl(center.logoUrl)" alt="لوگو" class="w-full h-full object-cover" />
           <Building2 v-else :size="32" class="text-brand-500" />
@@ -85,7 +85,7 @@ onMounted(load)
 
         <div class="mt-5 flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-200 leading-7">
           <ShieldAlert :size="18" class="shrink-0 mt-0.5" />
-          <span>این پلتفرم صرفاً اطلاع‌رسانی است و مسئولیت پرداخت‌ها بر عهده خود کاربر و مرکز خیریه می‌باشد.</span>
+          <span>یاری جو صرفاً اطلاع‌رسانی است و مسئولیت پرداخت‌ها بر عهده خود کاربر و مرکز خیریه می‌باشد.</span>
         </div>
       </div>
     </div>

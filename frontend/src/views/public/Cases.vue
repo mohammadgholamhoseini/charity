@@ -105,7 +105,7 @@ watch(page, load)
 <template>
   <div class="max-w-6xl mx-auto px-4 py-12">
     <!-- Header -->
-    <div class="relative overflow-hidden card p-8 mb-9 bg-gradient-to-br from-brand-50 to-emerald-50 dark:from-brand-900/20 dark:to-emerald-900/10">
+    <div class="relative overflow-hidden card p-8 mb-9 bg-gradient-to-br from-brand-50 to-brand-50 dark:from-brand-900/20 dark:to-brand-900/10">
       <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-brand-300/20 rounded-full blur-2xl"></div>
       <div class="relative flex items-center gap-3 mb-2">
         <span class="grid place-items-center w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-600/30">

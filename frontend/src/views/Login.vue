@@ -3,7 +3,8 @@ import { ref } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import api from '../api/client'
 import { useAuthStore } from '../stores/auth'
-import { HeartHandshake, User, Lock, Eye, EyeOff, LogIn, ArrowRight } from '@lucide/vue'
+import { User, Lock, Eye, EyeOff, LogIn, ArrowRight } from '@lucide/vue'
+import BrandLogo from '../components/BrandLogo.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -33,15 +34,15 @@ async function submit() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-gradient-to-br from-brand-50 via-surface to-emerald-50 dark:from-brand-950 dark:via-[#0a1411] dark:to-emerald-950">
+  <div class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-gradient-to-br from-brand-50 via-surface to-brand-100 dark:from-brand-950 dark:via-[#0a152e] dark:to-brand-950">
     <div class="absolute -top-24 -right-20 w-96 h-96 bg-brand-400/20 rounded-full blur-3xl"></div>
-    <div class="absolute -bottom-24 -left-20 w-80 h-80 bg-emerald-400/15 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-24 -left-20 w-80 h-80 bg-accent-500/15 rounded-full blur-3xl"></div>
 
     <div class="w-full max-w-md card p-8 relative animate-fade-up">
       <div class="text-center mb-7">
-        <span class="inline-grid place-items-center w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-600/30 mb-4">
-          <HeartHandshake :size="28" />
-        </span>
+        <div class="inline-flex justify-center mb-4">
+          <BrandLogo full dark :mark="64" tagline="سامانهٔ کمک‌رسانی" />
+        </div>
         <h1 class="text-2xl font-extrabold text-slate-800 dark:text-white">ورود به پنل</h1>
         <p class="text-slate-400 text-sm mt-1">برای مراکز خیریه و ادمین</p>
       </div>

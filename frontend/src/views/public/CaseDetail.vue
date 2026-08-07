@@ -52,7 +52,7 @@ onMounted(load)
 
     <div class="card overflow-hidden">
       <!-- Hero image -->
-      <div class="relative h-60 bg-gradient-to-br from-brand-200 to-emerald-300 dark:from-brand-900/50 dark:to-emerald-900/40">
+      <div class="relative h-60 bg-gradient-to-br from-brand-200 to-brand-300 dark:from-brand-900/50 dark:to-brand-900/40">
         <img v-if="item.imageUrl" :src="item.imageUrl" class="w-full h-full object-cover" alt="" />
         <div v-else class="w-full h-full grid place-items-center text-7xl opacity-80">🏥</div>
         <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
@@ -122,7 +122,7 @@ onMounted(load)
         <!-- Disclaimer -->
         <div class="mt-7 flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-200 leading-7">
           <ShieldAlert :size="18" class="shrink-0 mt-0.5" />
-          <span>این پلتفرم صرفاً اطلاع‌رسانی است و مسئولیت پرداخت‌ها بر عهده خود کاربر و مرکز خیریه می‌باشد.</span>
+          <span>یاری جو صرفاً اطلاع‌رسانی است و مسئولیت پرداخت‌ها بر عهده خود کاربر و مرکز خیریه می‌باشد.</span>
         </div>
       </div>
     </div>
