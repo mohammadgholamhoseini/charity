@@ -26,7 +26,7 @@ async function submit() {
     router.push(redirect)
   } catch (e) {
     const msg = e.response?.data?.message || e.message || 'خطای ناشناخته'
-    error.value = 'ddddddddddddd (' + msg + ')'
+    error.value = 'نام کاربری یا رمز عبور اشتباه است. (' + msg + ')'
   } finally {
     loading.value = false
   }
