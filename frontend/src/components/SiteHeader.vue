@@ -21,7 +21,10 @@ const navItems = [
 
 function isActive(to) {
   if (to === '/') return route.path === '/'
-  return route.path.startsWith(to.split('?')[0])
+  const [path, query] = to.split('?')
+  if (!route.path.startsWith(path)) return false
+  if (!query) return !route.query.status
+  return new URLSearchParams(query).get('status') === route.query.status
 }
 
 function logout() {

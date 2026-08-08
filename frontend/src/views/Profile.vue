@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/auth'
 import api from '../api/client'
 import PageHeader from '../components/PageHeader.vue'
 import UiAlert from '../components/UiAlert.vue'
-import { User as UserIcon, Lock, Save, Loader2, CheckCircle2, ArrowRight, ImageUp } from '@lucide/vue'
+import { User as UserIcon, Lock, Save, Loader2, ArrowRight, ImageUp } from '@lucide/vue'
 
 const auth = useAuthStore()
 const isAdmin = computed(() => auth.isAdmin)
