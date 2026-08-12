@@ -1,87 +1,37 @@
 package com.charity.app.payload;
 
+import com.charity.app.model.enums.CenterStatus;
+
+import java.time.OffsetDateTime;
 import java.util.List;
 
-public class CenterResponse {
-    private Long id;
-    private String name;
-    private String fullName;
-    private String description;
-    private String contactPhone;
-    private String email;
-    private String address;
-    private String cardNumber;
-    private String sheba;
-    private String logoUrl;
-    private String status;
-    private ProvinceInfo province;
-    private CityInfo city;
-    private List<CategoryInfo> categories;
-    private String createdAt;
-
-    public CenterResponse() {}
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public String getContactPhone() { return contactPhone; }
-    public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-    public String getCardNumber() { return cardNumber; }
-    public void setCardNumber(String cardNumber) { this.cardNumber = cardNumber; }
-    public String getSheba() { return sheba; }
-    public void setSheba(String sheba) { this.sheba = sheba; }
-    public String getLogoUrl() { return logoUrl; }
-    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public ProvinceInfo getProvince() { return province; }
-    public void setProvince(ProvinceInfo province) { this.province = province; }
-    public CityInfo getCity() { return city; }
-    public void setCity(CityInfo city) { this.city = city; }
-    public List<CategoryInfo> getCategories() { return categories; }
-    public void setCategories(List<CategoryInfo> categories) { this.categories = categories; }
-    public String getCreatedAt() { return createdAt; }
-    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
-
-    public static class ProvinceInfo {
-        private Long id;
-        private String name;
-        public ProvinceInfo() {}
-        public ProvinceInfo(Long id, String name) { this.id = id; this.name = name; }
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-    }
-
-    public static class CityInfo {
-        private Long id;
-        private String name;
-        public CityInfo() {}
-        public CityInfo(Long id, String name) { this.id = id; this.name = name; }
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-    }
-
-    public static class CategoryInfo {
-        private Long id;
-        private String name;
-        public CategoryInfo() {}
-        public CategoryInfo(Long id, String name) { this.id = id; this.name = name; }
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-    }
+/**
+ * The full centre record, for the centre's own profile screen and for admin screens.
+ *
+ * <p>The same centre used to be serialised in three unrelated shapes -- this record, a hand-built
+ * LinkedHashMap, and the raw entity -- which meant fields leaked or went missing depending on which
+ * endpoint you happened to call. There are now exactly three intentional shapes: this one,
+ * {@link CenterCard} for public listings and {@link CenterPublicProfile} for the public detail page.
+ * Account fields (username, email) appear only here.
+ */
+public record CenterResponse(Long id,
+                             String name,
+                             String slug,
+                             String fullName,
+                             String description,
+                             String contactPhone,
+                             String responseHours,
+                             String username,
+                             String email,
+                             String address,
+                             String cardNumber,
+                             String sheba,
+                             String logoUrl,
+                             CenterStatus status,
+                             String statusLabel,
+                             CityRef city,
+                             List<CategoryRef> categories,
+                             long activeRequestCount,
+                             OffsetDateTime createdAt,
+                             OffsetDateTime updatedAt) {
 }

@@ -2,67 +2,65 @@ package com.charity.app.payload;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-public class CreateCenterByAdminRequest {
+/**
+ * Admin provisioning a centre together with its user account. This is the only way a centre comes
+ * into existence -- there is no public registration.
+ */
+public record CreateCenterByAdminRequest(
 
-    @NotBlank @Size(min = 3, max = 50)
-    private String username;
+        @NotBlank(message = "نام کاربری الزامی است")
+        @Size(min = 3, max = 60)
+        @Pattern(regexp = "^[a-zA-Z0-9._-]+$",
+                message = "نام کاربری فقط می‌تواند شامل حروف انگلیسی، عدد، نقطه، خط تیره و زیرخط باشد")
+        String username,
 
-    @NotBlank @Size(min = 6, max = 100)
-    private String password;
+        @NotBlank(message = "رمز عبور موقت الزامی است")
+        @Size(min = 8, max = 100, message = "رمز عبور باید حداقل ۸ نویسه باشد")
+        String password,
 
-    @NotBlank @Email
-    private String email;
+        @NotBlank(message = "ایمیل الزامی است")
+        @Email(message = "قالب ایمیل معتبر نیست")
+        @Size(max = 255)
+        String email,
 
-    @NotBlank
-    private String centerName;
+        @NotBlank(message = "نام مرکز الزامی است")
+        @Size(max = 255)
+        String centerName,
 
-    private String fullName;
+        @Size(max = 255)
+        String fullName,
 
-    private Long provinceId;
+        @NotNull(message = "انتخاب شهر الزامی است")
+        Long cityId,
 
-    private Long cityId;
+        @NotEmpty(message = "حداقل یک دسته‌بندی مجاز باید انتخاب شود")
+        @Size(max = 30)
+        List<@NotNull Long> categoryIds,
 
-    private List<Long> categoryIds;
+        @Size(max = 1000)
+        String description,
 
-    @Size(max = 1000)
-    private String description;
+        @Size(max = 255)
+        String contactPhone,
 
-    private String contactPhone;
+        @Size(max = 120)
+        String responseHours,
 
-    private String address;
+        @Size(max = 1000)
+        String address,
 
-    private String cardNumber;
+        @Size(max = 255)
+        String cardNumber,
 
-    private String sheba;
+        @Size(max = 255)
+        String sheba,
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getCenterName() { return centerName; }
-    public void setCenterName(String centerName) { this.centerName = centerName; }
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public Long getProvinceId() { return provinceId; }
-    public void setProvinceId(Long provinceId) { this.provinceId = provinceId; }
-    public Long getCityId() { return cityId; }
-    public void setCityId(Long cityId) { this.cityId = cityId; }
-    public List<Long> getCategoryIds() { return categoryIds; }
-    public void setCategoryIds(List<Long> categoryIds) { this.categoryIds = categoryIds; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public String getContactPhone() { return contactPhone; }
-    public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-    public String getCardNumber() { return cardNumber; }
-    public void setCardNumber(String cardNumber) { this.cardNumber = cardNumber; }
-    public String getSheba() { return sheba; }
-    public void setSheba(String sheba) { this.sheba = sheba; }
+        Boolean active) {
 }

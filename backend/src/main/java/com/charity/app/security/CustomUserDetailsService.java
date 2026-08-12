@@ -10,26 +10,34 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final UserRepository users;
 
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("کاربر یافت نشد: " + username));
+        User user = users.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("کاربر یافت نشد"));
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                user.isEnabled(),
-                true, true, true,
-                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
-        );
+        // Reporting the lock here means DaoAuthenticationProvider rejects the attempt in its
+        // pre-authentication checks, before the password is compared -- so a locked account cannot
+        // be probed for a correct password. Previously accountNonLocked was hardcoded true.
+        boolean locked = user.isLockedAt(LocalDateTime.now());
+
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .authorities(List.of(new SimpleGrantedAuthority(user.getRole().authority())))
+                .disabled(!user.isEnabled())
+                .accountLocked(locked)
+                .accountExpired(false)
+                .credentialsExpired(false)
+                .build();
     }
 }

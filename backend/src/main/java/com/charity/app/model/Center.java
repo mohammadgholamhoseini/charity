@@ -1,5 +1,6 @@
 package com.charity.app.model;
 
+import com.charity.app.model.enums.CenterStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,6 +11,9 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * A charity centre. Created only by an admin -- there is no public registration.
+ */
 @Entity
 @Table(name = "centers")
 @Getter
@@ -31,6 +35,14 @@ public class Center {
     @Column(nullable = false)
     private String name;
 
+    /** Persian URL slug for {@code /centers/<slug>}. */
+    @Column(nullable = false, unique = true)
+    private String slug;
+
+    /**
+     * The categories this centre is allowed to publish in. A request's category is validated
+     * against this set on every write.
+     */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "center_categories",
             joinColumns = @JoinColumn(name = "center_id"),
@@ -55,6 +67,10 @@ public class Center {
     @Column(name = "contact_phone")
     private String contactPhone;
 
+    /** Free text, e.g. «شنبه تا چهارشنبه ۹ تا ۱۷». Shown on the request detail sidebar. */
+    @Column(name = "response_hours", length = 120)
+    private String responseHours;
+
     @Column(name = "address", length = 1000)
     private String address;
 
@@ -69,7 +85,7 @@ public class Center {
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private Status status = Status.PENDING;
+    private CenterStatus status = CenterStatus.APPROVED;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -78,12 +94,7 @@ public class Center {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    public enum Status {
-        PENDING, APPROVED, REJECTED, INACTIVE
-    }
-
-    public Category getPrimaryCategory() {
-        return categories != null && !categories.isEmpty()
-                ? categories.iterator().next() : null;
+    public boolean isActive() {
+        return status == CenterStatus.APPROVED;
     }
 }

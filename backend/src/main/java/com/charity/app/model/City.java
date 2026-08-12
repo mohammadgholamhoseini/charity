@@ -19,7 +19,12 @@ public class City {
     @Column(nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    /**
+     * LAZY now that cities are exposed as a flattened {@code CityRef} rather than as raw entities.
+     * It had to be EAGER while public endpoints serialised the entity directly, which meant every
+     * city in a dropdown dragged a nested province object along with it.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "province_id", nullable = false)
     private Province province;
 }

@@ -46,6 +46,16 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Flyway owns the schema on every profile; ddl-auto is none everywhere -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
         <!-- H2 for local/test profile (no MySQL needed) -->
         <dependency>
             <groupId>com.h2database</groupId>

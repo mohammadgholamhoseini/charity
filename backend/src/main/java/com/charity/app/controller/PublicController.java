@@ -1,34 +1,22 @@
 package com.charity.app.controller;
 
-import com.charity.app.model.Category;
-import com.charity.app.model.City;
-import com.charity.app.model.Center;
-import com.charity.app.model.Notice;
+import com.charity.app.common.Paging;
 import com.charity.app.model.Province;
-import com.charity.app.payload.CenterResponse;
-import com.charity.app.payload.CharityCaseResponse;
+import com.charity.app.model.enums.NoticePlacement;
+import com.charity.app.payload.*;
 import com.charity.app.service.CategoryService;
 import com.charity.app.service.CenterService;
-import com.charity.app.service.CharityCaseService;
 import com.charity.app.service.CityService;
-import com.charity.app.service.FileStorageService;
 import com.charity.app.service.NoticeService;
 import com.charity.app.service.ProvinceService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,85 +25,69 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PublicController {
 
-    private final CharityCaseService caseService;
-    private final CategoryService categoryService;
-    private final NoticeService noticeService;
-    private final CenterService centerService;
-    private final FileStorageService fileStorageService;
-    private final ProvinceService provinceService;
-    private final CityService cityService;
-
-    @GetMapping("/cases")
-    public ResponseEntity<Page<CharityCaseResponse>> listCases(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9") int size,
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) Long provinceId,
-            @RequestParam(required = false) Long cityId,
-            @RequestParam(required = false) Long centerId,
-            @RequestParam(required = false) String status) {
-        Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(caseService.publicList(
-                pageable, q, categoryId, provinceId, cityId, centerId, status));
-    }
-
-    @GetMapping("/cases/{id}")
-    public ResponseEntity<CharityCaseResponse> getCase(@PathVariable Long id) {
-        return ResponseEntity.ok(caseService.getVisible(id));
-    }
+    private final CategoryService categories;
+    private final CenterService centers;
+    private final ProvinceService provinces;
+    private final CityService cities;
+    private final NoticeService notices;
 
     @GetMapping("/categories")
-    public ResponseEntity<List<Category>> categories() {
-        return ResponseEntity.ok(categoryService.listActive());
+    public ResponseEntity<List<CategoryResponse>> categories() {
+        return cached(categories.listActive(), Duration.ofMinutes(10));
     }
 
-    @GetMapping("/notices")
-    public ResponseEntity<Map<String, Object>> notices() {
-        List<Notice> footer = noticeService.listActiveByPosition(Notice.Position.FOOTER);
-        List<Notice> banner = noticeService.listActiveByPosition(Notice.Position.BANNER);
-        return ResponseEntity.ok(Map.of("footer", footer, "banner", banner));
-    }
-
-    @GetMapping("/centers/{id}")
-    public ResponseEntity<?> centerProfile(@PathVariable Long id) {
-        return ResponseEntity.ok(centerService.getPublicProfile(id));
+    @GetMapping("/categories/{slug}")
+    public ResponseEntity<CategoryResponse> category(@PathVariable String slug) {
+        return cached(categories.getBySlug(slug), Duration.ofMinutes(10));
     }
 
     @GetMapping("/centers")
-    public ResponseEntity<Page<CenterResponse>> listCenters(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-        return ResponseEntity.ok(centerService.listByStatus(Center.Status.APPROVED, pageable));
+    public ResponseEntity<Page<CenterCard>> centers(@RequestParam(required = false) Integer page,
+                                                    @RequestParam(required = false) Integer size) {
+        Page<CenterCard> result = centers.publicList(
+                Paging.of(page, size, org.springframework.data.domain.Sort.by("name")));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(10)).cachePublic())
+                .header("X-Total-Count", String.valueOf(result.getTotalElements()))
+                .body(result);
+    }
+
+    @GetMapping("/centers/{slug}")
+    public ResponseEntity<CenterPublicProfile> center(@PathVariable String slug) {
+        return cached(centers.publicProfile(slug), Duration.ofMinutes(10));
     }
 
     @GetMapping("/provinces")
     public ResponseEntity<List<Province>> provinces(@RequestParam(required = false) String q) {
-        return ResponseEntity.ok(provinceService.list(q));
+        return cached(provinces.list(q), Duration.ofHours(1));
     }
 
     @GetMapping("/cities")
-    public ResponseEntity<List<City>> cities(@RequestParam(required = false) Long provinceId,
-                                             @RequestParam(required = false) String q) {
-        return ResponseEntity.ok(cityService.list(provinceId, q));
+    public ResponseEntity<List<CityRef>> cities(@RequestParam(required = false) Long provinceId,
+                                                @RequestParam(required = false) String q) {
+        return cached(cities.list(provinceId, q), Duration.ofHours(1));
     }
 
-    @GetMapping("/files/{filename}")
-    public ResponseEntity<Resource> download(@PathVariable String filename) {
-        try {
-            Path path = fileStorageService.resolve(filename);
-            Resource resource = new UrlResource(path.toUri());
-            if (!resource.exists()) {
-                return ResponseEntity.notFound().build();
-            }
-            String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
-                    .body(resource);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+    /**
+     * The announcements currently on display, keyed by placement.
+     *
+     * <p>Returns at most one per placement -- choosing which announcement wins is the server's job,
+     * not something the client should have to derive from a list.
+     */
+    @GetMapping("/announcements")
+    public ResponseEntity<Map<String, NoticeResponse>> announcements() {
+        Map<String, NoticeResponse> current = new HashMap<>();
+        for (NoticePlacement placement : NoticePlacement.values()) {
+            notices.currentFor(placement).ifPresent(notice -> current.put(placement.name(), notice));
         }
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)).cachePublic())
+                .body(current);
+    }
+
+    private <T> ResponseEntity<T> cached(T body, Duration maxAge) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(maxAge).cachePublic())
+                .body(body);
     }
 }

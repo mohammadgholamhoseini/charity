@@ -1,238 +1,243 @@
 package com.charity.app.controller;
 
-import com.charity.app.model.City;
+import com.charity.app.common.Paging;
 import com.charity.app.model.Province;
-import com.charity.app.payload.CategoryRequest;
-import com.charity.app.payload.CenterResponse;
-import com.charity.app.payload.CreateCenterByAdminRequest;
-import com.charity.app.payload.CharityCaseResponse;
-import com.charity.app.payload.NoticeRequest;
-import com.charity.app.payload.UpdateAdminProfileRequest;
-import com.charity.app.payload.UpdateCaseRequest;
-import com.charity.app.payload.UpdateCenterByAdminRequest;
-import com.charity.app.payload.NameRequest;
-import com.charity.app.service.CategoryService;
-import com.charity.app.service.CenterService;
-import com.charity.app.service.CharityCaseService;
-import com.charity.app.service.CityService;
-import com.charity.app.service.NoticeService;
-import com.charity.app.service.ProvinceService;
-import com.charity.app.service.UserService;
+import com.charity.app.model.enums.RequestStatus;
+import com.charity.app.model.enums.Urgency;
+import com.charity.app.payload.*;
+import com.charity.app.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
-@RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@RequiredArgsConstructor
 public class AdminController {
 
-    private final CharityCaseService caseService;
-    private final CenterService centerService;
-    private final CategoryService categoryService;
-    private final NoticeService noticeService;
-    private final ProvinceService provinceService;
-    private final CityService cityService;
-    private final UserService userService;
+    private final RequestService requests;
+    private final CenterService centers;
+    private final CategoryService categories;
+    private final NoticeService notices;
+    private final ProvinceService provinces;
+    private final CityService cities;
+    private final UserService users;
 
-    @GetMapping("/cases")
-    public ResponseEntity<Page<CharityCaseResponse>> listCases(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String status) {
-        Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(caseService.adminList(pageable, status));
+    // ---------------------------------------------------------------- requests
+
+    @GetMapping("/requests")
+    public Page<RequestSummary> listRequests(@RequestParam(required = false) List<RequestStatus> status,
+                                             @RequestParam(required = false) List<Long> categoryId,
+                                             @RequestParam(required = false) List<Urgency> urgency,
+                                             @RequestParam(required = false) List<Long> cityId,
+                                             @RequestParam(required = false) Long centerId,
+                                             @RequestParam(required = false) String q,
+                                             @RequestParam(required = false) Integer page,
+                                             @RequestParam(required = false) Integer size,
+                                             @RequestParam(required = false) String sort) {
+        RequestFilter filter = new RequestFilter(
+                categoryId, null, urgency, cityId, null, null, centerId, null, status, q);
+        return requests.adminList(filter, Paging.of(page, size, sort == null ? "newest" : sort));
     }
 
-    @PostMapping("/cases/{id}/complete")
-    public ResponseEntity<CharityCaseResponse> complete(@PathVariable Long id) {
-        return ResponseEntity.ok(toResponse(caseService.markCompleted(id)));
+    /** The five stat cards. Every status is present even at zero. */
+    @GetMapping("/requests/stats")
+    public Map<RequestStatus, Long> requestStats() {
+        return requests.adminStats();
     }
 
-    @PutMapping("/cases/{id}")
-    public ResponseEntity<CharityCaseResponse> update(@PathVariable Long id,
-                                                      @Valid @RequestBody UpdateCaseRequest request) {
-        return ResponseEntity.ok(caseService.updateCase(id, request));
+    @GetMapping("/requests/{id}")
+    public RequestDetailResponse getRequest(@PathVariable Long id) {
+        return requests.adminDetail(id);
     }
 
-    @DeleteMapping("/cases/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        caseService.deleteCase(id);
-        return ResponseEntity.ok().build();
+    @PutMapping("/requests/{id}")
+    public RequestDetailResponse updateRequest(@PathVariable Long id,
+                                               @Valid @RequestBody RequestUpdateDto request) {
+        return requests.updateByAdmin(id, request);
     }
 
-    @GetMapping("/centers/pending")
-    public ResponseEntity<Page<CenterResponse>> pendingCenters(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(centerService.listPendingResponse(pageable));
+    /**
+     * The single status-change endpoint behind the admin panel's «تغییر وضعیت درخواست» card.
+     * Rejecting without a note is refused.
+     */
+    @PostMapping("/requests/{id}/status")
+    public RequestDetailResponse changeStatus(@PathVariable Long id,
+                                              @Valid @RequestBody RequestStatusChangeDto request) {
+        return requests.changeStatus(id, request);
     }
+
+    @DeleteMapping("/requests/{id}")
+    public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
+        requests.softDeleteByAdmin(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------------------------------------------------------------- centres
 
     @GetMapping("/centers")
-    public ResponseEntity<Page<CenterResponse>> allCenters(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(centerService.listAllResponse(pageable));
+    public Page<CenterResponse> listCenters(@RequestParam(required = false) Integer page,
+                                            @RequestParam(required = false) Integer size) {
+        return centers.adminList(Paging.of(page, size, org.springframework.data.domain.Sort.by("name")));
     }
 
     @GetMapping("/centers/{id}")
-    public ResponseEntity<CenterResponse> centerDetail(@PathVariable Long id) {
-        return ResponseEntity.ok(centerService.getByIdResponse(id));
-    }
-
-    @PostMapping("/centers/{id}/approve")
-    public ResponseEntity<CenterResponse> approve(@PathVariable Long id) {
-        return ResponseEntity.ok(toCenterResponse(centerService.approve(id)));
+    public CenterResponse getCenter(@PathVariable Long id) {
+        return centers.adminGet(id);
     }
 
     @PostMapping("/centers")
-    public ResponseEntity<CenterResponse> createCenter(@Valid @RequestBody CreateCenterByAdminRequest request) {
-        return ResponseEntity.ok(toCenterResponse(centerService.createByAdmin(request)));
+    public CenterResponse createCenter(@Valid @RequestBody CreateCenterByAdminRequest request) {
+        return centers.createByAdmin(request);
     }
 
     @PutMapping("/centers/{id}")
-    public ResponseEntity<CenterResponse> updateCenter(@PathVariable Long id,
-                                               @Valid @RequestBody UpdateCenterByAdminRequest request) {
-        return ResponseEntity.ok(toCenterResponse(centerService.updateByAdmin(id, request)));
+    public CenterResponse updateCenter(@PathVariable Long id,
+                                       @Valid @RequestBody UpdateCenterByAdminRequest request) {
+        return centers.updateByAdmin(id, request);
     }
 
-    @PostMapping("/centers/{id}/deactivate")
-    public ResponseEntity<CenterResponse> deactivateCenter(@PathVariable Long id) {
-        return ResponseEntity.ok(toCenterResponse(centerService.deactivate(id)));
+    @PutMapping("/centers/{id}/categories")
+    public CenterResponse setCenterCategories(@PathVariable Long id,
+                                              @Valid @RequestBody SetCategoriesDto request) {
+        return centers.setCategories(id, request);
     }
 
     @PostMapping("/centers/{id}/activate")
-    public ResponseEntity<CenterResponse> activateCenter(@PathVariable Long id) {
-        return ResponseEntity.ok(toCenterResponse(centerService.activate(id)));
+    public CenterResponse activateCenter(@PathVariable Long id) {
+        return centers.setActive(id, true);
+    }
+
+    /** Deactivating a centre also withdraws its live requests, so no dead contact is left listed. */
+    @PostMapping("/centers/{id}/deactivate")
+    public CenterResponse deactivateCenter(@PathVariable Long id) {
+        return centers.setActive(id, false);
     }
 
     @DeleteMapping("/centers/{id}")
     public ResponseEntity<Void> deleteCenter(@PathVariable Long id) {
-        centerService.delete(id);
-        return ResponseEntity.ok().build();
+        centers.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<?> adminProfile() {
-        return ResponseEntity.ok(userService.currentProfile());
-    }
-
-    @PutMapping("/me")
-    public ResponseEntity<?> updateAdminProfile(@Valid @RequestBody UpdateAdminProfileRequest request) {
-        return ResponseEntity.ok(userService.updateProfile(request));
-    }
-
-    @GetMapping("/provinces")
-    public ResponseEntity<List<Province>> listProvinces(@RequestParam(required = false) String q) {
-        return ResponseEntity.ok(provinceService.list(q));
-    }
-
-    @PostMapping("/provinces")
-    public ResponseEntity<Province> createProvince(@Valid @RequestBody NameRequest request) {
-        return ResponseEntity.ok(provinceService.create(request));
-    }
-
-    @PutMapping("/provinces/{id}")
-    public ResponseEntity<Province> updateProvince(@PathVariable Long id,
-                                                   @Valid @RequestBody NameRequest request) {
-        return ResponseEntity.ok(provinceService.update(id, request));
-    }
-
-    @DeleteMapping("/provinces/{id}")
-    public ResponseEntity<Void> deleteProvince(@PathVariable Long id) {
-        provinceService.delete(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/cities")
-    public ResponseEntity<List<City>> listCities(@RequestParam(required = false) Long provinceId,
-                                                 @RequestParam(required = false) String q) {
-        return ResponseEntity.ok(cityService.list(provinceId, q));
-    }
-
-    @PostMapping("/cities")
-    public ResponseEntity<City> createCity(@RequestParam Long provinceId,
-                                           @Valid @RequestBody NameRequest request) {
-        return ResponseEntity.ok(cityService.create(provinceId, request));
-    }
-
-    @PutMapping("/cities/{id}")
-    public ResponseEntity<City> updateCity(@PathVariable Long id,
-                                           @Valid @RequestBody NameRequest request) {
-        return ResponseEntity.ok(cityService.update(id, request));
-    }
-
-    @DeleteMapping("/cities/{id}")
-    public ResponseEntity<Void> deleteCity(@PathVariable Long id) {
-        cityService.delete(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("/centers/{id}/categories")
-    public ResponseEntity<CenterResponse> setCenterCategories(@PathVariable Long id,
-                                                       @RequestBody List<Long> categoryIds) {
-        return ResponseEntity.ok(toCenterResponse(centerService.setCategories(id, categoryIds)));
-    }
+    // ---------------------------------------------------------------- categories
 
     @GetMapping("/categories")
-    public ResponseEntity<List<com.charity.app.model.Category>> listCategories() {
-        return ResponseEntity.ok(categoryService.listAll());
+    public List<CategoryResponse> listCategories() {
+        return categories.listAll();
     }
 
     @PostMapping("/categories")
-    public ResponseEntity<com.charity.app.model.Category> createCategory(@Valid @RequestBody CategoryRequest request) {
-        return ResponseEntity.ok(categoryService.create(request));
+    public CategoryResponse createCategory(@Valid @RequestBody CategoryRequest request) {
+        return categories.create(request);
     }
 
     @PutMapping("/categories/{id}")
-    public ResponseEntity<com.charity.app.model.Category> updateCategory(@PathVariable Long id,
-                                                                         @Valid @RequestBody CategoryRequest request) {
-        return ResponseEntity.ok(categoryService.update(id, request));
+    public CategoryResponse updateCategory(@PathVariable Long id,
+                                           @Valid @RequestBody CategoryRequest request) {
+        return categories.update(id, request);
     }
 
+    /**
+     * @param replacementId required when any request still uses this category; those requests are
+     *                      moved across rather than being orphaned or blocking the delete
+     */
     @DeleteMapping("/categories/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        categoryService.delete(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id,
+                                               @RequestParam(required = false) Long replacementId) {
+        categories.delete(id, replacementId);
+        return ResponseEntity.noContent().build();
     }
+
+    // ---------------------------------------------------------------- announcements
 
     @GetMapping("/notices")
-    public ResponseEntity<List<com.charity.app.model.Notice>> listNotices() {
-        return ResponseEntity.ok(noticeService.listAll());
+    public List<NoticeResponse> listNotices() {
+        return notices.listAll();
+    }
+
+    @GetMapping("/notices/{id}")
+    public NoticeResponse getNotice(@PathVariable Long id) {
+        return notices.get(id);
     }
 
     @PostMapping("/notices")
-    public ResponseEntity<com.charity.app.model.Notice> createNotice(@Valid @RequestBody NoticeRequest request) {
-        return ResponseEntity.ok(noticeService.create(request));
+    public NoticeResponse createNotice(@Valid @RequestBody NoticeRequest request) {
+        return notices.create(request);
     }
 
     @PutMapping("/notices/{id}")
-    public ResponseEntity<com.charity.app.model.Notice> updateNotice(@PathVariable Long id,
-                                                                     @Valid @RequestBody NoticeRequest request) {
-        return ResponseEntity.ok(noticeService.update(id, request));
+    public NoticeResponse updateNotice(@PathVariable Long id, @Valid @RequestBody NoticeRequest request) {
+        return notices.update(id, request);
     }
 
     @DeleteMapping("/notices/{id}")
     public ResponseEntity<Void> deleteNotice(@PathVariable Long id) {
-        noticeService.delete(id);
-        return ResponseEntity.ok().build();
+        notices.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
-    private CharityCaseResponse toResponse(com.charity.app.model.CharityCase c) {
-        return caseService.getPublic(c.getId());
+    // ---------------------------------------------------------------- locations
+
+    @GetMapping("/provinces")
+    public List<Province> listProvinces(@RequestParam(required = false) String q) {
+        return provinces.list(q);
     }
 
-    private CenterResponse toCenterResponse(com.charity.app.model.Center c) {
-        return centerService.getByIdResponse(c.getId());
+    @PostMapping("/provinces")
+    public Province createProvince(@Valid @RequestBody NameRequest request) {
+        return provinces.create(request);
+    }
+
+    @PutMapping("/provinces/{id}")
+    public Province updateProvince(@PathVariable Long id, @Valid @RequestBody NameRequest request) {
+        return provinces.update(id, request);
+    }
+
+    @DeleteMapping("/provinces/{id}")
+    public ResponseEntity<Void> deleteProvince(@PathVariable Long id) {
+        provinces.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/cities")
+    public List<CityRef> listCities(@RequestParam(required = false) Long provinceId,
+                                    @RequestParam(required = false) String q) {
+        return cities.list(provinceId, q);
+    }
+
+    @PostMapping("/cities")
+    public CityRef createCity(@RequestParam Long provinceId, @Valid @RequestBody NameRequest request) {
+        return cities.create(provinceId, request);
+    }
+
+    @PutMapping("/cities/{id}")
+    public CityRef updateCity(@PathVariable Long id, @Valid @RequestBody NameRequest request) {
+        return cities.update(id, request);
+    }
+
+    @DeleteMapping("/cities/{id}")
+    public ResponseEntity<Void> deleteCity(@PathVariable Long id) {
+        cities.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------------------------------------------------------------- own account
+
+    @GetMapping("/me")
+    public UserProfileResponse me() {
+        return users.currentProfile();
+    }
+
+    @PutMapping("/me")
+    public UserProfileResponse updateMe(@Valid @RequestBody UpdateAdminProfileRequest request) {
+        return users.updateProfile(request);
     }
 }

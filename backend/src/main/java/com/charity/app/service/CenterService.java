@@ -1,308 +1,319 @@
 package com.charity.app.service;
 
+import com.charity.app.common.SlugUtil;
+import com.charity.app.common.error.ConflictException;
+import com.charity.app.common.error.NotFoundException;
+import com.charity.app.common.error.ValidationException;
+import com.charity.app.mapper.CenterMapper;
 import com.charity.app.model.Category;
 import com.charity.app.model.Center;
 import com.charity.app.model.City;
-import com.charity.app.model.Province;
 import com.charity.app.model.User;
-import com.charity.app.payload.CenterResponse;
-import com.charity.app.payload.CreateCenterByAdminRequest;
-import com.charity.app.payload.UpdateCenterByAdminRequest;
-import com.charity.app.payload.UpdateCenterProfileRequest;
-import com.charity.app.repository.CategoryRepository;
-import com.charity.app.repository.CenterRepository;
-import com.charity.app.repository.CityRepository;
-import com.charity.app.repository.ProvinceRepository;
-import com.charity.app.repository.UserRepository;
+import com.charity.app.model.enums.CenterStatus;
+import com.charity.app.model.enums.RequestStatus;
+import com.charity.app.model.enums.UserRole;
+import com.charity.app.payload.*;
+import com.charity.app.repository.*;
+import com.charity.app.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
-
-import java.util.*;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
 public class CenterService {
 
-    private final CenterRepository centerRepository;
-    private final UserRepository userRepository;
-    private final CategoryRepository categoryRepository;
-    private final ProvinceRepository provinceRepository;
-    private final CityRepository cityRepository;
-    private final CharityCaseService caseService;
+    private final CenterRepository centers;
+    private final UserRepository users;
+    private final CategoryRepository categories;
+    private final CityRepository cities;
+    private final RequestRepository requests;
+    private final RequestService requestService;
+    private final CenterMapper mapper;
+    private final CurrentUser currentUser;
     private final PasswordEncoder passwordEncoder;
 
-    @Transactional
-    public Center createByAdmin(CreateCenterByAdminRequest req) {
-        if (userRepository.existsByUsername(req.getUsername())) {
-            throw new IllegalArgumentException("نام کاربری قبلاً ثبت شده است");
-        }
-        if (userRepository.existsByEmail(req.getEmail())) {
-            throw new IllegalArgumentException("ایمیل قبلاً ثبت شده است");
-        }
+    // ------------------------------------------------------------------ public reads
 
-        User user = User.builder()
-                .username(req.getUsername())
-                .password(passwordEncoder.encode(req.getPassword()))
-                .email(req.getEmail())
-                .role(User.Role.CENTER)
-                .fullName(req.getFullName())
-                .enabled(true)
-                .build();
-        user = userRepository.save(user);
+    @Transactional(readOnly = true)
+    public Page<CenterCard> publicList(Pageable pageable) {
+        Page<Center> page = centers.findByStatus(CenterStatus.APPROVED, pageable);
+        Map<Long, Long> counts = activeCounts(page.getContent());
+        return page.map(center -> mapper.toCard(center, counts.getOrDefault(center.getId(), 0L)));
+    }
 
-        Set<Category> categories = new HashSet<>();
-        if (req.getCategoryIds() != null) {
-            for (Long cid : req.getCategoryIds()) {
-                categoryRepository.findById(cid).ifPresent(categories::add);
-            }
-        }
+    @Transactional(readOnly = true)
+    public CenterPublicProfile publicProfile(String slug) {
+        Center center = centers.findBySlug(slug)
+                .filter(c -> c.getStatus() == CenterStatus.APPROVED)
+                .orElseThrow(() -> new NotFoundException("مرکز خیریه یافت نشد"));
+        return mapper.toPublicProfile(center, activeCount(center.getId()));
+    }
 
-        Province province = req.getProvinceId() != null
-                ? provinceRepository.findById(req.getProvinceId()).orElse(null) : null;
-        City city = req.getCityId() != null
-                ? cityRepository.findById(req.getCityId()).orElse(null) : null;
+    // ------------------------------------------------------------------ centre self-service
 
-        Center center = Center.builder()
-                .user(user)
-                .name(req.getCenterName())
-                .fullName(req.getFullName())
-                .categories(categories)
-                .province(province)
-                .city(city)
-                .description(req.getDescription())
-                .contactPhone(req.getContactPhone())
-                .address(req.getAddress())
-                .cardNumber(req.getCardNumber())
-                .sheba(req.getSheba())
-                .status(Center.Status.APPROVED)
-                .build();
-        return centerRepository.save(center);
+    @Transactional(readOnly = true)
+    public CenterResponse currentCenter() {
+        Center center = currentUser.center();
+        return mapper.toResponse(center, activeCount(center.getId()));
     }
 
     @Transactional
-    public Center updateByAdmin(Long id, UpdateCenterByAdminRequest req) {
-        Center c = centerRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        if (req.getCenterName() != null) c.setName(req.getCenterName());
-        if (req.getFullName() != null) {
-            c.setFullName(req.getFullName());
-            if (c.getUser() != null) c.getUser().setFullName(req.getFullName());
+    public CenterResponse updateOwnProfile(UpdateCenterProfileRequest req) {
+        Center center = currentUser.center();
+        center.setName(req.centerName());
+        applySlugIfNameChanged(center);
+        center.setFullName(req.fullName());
+        center.setDescription(req.description());
+        center.setContactPhone(req.contactPhone());
+        center.setResponseHours(req.responseHours());
+        center.setAddress(req.address());
+        center.setCardNumber(req.cardNumber());
+        center.setSheba(req.sheba());
+        if (req.logoUrl() != null) {
+            center.setLogoUrl(req.logoUrl());
         }
-        if (req.getDescription() != null) c.setDescription(req.getDescription());
-        if (req.getContactPhone() != null) c.setContactPhone(req.getContactPhone());
-        if (req.getAddress() != null) c.setAddress(req.getAddress());
-        if (req.getCardNumber() != null) c.setCardNumber(req.getCardNumber());
-        if (req.getSheba() != null) c.setSheba(req.getSheba());
-        if (req.getProvinceId() != null) {
-            c.setProvince(provinceRepository.findById(req.getProvinceId()).orElse(null));
+        if (req.cityId() != null) {
+            assignCity(center, req.cityId());
         }
-        if (req.getCityId() != null) {
-            c.setCity(cityRepository.findById(req.getCityId()).orElse(null));
+        Center saved = centers.save(center);
+        return mapper.toResponse(saved, activeCount(saved.getId()));
+    }
+
+    @Transactional
+    public CenterResponse setOwnLogo(String filename) {
+        Center center = currentUser.center();
+        center.setLogoUrl(filename);
+        Center saved = centers.save(center);
+        return mapper.toResponse(saved, activeCount(saved.getId()));
+    }
+
+    // ------------------------------------------------------------------ admin
+
+    @Transactional(readOnly = true)
+    public Page<CenterResponse> adminList(Pageable pageable) {
+        Page<Center> page = centers.findAllBy(pageable);
+        Map<Long, Long> counts = activeCounts(page.getContent());
+        return page.map(center -> mapper.toResponse(center, counts.getOrDefault(center.getId(), 0L)));
+    }
+
+    @Transactional(readOnly = true)
+    public CenterResponse adminGet(Long id) {
+        Center center = load(id);
+        return mapper.toResponse(center, activeCount(id));
+    }
+
+    @Transactional
+    public CenterResponse createByAdmin(CreateCenterByAdminRequest req) {
+        if (users.existsByUsername(req.username())) {
+            throw new ConflictException("USERNAME_TAKEN", "این نام کاربری قبلاً ثبت شده است");
         }
-        if (req.getCategoryIds() != null) {
-            Set<Category> categories = new HashSet<>();
-            for (Long cid : req.getCategoryIds()) {
-                categoryRepository.findById(cid).ifPresent(categories::add);
-            }
-            c.setCategories(categories);
+        if (users.existsByEmail(req.email())) {
+            throw new ConflictException("EMAIL_TAKEN", "این ایمیل قبلاً ثبت شده است");
         }
-        return centerRepository.save(c);
+
+        User user = users.save(User.builder()
+                .username(req.username())
+                .password(passwordEncoder.encode(req.password()))
+                .email(req.email())
+                .role(UserRole.CENTER)
+                .fullName(req.fullName())
+                .enabled(true)
+                .build());
+
+        Center center = Center.builder()
+                .user(user)
+                .name(req.centerName())
+                .fullName(req.fullName())
+                .categories(resolveCategories(req.categoryIds()))
+                .description(req.description())
+                .contactPhone(req.contactPhone())
+                .responseHours(req.responseHours())
+                .address(req.address())
+                .cardNumber(req.cardNumber())
+                .sheba(req.sheba())
+                // Admin-created means already approved: there is no application to review.
+                .status(Boolean.FALSE.equals(req.active()) ? CenterStatus.INACTIVE : CenterStatus.APPROVED)
+                .build();
+        assignCity(center, req.cityId());
+        center.setSlug(uniqueSlug(req.centerName(), null));
+
+        return mapper.toResponse(centers.save(center), 0);
+    }
+
+    @Transactional
+    public CenterResponse updateByAdmin(Long id, UpdateCenterByAdminRequest req) {
+        Center center = load(id);
+
+        center.setName(req.centerName());
+        applySlugIfNameChanged(center);
+        center.setFullName(req.fullName());
+        if (center.getUser() != null && req.fullName() != null) {
+            center.getUser().setFullName(req.fullName());
+        }
+        center.setDescription(req.description());
+        center.setContactPhone(req.contactPhone());
+        center.setResponseHours(req.responseHours());
+        center.setAddress(req.address());
+        center.setCardNumber(req.cardNumber());
+        center.setSheba(req.sheba());
+        assignCity(center, req.cityId());
+
+        if (req.categoryIds() != null) {
+            replaceCategories(center, req.categoryIds());
+        }
+        if (req.active() != null) {
+            applyActive(center, req.active());
+        }
+
+        Center saved = centers.save(center);
+        return mapper.toResponse(saved, activeCount(saved.getId()));
+    }
+
+    @Transactional
+    public CenterResponse setCategories(Long id, SetCategoriesDto dto) {
+        Center center = load(id);
+        replaceCategories(center, dto.categoryIds());
+        Center saved = centers.save(center);
+        return mapper.toResponse(saved, activeCount(saved.getId()));
+    }
+
+    @Transactional
+    public CenterResponse setActive(Long id, boolean active) {
+        Center center = load(id);
+        applyActive(center, active);
+        Center saved = centers.save(center);
+        return mapper.toResponse(saved, activeCount(saved.getId()));
     }
 
     @Transactional
     public void delete(Long id) {
-        Center c = centerRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        User user = c.getUser();
-        c.setUser(null);
-        centerRepository.delete(c);
+        Center center = load(id);
+        long owned = requests.countByCenterIdAndDeletedAtIsNull(id);
+        if (owned > 0) {
+            throw new ConflictException("CENTER_HAS_REQUESTS",
+                    ("این مرکز %d درخواست ثبت‌شده دارد و قابل حذف نیست. "
+                            + "برای خارج کردن آن از سایت، وضعیت مرکز را غیرفعال کنید.").formatted(owned));
+        }
+        User user = center.getUser();
+        center.setUser(null);
+        centers.delete(center);
         if (user != null) {
-            userRepository.delete(user);
+            users.delete(user);
         }
     }
 
-    @Transactional
-    public Center deactivate(Long id) {
-        Center c = centerRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        c.setStatus(Center.Status.INACTIVE);
-        Center saved = centerRepository.save(c);
-        caseService.deactivateByCenter(id);
-        return saved;
-    }
+    // ------------------------------------------------------------------ internals
 
-    @Transactional
-    public Center activate(Long id) {
-        Center c = centerRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        c.setStatus(Center.Status.APPROVED);
-        return centerRepository.save(c);
-    }
-
-    @Transactional
-    public Center updateOwnProfile(User currentUser, UpdateCenterProfileRequest req) {
-        Center c = centerRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        if (req.getCenterName() != null) c.setName(req.getCenterName());
-        if (req.getFullName() != null) {
-            c.setFullName(req.getFullName());
-            if (c.getUser() != null) c.getUser().setFullName(req.getFullName());
+    private void applyActive(Center center, boolean active) {
+        center.setStatus(active ? CenterStatus.APPROVED : CenterStatus.INACTIVE);
+        if (!active) {
+            // A centre leaving the site must take its live requests with it, otherwise visitors are
+            // pointed at a contact who is no longer reachable.
+            requestService.deactivateAllForCenter(center.getId());
         }
-        if (req.getDescription() != null) c.setDescription(req.getDescription());
-        if (req.getContactPhone() != null) c.setContactPhone(req.getContactPhone());
-        if (req.getAddress() != null) c.setAddress(req.getAddress());
-        if (req.getCardNumber() != null) c.setCardNumber(req.getCardNumber());
-        if (req.getSheba() != null) c.setSheba(req.getSheba());
-        if (req.getLogoUrl() != null) c.setLogoUrl(req.getLogoUrl());
-        if (req.getProvinceId() != null) {
-            c.setProvince(provinceRepository.findById(req.getProvinceId()).orElse(null));
+    }
+
+    /**
+     * Refuses to strip a category the centre still has requests in -- those requests would be left
+     * referencing a category their centre is no longer permitted to publish in.
+     */
+    private void replaceCategories(Center center, List<Long> categoryIds) {
+        Set<Category> resolved = resolveCategories(categoryIds);
+        Set<Long> keptIds = resolved.stream().map(Category::getId).collect(java.util.stream.Collectors.toSet());
+
+        Set<Long> inUse = new HashSet<>();
+        requests.findAll(
+                        com.charity.app.repository.spec.RequestSpecifications.notDeleted()
+                                .and(com.charity.app.repository.spec.RequestSpecifications
+                                        .centerIdEquals(center.getId())),
+                        Pageable.unpaged())
+                .forEach(request -> inUse.add(request.getCategory().getId()));
+
+        List<Long> orphaned = inUse.stream().filter(idInUse -> !keptIds.contains(idInUse)).toList();
+        if (!orphaned.isEmpty()) {
+            throw new ConflictException("CATEGORY_IN_USE_BY_CENTER",
+                    "این مرکز در %d دسته‌بندی حذف‌شده درخواست ثبت‌شده دارد؛ ابتدا آن درخواست‌ها را جابه‌جا کنید."
+                            .formatted(orphaned.size()));
         }
-        if (req.getCityId() != null) {
-            c.setCity(cityRepository.findById(req.getCityId()).orElse(null));
+        center.setCategories(resolved);
+    }
+
+    private Set<Category> resolveCategories(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            throw new ValidationException("حداقل یک دسته‌بندی مجاز باید انتخاب شود");
         }
-        return centerRepository.save(c);
-    }
-
-    @Transactional
-    public Center setLogo(User currentUser, String logoUrl) {
-        Center c = centerRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        c.setLogoUrl(logoUrl);
-        return centerRepository.save(c);
-    }
-
-    @Transactional
-    public Center setCategories(Long centerId, List<Long> categoryIds) {
-        Center c = centerRepository.findById(centerId)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        Set<Category> categories = new HashSet<>();
-        if (categoryIds != null) {
-            for (Long cid : categoryIds) {
-                categoryRepository.findById(cid).ifPresent(categories::add);
-            }
+        Set<Category> resolved = new HashSet<>();
+        for (Long categoryId : categoryIds) {
+            resolved.add(categories.findById(categoryId)
+                    .orElseThrow(() -> new NotFoundException("دسته‌بندی یافت نشد")));
         }
-        c.setCategories(categories);
-        return centerRepository.save(c);
+        return resolved;
     }
 
-    @Transactional
-    public Center approve(Long centerId) {
-        Center c = centerRepository.findById(centerId)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        c.setStatus(Center.Status.APPROVED);
-        return centerRepository.save(c);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<Center> listPending(Pageable pageable) {
-        return centerRepository.findByStatus(Center.Status.PENDING, pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<Center> listAll(Pageable pageable) {
-        return centerRepository.findAll(pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<CenterResponse> listByStatus(Center.Status status, Pageable pageable) {
-        return centerRepository.findByStatus(status, pageable).map(this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<CenterResponse> listAllResponse(Pageable pageable) {
-        return centerRepository.findAll(pageable).map(this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<CenterResponse> listPendingResponse(Pageable pageable) {
-        return centerRepository.findByStatus(Center.Status.PENDING, pageable).map(this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public CenterResponse getByIdResponse(Long id) {
-        Center c = centerRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        return toResponse(c);
-    }
-
-    private CenterResponse toResponse(Center c) {
-        CenterResponse r = new CenterResponse();
-        r.setId(c.getId());
-        r.setName(c.getName());
-        r.setFullName(c.getFullName());
-        r.setDescription(c.getDescription());
-        r.setContactPhone(c.getContactPhone());
-        r.setAddress(c.getAddress());
-        r.setCardNumber(c.getCardNumber());
-        r.setSheba(c.getSheba());
-        r.setLogoUrl(c.getLogoUrl());
-        r.setStatus(c.getStatus().name());
-        if (c.getUser() != null) r.setEmail(c.getUser().getEmail());
-        if (c.getProvince() != null) {
-            r.setProvince(new CenterResponse.ProvinceInfo(c.getProvince().getId(), c.getProvince().getName()));
+    /** Province is derived from the city rather than being set independently, so the two cannot disagree. */
+    private void assignCity(Center center, Long cityId) {
+        if (cityId == null) {
+            return;
         }
-        if (c.getCity() != null) {
-            r.setCity(new CenterResponse.CityInfo(c.getCity().getId(), c.getCity().getName()));
-        }
-        if (c.getCategories() != null) {
-            r.setCategories(c.getCategories().stream()
-                .map(cat -> new CenterResponse.CategoryInfo(cat.getId(), cat.getName()))
-                .toList());
-        }
-        if (c.getCreatedAt() != null) r.setCreatedAt(c.getCreatedAt().toString());
-        return r;
+        City city = cities.findById(cityId).orElseThrow(() -> new NotFoundException("شهر یافت نشد"));
+        center.setCity(city);
+        center.setProvince(city.getProvince());
     }
 
-    @Transactional(readOnly = true)
-    public Center currentCenter() {
-        String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username).orElseThrow();
-        return centerRepository.findByUserId(user.getId()).orElseThrow();
-    }
-
-    @Transactional(readOnly = true)
-    public CenterResponse currentCenterResponse() {
-        return toResponse(currentCenter());
-    }
-
-    @Transactional(readOnly = true)
-    public Center getById(Long id) {
-        return centerRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-    }
-
-    @Transactional(readOnly = true)
-    public java.util.Map<String, Object> getPublicProfile(Long id) {
-        Center c = centerRepository.findById(id)
-                .filter(center -> center.getStatus() == Center.Status.APPROVED)
-                .orElseThrow(() -> new NoSuchElementException("مرکز یافت نشد"));
-        java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
-        map.put("id", c.getId());
-        map.put("name", c.getName());
-        map.put("fullName", c.getFullName());
-        map.put("description", c.getDescription());
-        map.put("contactPhone", c.getContactPhone());
-        map.put("address", c.getAddress());
-        map.put("cardNumber", c.getCardNumber());
-        map.put("sheba", c.getSheba());
-        map.put("logoUrl", c.getLogoUrl());
-        map.put("categories", c.getCategories());
-        map.put("status", c.getStatus().name());
-        if (c.getProvince() != null) {
-            map.put("provinceId", c.getProvince().getId());
-            map.put("provinceName", c.getProvince().getName());
+    private void applySlugIfNameChanged(Center center) {
+        if (center.getSlug() == null || center.getSlug().isBlank()) {
+            center.setSlug(uniqueSlug(center.getName(), center.getId()));
         }
-        if (c.getCity() != null) {
-            map.put("cityId", c.getCity().getId());
-            map.put("cityName", c.getCity().getName());
+    }
+
+    /**
+     * Centre slugs are admin-managed and low volume, so they get a clean name-based slug with a
+     * numeric suffix only on collision -- unlike request slugs, which carry their code.
+     */
+    private String uniqueSlug(String name, Long currentId) {
+        String base = SlugUtil.slugify(name, 180);
+        if (base.isEmpty()) {
+            base = "center";
         }
-        return map;
+        String candidate = base;
+        int suffix = 2;
+        while (isSlugTaken(candidate, currentId)) {
+            candidate = base + "-" + suffix++;
+        }
+        return candidate;
+    }
+
+    private boolean isSlugTaken(String slug, Long currentId) {
+        return centers.findBySlug(slug).map(c -> !c.getId().equals(currentId)).orElse(false);
+    }
+
+    private Center load(Long id) {
+        return centers.findById(id).orElseThrow(() -> new NotFoundException("مرکز خیریه یافت نشد"));
+    }
+
+    private long activeCount(Long centerId) {
+        return activeCounts(List.of(centerId), Function.identity()).getOrDefault(centerId, 0L);
+    }
+
+    private Map<Long, Long> activeCounts(List<Center> page) {
+        return activeCounts(page.stream().map(Center::getId).toList(), Function.identity());
+    }
+
+    /** One grouped query per page rather than a count per centre. */
+    private Map<Long, Long> activeCounts(List<Long> centerIds, Function<Long, Long> identity) {
+        if (centerIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> counts = new HashMap<>();
+        requests.countActiveByCenterIds(RequestStatus.PUBLISHED, centerIds)
+                .forEach(row -> counts.put(row.getCenterId(), row.getTotal()));
+        return counts;
     }
 }

@@ -1,11 +1,12 @@
 package com.charity.app.payload;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
-public class NameRequest {
-    @NotBlank(message = "نام الزامی است")
-    private String name;
+/** Shared by province and city create/update. */
+public record NameRequest(
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+        @NotBlank(message = "نام الزامی است")
+        @Size(max = 255)
+        String name) {
 }

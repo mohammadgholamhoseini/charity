@@ -9,20 +9,58 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
+    # Flyway owns the schema. `none` rather than `validate` because this profile points at the
+    # populated production database, whose columns were created by the old ddl-auto: update and can
+    # differ from Hibernate's expectations in harmless ways (bit(1) vs boolean, longtext vs text).
+    # The `local` profile builds from the same migrations and DOES validate, so drift between the
+    # migrations and the entities is caught in development rather than at production startup.
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
         format_sql: true
     open-in-view: false
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # The existing database predates Flyway, so its schema is non-empty with no history table.
+    # Baselining marks it as already at V1 and applies V2 onward. This only fires on a non-empty
+    # schema; a fresh database simply runs V1 first.
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
+    baseline-version: 1
+    baseline-description: "pre-flyway hibernate schema"
+    validate-on-migrate: true
+    out-of-order: false
+
+  servlet:
+    multipart:
+      # Without these, Spring's 1MB default rejected uploads before FileStorageService's own 10MB
+      # check ever ran, and the resulting exception surfaced as a 500.
+      max-file-size: ${MAX_FILE_SIZE:10MB}
+      max-request-size: ${MAX_REQUEST_SIZE:40MB}
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
 server:
   port: 8082
 
+springdoc:
+  # Swagger was reachable unauthenticated in every profile, production included.
+  api-docs:
+    enabled: ${SPRINGDOC_ENABLED:false}
+  swagger-ui:
+    enabled: ${SPRINGDOC_ENABLED:false}
+
 jwt:
-  secret: ${JWT_SECRET:a-very-long-random-string-at-least}
-  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  # No fallback on purpose. The previous default was a 32-byte literal committed to a public repo,
+  # which is a valid HS256 key -- anyone who read the source could mint {"sub":"admin"}. A missing
+  # JWT_SECRET must crash the app, not silently fall back. JwtService also refuses short/known keys.
+  secret: ${JWT_SECRET:}
+  expiration-ms: ${JWT_EXPIRATION_MS:28800000}
 
 telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN:}
@@ -30,15 +68,26 @@ telegram:
   enabled: ${TELEGRAM_ENABLED:false}
 
 bale:
-  bot-token: ${BALE_BOT_TOKEN:573415822:G7Y6X1umfpGT_eU4_9lNDfp0AnvV4aIebhM}
-  channel: ${BALE_CHANNEL:@yariju}
-  enabled: ${BALE_ENABLED:true}
+  # The previous default was a live bot token committed to source control, with enabled defaulting
+  # to true. Removing it here does not invalidate it -- it still needs revoking in BotFather.
+  bot-token: ${BALE_BOT_TOKEN:}
+  channel: ${BALE_CHANNEL:}
+  enabled: ${BALE_ENABLED:false}
 
 cors:
-  allowed-origins: ${CORS_ORIGINS:http://localhost,http://127.0.0.1,http://localhost:5173,http://127.0.0.1:5173}
+  allowed-origins: ${CORS_ORIGINS:http://localhost,http://127.0.0.1,http://localhost:3000,http://127.0.0.1:3000}
 
 file:
   upload-dir: ${FILE_UPLOAD_DIR:./uploads}
 
 app:
+  # Where this API is reachable. Used only to build absolute file URLs.
   base-url: ${APP_BASE_URL:http://localhost:8082}
+  # The public site. Used for canonical URLs and for the "view on site" links in Telegram/Bale
+  # messages, which previously pointed at the backend port and 404'd in every deployment.
+  site-url: ${APP_SITE_URL:http://localhost:3000}
+  # Stored timestamps are local date-times; this is the zone they are interpreted in when converting
+  # to the ISO-8601 offsets that crawlers and <time datetime> consume.
+  timezone: ${APP_TIMEZONE:Asia/Tehran}
+  admin:
+    initial-password: ${ADMIN_INITIAL_PASSWORD:}

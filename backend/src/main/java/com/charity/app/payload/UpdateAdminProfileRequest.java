@@ -1,26 +1,20 @@
 package com.charity.app.payload;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public class UpdateAdminProfileRequest {
+public record UpdateAdminProfileRequest(
 
-    @NotBlank
-    private String fullName;
+        @Size(max = 255)
+        String fullName,
 
-    @NotBlank @Email
-    private String email;
+        @Email(message = "قالب ایمیل معتبر نیست")
+        @Size(max = 255)
+        String email,
 
-    private String currentPassword;
-    private String newPassword;
+        @Size(max = 200)
+        String currentPassword,
 
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getCurrentPassword() { return currentPassword; }
-    public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }
-    public String getNewPassword() { return newPassword; }
-    public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
+        @Size(min = 8, max = 100, message = "رمز عبور جدید باید حداقل ۸ نویسه باشد")
+        String newPassword) {
 }

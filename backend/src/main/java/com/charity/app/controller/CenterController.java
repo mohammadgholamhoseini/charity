@@ -1,122 +1,112 @@
 package com.charity.app.controller;
 
-import com.charity.app.model.Center;
-import com.charity.app.model.User;
-import com.charity.app.payload.CenterResponse;
-import com.charity.app.payload.CreateCaseRequest;
-import com.charity.app.payload.UpdateCaseRequest;
-import com.charity.app.payload.CharityCaseResponse;
-import com.charity.app.payload.UpdateCenterProfileRequest;
+import com.charity.app.common.Paging;
+import com.charity.app.model.enums.RequestStatus;
+import com.charity.app.model.enums.Urgency;
+import com.charity.app.payload.*;
 import com.charity.app.service.CenterService;
-import com.charity.app.service.CharityCaseService;
 import com.charity.app.service.FileStorageService;
-import com.charity.app.service.UserService;
+import com.charity.app.service.RequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/center")
-@RequiredArgsConstructor
 @PreAuthorize("hasRole('CENTER')")
+@RequiredArgsConstructor
 public class CenterController {
 
-    private final CharityCaseService caseService;
-    private final CenterService centerService;
-    private final FileStorageService fileStorageService;
-    private final UserService userService;
+    private final CenterService centers;
+    private final RequestService requests;
+    private final FileStorageService storage;
+
+    // ---------------------------------------------------------------- profile
 
     @GetMapping("/me")
-    public ResponseEntity<CenterResponse> me() {
-        return ResponseEntity.ok(centerService.currentCenterResponse());
+    public CenterResponse me() {
+        return centers.currentCenter();
     }
 
     @PutMapping("/me")
-    public ResponseEntity<CenterResponse> updateProfile(@Valid @RequestBody UpdateCenterProfileRequest request) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userService.getUserByUsername(username);
-        return ResponseEntity.ok(toCenterResponse(centerService.updateOwnProfile(user, request)));
-    }
-
-    @PostMapping("/cases")
-    public ResponseEntity<CharityCaseResponse> createCase(@Valid @RequestBody CreateCaseRequest request) {
-        return ResponseEntity.ok(caseService.createCase(request));
-    }
-
-    @GetMapping("/cases")
-    public ResponseEntity<Page<CharityCaseResponse>> myCases(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(caseService.centerList(pageable));
-    }
-
-    @PostMapping("/cases/{id}/complete")
-    public ResponseEntity<CharityCaseResponse> complete(@PathVariable Long id) {
-        caseService.ensureOwnedByCurrentCenter(id);
-        return ResponseEntity.ok(toResponse(caseService.markCompleted(id)));
-    }
-
-    @PutMapping("/cases/{id}")
-    public ResponseEntity<CharityCaseResponse> update(@PathVariable Long id,
-                                                      @Valid @RequestBody UpdateCaseRequest request) {
-        caseService.ensureOwnedByCurrentCenter(id);
-        return ResponseEntity.ok(caseService.updateCase(id, request));
-    }
-
-    @DeleteMapping("/cases/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        caseService.ensureOwnedByCurrentCenter(id);
-        caseService.deleteCase(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/cases/{id}/documents")
-    public CharityCaseResponse uploadDocuments(@PathVariable Long id,
-                                                               @RequestParam("files") List<MultipartFile> files) {
-        caseService.ensureOwnedByCurrentCenter(id);
-        List<String> saved = new ArrayList<>();
-        for (MultipartFile f : files) {
-            if (!f.isEmpty()) {
-                saved.add(fileStorageService.store(f));
-            }
-        }
-        caseService.addDocuments(id, saved);
-        return caseService.getPublic(id);
+    public CenterResponse updateMe(@Valid @RequestBody UpdateCenterProfileRequest request) {
+        return centers.updateOwnProfile(request);
     }
 
     @PostMapping("/me/logo")
-    public ResponseEntity<CenterResponse> uploadLogo(@RequestParam("file") MultipartFile file) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userService.getUserByUsername(username);
-        String filename = fileStorageService.store(file);
-        return ResponseEntity.ok(toCenterResponse(centerService.setLogo(user, filename)));
+    public CenterResponse uploadLogo(@RequestParam("file") MultipartFile file) {
+        return centers.setOwnLogo(storage.store(file));
     }
 
     @PutMapping("/me/logo")
-    public ResponseEntity<CenterResponse> setLogoUrl(@RequestBody Map<String, String> body) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userService.getUserByUsername(username);
-        return ResponseEntity.ok(toCenterResponse(centerService.setLogo(user, body.get("logoUrl"))));
+    public CenterResponse setLogo(@Valid @RequestBody SetLogoDto request) {
+        return centers.setOwnLogo(request.logoUrl());
     }
 
-    private CharityCaseResponse toResponse(com.charity.app.model.CharityCase c) {
-        return caseService.getPublic(c.getId());
+    // ---------------------------------------------------------------- requests
+
+    @GetMapping("/requests")
+    public Page<RequestSummary> listRequests(@RequestParam(required = false) List<RequestStatus> status,
+                                             @RequestParam(required = false) List<Long> categoryId,
+                                             @RequestParam(required = false) List<Urgency> urgency,
+                                             @RequestParam(required = false) String q,
+                                             @RequestParam(required = false) Integer page,
+                                             @RequestParam(required = false) Integer size,
+                                             @RequestParam(required = false) String sort) {
+        RequestFilter filter = new RequestFilter(
+                categoryId, null, urgency, null, null, null, null, null, status, q);
+        return requests.centerList(filter, Paging.of(page, size, sort == null ? "newest" : sort));
     }
 
-    private CenterResponse toCenterResponse(Center c) {
-        return centerService.getByIdResponse(c.getId());
+    /** Per-status totals for the panel's four stat cards. */
+    @GetMapping("/requests/stats")
+    public Map<RequestStatus, Long> stats() {
+        return requests.centerStats();
+    }
+
+    @GetMapping("/requests/{id}")
+    public RequestDetailResponse getRequest(@PathVariable Long id) {
+        return requests.centerDetail(id);
+    }
+
+    /** {@code submit=false} saves a draft; {@code submit=true} sends it for admin review. */
+    @PostMapping("/requests")
+    public RequestDetailResponse createRequest(@Valid @RequestBody RequestCreateDto request) {
+        return requests.create(request);
+    }
+
+    @PutMapping("/requests/{id}")
+    public RequestDetailResponse updateRequest(@PathVariable Long id,
+                                               @Valid @RequestBody RequestUpdateDto request) {
+        return requests.updateByCenter(id, request);
+    }
+
+    @PostMapping("/requests/{id}/submit")
+    public RequestDetailResponse submitRequest(@PathVariable Long id) {
+        return requests.submitForReview(id);
+    }
+
+    @PostMapping("/requests/{id}/complete")
+    public RequestDetailResponse completeRequest(@PathVariable Long id) {
+        return requests.markCompletedByCenter(id);
+    }
+
+    @DeleteMapping("/requests/{id}")
+    public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
+        requests.softDeleteByCenter(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/requests/{id}/documents")
+    public RequestDetailResponse uploadDocuments(@PathVariable Long id,
+                                                 @RequestParam("files") List<MultipartFile> files) {
+        return requests.addDocuments(id, storage.storeAll(files));
     }
 }

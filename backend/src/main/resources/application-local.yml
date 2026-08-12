@@ -5,13 +5,21 @@ spring:
     password: ""
     driver-class-name: org.h2.Driver
   jpa:
+    # This profile builds the schema from the same Flyway migrations as production and then asks
+    # Hibernate to validate the entities against the result. That makes every dev run a check that
+    # the migrations and the entity model still agree -- the guard production's `none` gives up.
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         format_sql: true
     open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # Always a fresh in-memory database, so there is never anything to baseline.
+    baseline-on-migrate: false
   h2:
     console:
       enabled: true
@@ -19,19 +27,32 @@ spring:
 server:
   port: 8085
 
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
 jwt:
-  secret: ${JWT_SECRET:changeThisSecretKeyToAVeryLongRandomStringAtLeast256BitsLongForProduction}
-  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  secret: ${JWT_SECRET:local-development-only-secret-key-not-for-any-deployment-32b+}
+  expiration-ms: ${JWT_EXPIRATION_MS:28800000}
 
 telegram:
-  bot-token: REPLACE_WITH_YOUR_BOT_TOKEN
-  channel: "@your_channel_username"
+  bot-token: ""
+  channel: ""
   enabled: false
 
 bale:
-  bot-token: REPLACE_WITH_YOUR_BOT_TOKEN
-  channel: "@your_bale_channel"
+  bot-token: ""
+  channel: ""
   enabled: false
 
 cors:
-  allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+  allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8085}
+  site-url: ${APP_SITE_URL:http://localhost:3000}
+  timezone: ${APP_TIMEZONE:Asia/Tehran}
+  admin:
+    initial-password: ${ADMIN_INITIAL_PASSWORD:admin123}

@@ -1,27 +1,37 @@
 package com.charity.app.payload;
 
-import com.charity.app.model.Notice;
-
+import com.charity.app.model.enums.NoticePlacement;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
-public class NoticeRequest {
+import java.time.LocalDateTime;
 
-    @NotBlank
-    private String title;
+/**
+ * Admin create/update for an announcement.
+ *
+ * <p>The 90-character title cap matches the admin form's own counter -- the top banner is a single
+ * line and longer titles simply do not fit.
+ */
+public record NoticeRequest(
 
-    @NotBlank
-    private String content;
+        @NotBlank(message = "عنوان اطلاعیه الزامی است")
+        @Size(max = 90, message = "عنوان اطلاعیه نمی‌تواند بیش از ۹۰ نویسه باشد")
+        String title,
 
-    private Notice.Position position;
+        @NotBlank(message = "متن اطلاعیه الزامی است")
+        @Size(max = 4000)
+        String content,
 
-    private boolean active = true;
+        @NotNull(message = "انتخاب محل نمایش الزامی است")
+        NoticePlacement placement,
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public Notice.Position getPosition() { return position; }
-    public void setPosition(Notice.Position position) { this.position = position; }
-    public boolean isActive() { return active; }
-    public void setActive(boolean active) { this.active = active; }
+        LocalDateTime startAt,
+
+        LocalDateTime endAt,
+
+        @Size(max = 500)
+        String linkUrl,
+
+        boolean active) {
 }
