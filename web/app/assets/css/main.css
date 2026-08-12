@@ -1,0 +1,362 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ font
+   Self-hosted rather than loaded from Google Fonts: that origin is slow or blocked
+   for many Iranian users, and it would sit in the critical path of the hero heading,
+   which is the LCP element on every public page. One variable file covers 300-900. */
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/vazirmatn-variable.woff2") format("woff2-variations");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Metric-matched fallback, so the swap from fallback to Vazirmatn does not reflow
+   the page. Without this the font swap alone would dominate the CLS score. */
+@font-face {
+  font-family: "Vazirmatn Fallback";
+  src: local("Tahoma"), local("Segoe UI"), local("Arial");
+  size-adjust: 100%;
+  ascent-override: 92%;
+  descent-override: 28%;
+  line-gap-override: 0%;
+}
+
+/* ------------------------------------------------------------------ tokens */
+@theme {
+  --font-sans: "Vazirmatn", "Vazirmatn Fallback", system-ui, sans-serif;
+
+  /* brand */
+  --color-brick-50: #faf1ec;
+  --color-brick-500: #b24a2e;
+  --color-brick-600: #8e3720;
+  --color-gold-400: #e8a33d;
+
+  /* dark surfaces — the announcement banner, centres panel and dashboard sidebar */
+  --color-ink-900: #241e19;
+  --color-ink-800: #2e2721;
+  --color-ink-700: #3a312a;
+  --color-ondark: #f6efe6;
+  --color-ondark-2: #c9bdb0;
+  --color-ondark-3: #a6998c;
+
+  /* light surfaces */
+  --color-cream-50: #fbf7f1;
+  --color-cream-100: #f4ede3;
+  --color-cream-200: #f0e8de;
+  --color-surface: #ffffff;
+  --color-field: #fdfbf8;
+  --color-row-selected: #fdf8f2;
+
+  /* lines */
+  --color-line-soft: #eadfd2;
+  --color-line: #ddd3c7;
+  --color-line-field: #e3d3c4;
+  --color-line-btn: #d6c8b8;
+
+  /* text */
+  --color-body: #5f5449;
+  --color-body-2: #6e635a;
+  --color-muted: #8a7f72;
+  --color-muted-2: #9a8b7c;
+
+  /* image placeholders — the design ships no photography */
+  --color-ph: #e4d6c4;
+  --color-ph-2: #dfd5c8;
+  --color-ph-ink: #a08e79;
+
+  /* destructive */
+  --color-danger: #96422f;
+  --color-danger-line: #ebd3cd;
+  --color-danger-bg: #f7e3e0;
+  --color-field-error: #de9e86;
+
+  --radius-pill: 999px;
+  --radius-input: 12px;
+  --radius-card: 20px;
+  --radius-frame: 24px;
+  --radius-icon: 10px;
+
+  --shadow-card: 0 14px 34px rgb(60 40 25 / 0.16);
+  --shadow-frame: 0 24px 60px rgb(60 40 25 / 0.10);
+}
+
+/* ------------------------------------------------------------------ base */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--color-cream-50);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 2;
+    min-width: 320px;
+  }
+
+  h1, h2, h3, h4 {
+    color: var(--color-ink-900);
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brick-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-gold-400);
+    color: var(--color-ink-900);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ components */
+@layer components {
+  /* Latin text inside an RTL sentence. `isolate` is the part that matters: without it
+     a username or phone number reorders the punctuation around it. */
+  .ltr {
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: left;
+  }
+
+  .page-shell {
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+  @media (min-width: 768px) {
+    .page-shell { padding-inline: 44px; }
+  }
+
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line-soft);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-flat {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line-soft);
+    border-radius: var(--radius-card);
+  }
+
+  .dark-panel {
+    background: var(--color-ink-900);
+    color: var(--color-ondark);
+  }
+
+  /* buttons — 44px minimum so every target is reachable on a phone */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-brick-500);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--color-brick-600); }
+
+  .btn-gold {
+    background: var(--color-gold-400);
+    color: var(--color-ink-900);
+    font-weight: 700;
+  }
+  .btn-gold:hover:not(:disabled) { filter: brightness(0.95); }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1.5px solid var(--color-line-btn);
+    color: var(--color-body);
+  }
+  .btn-secondary:hover:not(:disabled) { background: var(--color-cream-100); }
+
+  .btn-outline-light {
+    background: transparent;
+    border: 1.5px solid var(--color-ondark-3);
+    color: var(--color-ondark);
+  }
+  .btn-outline-light:hover:not(:disabled) { background: rgb(255 255 255 / 0.08); }
+
+  .btn-danger {
+    background: var(--color-danger);
+    color: #fff;
+  }
+  .btn-danger:hover:not(:disabled) { filter: brightness(0.92); }
+
+  .btn-sm {
+    min-height: 36px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* chips */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  /* Status and urgency are fixed enums, so their colours are written out as static
+     rules. They cannot be interpolated into class names -- Tailwind only sees class
+     strings that appear literally in the source, so `bg-${status}` produces nothing.
+     Category colours come from the API and are applied as inline styles instead. */
+  .chip[data-status="DRAFT"]     { background: #efeae3; color: #8a7f72; }
+  .chip[data-status="PENDING"]   { background: #f3e6d6; color: #8e5a22; }
+  .chip[data-status="PUBLISHED"] { background: #eaf0e7; color: #4f6b45; }
+  .chip[data-status="COMPLETED"] { background: #e7edf3; color: #3d5a76; }
+  .chip[data-status="REJECTED"]  { background: #f7e3e0; color: #96422f; }
+  .chip[data-status="INACTIVE"]  { background: #efeae3; color: #8a7f72; }
+
+  .chip[data-urgency="LOW"]    { background: #efeae3; color: #8a7f72; }
+  .chip[data-urgency="MEDIUM"] { background: #f3e6d6; color: #8e5a22; }
+  .chip[data-urgency="HIGH"]   { background: #f7e3e0; color: #96422f; }
+  .chip[data-urgency="URGENT"] { background: #b24a2e; color: #fff6ec; }
+
+  .chip-dark {
+    background: var(--color-ink-900);
+    color: var(--color-ondark);
+  }
+  .chip-gold {
+    background: var(--color-gold-400);
+    color: var(--color-ink-900);
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .chip-neutral {
+    background: var(--color-cream-100);
+    color: var(--color-body);
+  }
+
+  /* form fields */
+  .field {
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 14px;
+    background: var(--color-field);
+    border: 1px solid var(--color-line-field);
+    border-radius: var(--radius-input);
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--color-ink-900);
+    transition: border-color 0.15s ease;
+  }
+  .field::placeholder { color: var(--color-muted-2); }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-brick-500);
+  }
+  .field.is-error { border-color: var(--color-field-error); }
+
+  .label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-body-2);
+  }
+
+  .help { font-size: 13px; color: var(--color-muted); }
+  .error-text { font-size: 13px; color: var(--color-danger); }
+
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: var(--color-muted-2);
+  }
+
+  /* tables */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-muted);
+    text-align: start;
+    border-bottom: 1px solid var(--color-line-soft);
+    white-space: nowrap;
+  }
+  .data-table td {
+    padding: 16px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--color-cream-200);
+    vertical-align: middle;
+  }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table tbody tr.is-selected { background: var(--color-row-selected); }
+
+  /* image placeholder — the design has no photography anywhere */
+  .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-ph);
+    color: var(--color-ph-ink);
+    font-size: 14px;
+  }
+
+  /* loading skeleton — deliberately neutral, no brand colour */
+  .skel {
+    background: linear-gradient(
+      90deg,
+      var(--color-ph-2) 25%,
+      var(--color-cream-100) 37%,
+      var(--color-ph-2) 63%
+    );
+    background-size: 400% 100%;
+    animation: skel-shimmer 1.4s ease infinite;
+    border-radius: 8px;
+  }
+  @keyframes skel-shimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+  }
+
+  .skip-link {
+    position: absolute;
+    inset-inline-start: -9999px;
+    top: 0;
+    z-index: 100;
+    padding: 12px 20px;
+    background: var(--color-ink-900);
+    color: var(--color-ondark);
+    border-radius: 0 0 var(--radius-input) 0;
+  }
+  .skip-link:focus { inset-inline-start: 0; }
+}
