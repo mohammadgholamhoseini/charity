@@ -1,140 +1,116 @@
-# Charity Management System
+# یاری‌جو — Charity Platform
 
-A full-featured charity management platform with backend API and frontend SPA for managing charitable organizations, cases, and donations.
-
-## Architecture
+An information board for charity requests. Charity centres publish the needs they have
+verified; visitors browse them and contact the centre directly. **There is no online
+payment and no donation tracking** — the platform announces requests, nothing more.
 
 ```
 charity/
-├── backend/          Spring Boot 3 REST API (Java 21)
-└── frontend/         Vue 3 SPA (Vite + TypeScript)
+├── backend/     Spring Boot 3 REST API (Java 21, MySQL/H2, Flyway)
+└── frontend/    Nuxt 3 SSR app (Vue 3, Tailwind v4, TypeScript)
 ```
 
-## Tech Stack
+## Roles
 
-### Backend
-- **Java 21** + **Spring Boot 3.2**
-- **Spring Data JPA** + Hibernate
-- **Spring Security** + JWT authentication
-- **MySQL** (prod) / **H2** (local dev)
-- **Maven**
+| Role | How it is created | What it can do |
+|---|---|---|
+| `ADMIN` | seeded from `ADMIN_INITIAL_PASSWORD` | publish/reject requests, manage centres, categories, announcements, locations |
+| `CENTER` | created by an admin only | publish requests in its allowed categories |
 
-### Frontend
-- **Vue 3** (Composition API + `<script setup>`)
-- **Vite** build tool
-- **TypeScript**
-- **Pinia** state management
-- **Vue Router**
-- **Axios** HTTP client
+There is no public registration. A request goes `DRAFT` → `PENDING` → `PUBLISHED`, and
+only an admin can publish it; rejecting requires a written reason.
 
-## Features
+## Requirements
 
-- User registration & login (JWT-based)
-- Center (charity organization) management
-- Charity case management with image uploads
-- Category, Province, City browsing
-- Public listing pages with pagination & search
-- Admin panel for content moderation
-- Notice/Banner management
-- File storage for uploaded assets
+Java 21, Node 22, Maven, Docker (optional).
 
-## Getting Started
-
-### Prerequisites
-
-- Java 21+
-- Node.js 18+
-- Maven
-- Docker (optional, for the containerized setup below)
-
-### Backend Setup
+## Running locally
 
 ```bash
-cd backend
-# Local dev uses H2 in-memory (no MySQL needed):
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The API server starts at `http://localhost:8082` (default) / `8085` (local profile). The API is also exposed via docker as `81` (master) and `8081` (dev).
-
-### Frontend Setup
+The `local` profile uses an in-memory H2 database on port **8085**, builds the schema
+from the same Flyway migrations as production, and seeds categories, Iran's provinces
+and cities, and an `admin` / `admin123` account.
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install
+NUXT_API_ORIGIN=http://localhost:8085 npm run dev
 ```
 
-The development server starts at `http://localhost:5173`.
+The site runs at **http://localhost:3000**.
 
-### Docker (per-branch images)
+## Running with Docker
 
-The docker setup runs **two branches at the same time** — `master` on port 80 and `development` on port 8080 — each with its own prebuilt image. `compose.yaml` is image-based, so images are built per branch with a `git worktree` script:
+Two branches run side by side, each from its own prebuilt image. `compose.yaml` has no
+`build:` sections; images are produced per branch by a script that uses a `git worktree`,
+so neither branch has to be checked out to build it:
 
 ```bash
-./docker-build.sh all           # or: ./docker-build.sh dev|master
+./docker-build.sh all      # or: dev | master
 docker compose up -d
 ```
 
-| Service         | Branch       | Port | DB |
-|-----------------|--------------|------|----|
-| frontend-master | master       | 80   | —  |
-| frontend-dev    | development  | 8080 | —  |
-| backend-master  | master       | 81   | MySQL |
-| backend-dev     | development  | 8081 | H2  |
-| mysql           | —            | 3307 | MySQL |
+| Service | Branch | URL |
+|---|---|---|
+| frontend-master | master | http://localhost |
+| frontend-dev | development | http://localhost:8080 |
+| backend-master | master | http://localhost:81 |
+| backend-dev | development | http://localhost:8081 |
 
-### Authentication
+Only the master deployment sets `NUXT_PUBLIC_INDEXABLE=true`; the dev site serves a
+`robots.txt` that disallows everything so it cannot compete with production in search.
 
-The API uses JWT tokens. Public endpoints do not require authentication. Admin endpoints require a valid JWT token sent as `Authorization: Bearer <token>`.
+## Configuration
 
-## Project Structure
+Set in `.env` at the repo root:
 
-```
-backend/
-├── src/main/java/com/charity/app/
-│   ├── config/           Security & app configuration
-│   ├── controller/       REST controllers
-│   ├── model/            JPA entities
-│   ├── payload/          Request/Response DTOs
-│   ├── repository/       Spring Data repositories
-│   ├── security/         JWT & auth utilities
-│   └── service/          Business logic layer
-└── src/main/resources/
-    └── application.yml   Application config
+| Variable | Purpose |
+|---|---|
+| `JWT_SECRET` | **Required.** At least 32 bytes; the app refuses to start without it. |
+| `ADMIN_INITIAL_PASSWORD` | Creates the first admin. No admin is seeded if unset. |
+| `APP_SITE_URL` | Public site URL — used for canonical URLs and channel links. |
+| `APP_BASE_URL` | API URL — used only to build file URLs. |
+| `MYSQL_*` | Database credentials. |
+| `TELEGRAM_*`, `BALE_*` | Optional announcement channels; disabled by default. |
 
-frontend/
-├── src/
-│   ├── api/              API client modules
-│   ├── assets/           Static assets & styles
-│   ├── components/       Reusable Vue components
-│   ├── layouts/          Page layout components
-│   ├── router/           Vue Router configuration
-│   ├── stores/           Pinia stores
-│   ├── utils/            Utility functions
-│   └── views/            Page components
-└── public/               Public static assets
-```
+`APP_SITE_URL` and `APP_BASE_URL` are deliberately separate. They used to be one value
+pointing at the API, which made every "view on site" link posted to the messaging
+channels resolve to the backend port.
 
-## API Endpoints
+## API
 
-| Method | Path                    | Description              |
-|--------|-------------------------|--------------------------|
-| GET    | /api/public/centers     | List approved centers    |
-| GET    | /api/public/centers/{id}| Center profile detail    |
-| GET    | /api/public/cases       | List charity cases       |
-| GET    | /api/public/cases/{id}  | Case detail              |
-| GET    | /api/public/categories  | Active categories        |
-| GET    | /api/public/provinces   | Provinces                |
-| GET    | /api/public/cities      | Cities by province       |
-| POST   | /api/auth/register      | Register new user        |
-| POST   | /api/auth/login         | Login                    |
-| ...    | /api/admin/*            | Admin endpoints          |
+Public endpoints are unauthenticated and cacheable:
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/public/requests` | faceted: `category`, `urgency`, `city`, `status`, `q`, `sort`, `page`, `size` — all combinable |
+| GET | `/api/public/requests/{slug}` | 200 / 301 stale slug / 404 / 410 removed |
+| GET | `/api/public/requests/by-code/{code}` | 301 to the canonical URL |
+| GET | `/api/public/centers`, `/api/public/centers/{slug}` | |
+| GET | `/api/public/categories`, `/api/public/cities`, `/api/public/provinces` | |
+| GET | `/api/public/announcements` | at most one per placement |
+| GET | `/api/public/sitemap/*` | feeds the frontend's sitemap |
+| POST | `/api/auth/login` | 5 failed attempts locks the account for 15 minutes |
+| — | `/api/center/**` | `ROLE_CENTER` |
+| — | `/api/admin/**` | `ROLE_ADMIN` |
+
+Swagger is off by default and enabled with `SPRINGDOC_ENABLED=true`.
+
+## Database
+
+Flyway owns the schema on every profile. To change it, add a migration in
+`backend/src/main/resources/db/migration` and run the `local` profile — it validates
+the entity model against the migrated schema and will fail if the two disagree.
+
+An existing pre-Flyway database is baselined automatically on first run
+(`FLYWAY_BASELINE_ON_MIGRATE`, default `true`); V1 is skipped and V2 onward applied.
 
 ## Branches
 
-- `master` — Production-ready code
-- `development` — Active development
+- `master` — production-ready
+- `development` — active development
 
 ## License
 

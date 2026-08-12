@@ -1,0 +1,307 @@
+<script setup lang="ts">
+import { ep } from '~/api/endpoints'
+import type { CategoryResponse, CenterResponse, CityRef, Page } from '~/types/api'
+
+definePageMeta({ layout: 'dashboard', middleware: 'auth', role: 'ADMIN' })
+
+const { $api } = useNuxtApp()
+const { num } = useFormat()
+const toast = useToast()
+
+const rows = ref<CenterResponse[]>([])
+const categories = ref<CategoryResponse[]>([])
+const cities = ref<CityRef[]>([])
+const loading = ref(true)
+const loadError = ref(false)
+const saving = ref(false)
+
+const selected = ref<CenterResponse | null>(null)
+const deleteTarget = ref<CenterResponse | null>(null)
+
+const form = reactive({
+  username: '', password: '', email: '',
+  centerName: '', fullName: '', cityId: null as number | null,
+  categoryIds: [] as number[],
+  description: '', contactPhone: '', responseHours: '', address: '',
+  cardNumber: '', sheba: '', active: true,
+})
+
+async function load() {
+  loading.value = true
+  loadError.value = false
+  try {
+    const data = await $api<Page<CenterResponse>>(ep.adminCenters, { query: { size: 100 } })
+    rows.value = data.content
+  }
+  catch { loadError.value = true }
+  finally { loading.value = false }
+}
+
+onMounted(async () => {
+  await load()
+  try {
+    const [categoryData, cityData] = await Promise.all([
+      $api<CategoryResponse[]>(ep.adminCategories),
+      $api<CityRef[]>(ep.cities),
+    ])
+    categories.value = categoryData.filter(c => c.active)
+    cities.value = cityData
+  }
+  catch { /* the table still works without the pickers */ }
+})
+
+function startCreate() {
+  selected.value = null
+  Object.assign(form, {
+    username: '', password: '', email: '',
+    centerName: '', fullName: '', cityId: null, categoryIds: [],
+    description: '', contactPhone: '', responseHours: '', address: '',
+    cardNumber: '', sheba: '', active: true,
+  })
+}
+
+function startEdit(center: CenterResponse) {
+  selected.value = center
+  Object.assign(form, {
+    username: center.username ?? '', password: '', email: center.email ?? '',
+    centerName: center.name, fullName: center.fullName ?? '',
+    cityId: center.city?.id ?? null,
+    categoryIds: center.categories.map(c => c.id),
+    description: center.description ?? '',
+    contactPhone: center.contactPhone ?? '',
+    responseHours: center.responseHours ?? '',
+    address: center.address ?? '',
+    cardNumber: center.cardNumber ?? '',
+    sheba: center.sheba ?? '',
+    active: center.status === 'APPROVED',
+  })
+}
+
+function toggleCategory(id: number) {
+  const index = form.categoryIds.indexOf(id)
+  if (index >= 0) form.categoryIds.splice(index, 1)
+  else form.categoryIds.push(id)
+}
+
+async function save() {
+  if (!form.centerName.trim()) return toast.error('نام مرکز الزامی است.')
+  if (!form.cityId) return toast.error('انتخاب شهر الزامی است.')
+  if (!form.categoryIds.length) return toast.error('حداقل یک دسته‌بندی مجاز انتخاب کنید.')
+
+  saving.value = true
+  try {
+    if (selected.value) {
+      await $api(ep.adminCenter(selected.value.id), {
+        method: 'PUT',
+        body: {
+          centerName: form.centerName.trim(), fullName: form.fullName.trim() || null,
+          cityId: form.cityId, categoryIds: form.categoryIds,
+          description: form.description.trim() || null,
+          contactPhone: form.contactPhone.trim() || null,
+          responseHours: form.responseHours.trim() || null,
+          address: form.address.trim() || null,
+          cardNumber: form.cardNumber.trim() || null,
+          sheba: form.sheba.trim() || null,
+          active: form.active,
+        },
+      })
+    }
+    else {
+      await $api(ep.adminCenters, {
+        method: 'POST',
+        body: {
+          username: form.username.trim(), password: form.password, email: form.email.trim(),
+          centerName: form.centerName.trim(), fullName: form.fullName.trim() || null,
+          cityId: form.cityId, categoryIds: form.categoryIds,
+          description: form.description.trim() || null,
+          contactPhone: form.contactPhone.trim() || null,
+          responseHours: form.responseHours.trim() || null,
+          address: form.address.trim() || null,
+          cardNumber: form.cardNumber.trim() || null,
+          sheba: form.sheba.trim() || null,
+          active: form.active,
+        },
+      })
+    }
+    toast.success('مرکز ذخیره شد.')
+    startCreate()
+    load()
+  }
+  catch (error) { toast.error(apiErrorMessage(error)) }
+  finally { saving.value = false }
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
+  saving.value = true
+  try {
+    await $api(ep.adminCenter(deleteTarget.value.id), { method: 'DELETE' })
+    toast.success('مرکز حذف شد.')
+    deleteTarget.value = null
+    load()
+  }
+  catch (error) { toast.error(apiErrorMessage(error)) }
+  finally { saving.value = false }
+}
+
+useHead({ title: 'مراکز خیریه — پنل ادمین' })
+</script>
+
+<template>
+  <div class="flex flex-col gap-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-col gap-1">
+        <h1 class="text-[24px] font-extrabold">مراکز خیریه</h1>
+        <p class="text-[14px] text-muted">ثبت‌نام عمومی وجود ندارد؛ حساب مراکز فقط از این صفحه ساخته می‌شود.</p>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" @click="startCreate">+ ایجاد مرکز جدید</button>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] items-start">
+      <UiErrorState v-if="loadError" @retry="load()" />
+
+      <div v-else-if="loading" class="card-flat p-6 flex flex-col gap-2">
+        <UiSkeleton v-for="n in 4" :key="n" variant="row" />
+      </div>
+
+      <UiEmptyState
+        v-else-if="!rows.length"
+        title="هنوز مرکزی ثبت نشده است"
+        description="با فرم کنار همین صفحه اولین مرکز خیریه را ایجاد کنید."
+      />
+
+      <section v-else class="card-flat overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>نام مرکز</th>
+              <th>شهر</th>
+              <th>دسته‌های فعال</th>
+              <th>درخواست</th>
+              <th>وضعیت</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="center in rows" :key="center.id" :class="{ 'is-selected': selected?.id === center.id }">
+              <td>
+                <div class="flex flex-col">
+                  <span class="font-semibold">{{ center.name }}</span>
+                  <span class="text-[12px] text-muted ltr">{{ center.username }}</span>
+                </div>
+              </td>
+              <td>{{ center.city?.name ?? '—' }}</td>
+              <td>
+                <div class="flex flex-wrap gap-1">
+                  <UiChip
+                    v-for="category in center.categories.slice(0, 3)"
+                    :key="category.id"
+                    :label="category.name"
+                    :color="{ bg: category.labelBg, text: category.labelText }"
+                  />
+                </div>
+              </td>
+              <td>{{ num(center.activeRequestCount) }}</td>
+              <td>
+                <UiChip
+                  :label="center.statusLabel"
+                  :status="center.status === 'APPROVED' ? 'PUBLISHED' : 'INACTIVE'"
+                />
+              </td>
+              <td>
+                <div class="flex items-center gap-3 text-[13px]">
+                  <button type="button" class="text-brick-500 hover:text-brick-600" @click="startEdit(center)">
+                    ویرایش
+                  </button>
+                  <button type="button" class="text-danger hover:underline" @click="deleteTarget = center">
+                    حذف
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <aside class="card-flat p-6 flex flex-col gap-5">
+        <h2 class="text-[17px] font-bold">{{ selected ? 'ویرایش مرکز' : 'ایجاد مرکز جدید' }}</h2>
+
+        <UiField v-model="form.centerName" label="نام مرکز" required :maxlength="255" />
+        <UiField v-model="form.fullName" label="نام مسئول" :maxlength="255" />
+
+        <div class="flex flex-col">
+          <label class="label" for="center-city">شهر <span class="text-danger">*</span></label>
+          <select id="center-city" v-model="form.cityId" class="field">
+            <option :value="null" disabled>انتخاب کنید…</option>
+            <option v-for="city in cities" :key="city.id" :value="city.id">
+              {{ city.name }}<template v-if="city.provinceName"> — {{ city.provinceName }}</template>
+            </option>
+          </select>
+        </div>
+
+        <UiField v-model="form.contactPhone" label="تلفن" ltr :maxlength="255" />
+        <UiField v-model="form.responseHours" label="ساعات پاسخ‌گویی" :maxlength="120" placeholder="شنبه تا چهارشنبه ۹ تا ۱۷" />
+        <UiField v-model="form.address" label="نشانی" textarea :rows="2" :maxlength="1000" />
+
+        <fieldset class="flex flex-col gap-3">
+          <legend class="label">دسته‌های مجاز <span class="text-danger">*</span></legend>
+          <p class="help">مرکز فقط در همین دسته‌ها می‌تواند درخواست ثبت کند.</p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="category in categories"
+              :key="category.id"
+              type="button"
+              class="chip transition-all"
+              :style="form.categoryIds.includes(category.id)
+                ? { backgroundColor: category.labelBg, color: category.labelText, boxShadow: 'inset 0 0 0 1.5px currentColor' }
+                : { backgroundColor: 'var(--color-cream-100)', color: 'var(--color-muted)' }"
+              :aria-pressed="form.categoryIds.includes(category.id)"
+              @click="toggleCategory(category.id)"
+            >
+              <span v-if="form.categoryIds.includes(category.id)" aria-hidden="true">✓</span>
+              {{ category.name }}
+            </button>
+          </div>
+        </fieldset>
+
+        <div v-if="!selected" class="flex flex-col gap-4 border-t border-cream-200 pt-5">
+          <h3 class="text-[15px] font-bold">حساب کاربری</h3>
+          <UiField v-model="form.username" label="نام کاربری" ltr required :maxlength="60" />
+          <UiField v-model="form.email" label="ایمیل" ltr type="email" required />
+          <UiField
+            v-model="form.password"
+            label="رمز عبور موقت"
+            type="password"
+            revealable
+            required
+            hint="حداقل ۸ نویسه. مرکز پس از ورود می‌تواند آن را تغییر دهد."
+          />
+        </div>
+
+        <UiSwitch
+          v-model="form.active"
+          label="وضعیت مرکز"
+          description="غیرفعال کردن مرکز، درخواست‌های فعالش را هم از سایت خارج می‌کند."
+        />
+
+        <div class="flex items-center gap-3 border-t border-cream-200 pt-5">
+          <button type="button" class="btn btn-primary" :disabled="saving" @click="save">
+            {{ saving ? 'در حال ذخیره…' : (selected ? 'ذخیره تغییرات' : 'ایجاد مرکز') }}
+          </button>
+          <button type="button" class="btn btn-secondary" @click="startCreate">انصراف</button>
+        </div>
+      </aside>
+    </div>
+
+    <UiConfirm
+      :open="Boolean(deleteTarget)"
+      title="حذف مرکز"
+      :message="`«${deleteTarget?.name}» و حساب کاربری آن حذف می‌شود. مرکزی که درخواست ثبت‌شده دارد قابل حذف نیست — به‌جای آن غیرفعالش کنید.`"
+      confirm-label="حذف کن"
+      tone="danger"
+      :busy="saving"
+      @confirm="confirmDelete"
+      @close="deleteTarget = null"
+    />
+  </div>
+</template>
