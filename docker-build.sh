@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 #
-# docker-build.sh — ساخت تصاویر خیریه از محتوایِ کامیت‌شدهٔ برنچِ گیتِ محلی
+# docker-build.sh — ساخت تصاویر خیریه از برنچ‌های محلی
+#
+# تصویر dev در صورت فعال بودن برنچ development از working tree فعلی ساخته می‌شود
+# تا تغییرات commit‌نشده هم داخل image قرار بگیرند. تصویر master همیشه از آخرین
+# commit برنچ master و داخل worktree جداگانه ساخته می‌شود.
 #
 # هر تصویر از برنچ خودش ساخته می‌شود (بدون نیاز به push / اینترنت / توکن):
 #   - development -> charity-frontend:dev   و  charity-backend:dev   (پورت 8080 / 8081)
@@ -11,6 +15,7 @@
 #   ./docker-build.sh master        # فقط master
 #   ./docker-build.sh all           # هر دو
 #   ./docker-build.sh dev --no-cache
+#   ./docker-build.sh dev --committed # فقط آخرین commit برنچ development
 #
 set -euo pipefail
 
@@ -57,10 +62,27 @@ build_branch() {
   branch="$(branch_of "$tag")"
   local extra=()
   [[ -n "${2:-}" && "$2" == "--no-cache" ]] && extra=(--no-cache)
-  WORK_DIR="$repo/.wtree-$tag"
+  local source_dir=""
+  local source_mode="committed-worktree"
+  local current_branch
+  current_branch="$(git -C "$repo" branch --show-current)"
 
-  echo "===> [git] worktree $branch"
-  git -C "$repo" worktree add --detach "$WORK_DIR" "$branch"
+  if [[ "$tag" == "dev" && "$current_branch" == "development" && "${COMMITTED_ONLY:-0}" != "1" ]]; then
+    source_dir="$repo"
+    source_mode="working-tree"
+    echo "===> [source] development working tree"
+    if [[ -n "$(git -C "$repo" status --short)" ]]; then
+      echo "     شامل تغییرات commit‌نشده"
+    fi
+  else
+    WORK_DIR="$repo/.wtree-$tag"
+    if [[ -d "$WORK_DIR" ]]; then
+      git -C "$repo" worktree remove --force "$WORK_DIR" 2>/dev/null || true
+    fi
+    echo "===> [source] committed branch: $branch"
+    git -C "$repo" worktree add --detach "$WORK_DIR" "$branch"
+    source_dir="$WORK_DIR"
+  fi
 
   cleanup() {
     if [[ -n "${WORK_DIR:-}" && -d "$WORK_DIR" ]]; then
@@ -73,24 +95,37 @@ build_branch() {
   echo "===> backend:$tag"
   "$DOCKER" build "${extra[@]}" \
     --tag "charity-backend:$tag" \
-    -f "$(wpath "$WORK_DIR/backend/Dockerfile.$tag")" \
-    "$(wpath "$WORK_DIR/backend")"
+    --label "charity.branch=$branch" \
+    --label "charity.source=$source_mode" \
+    -f "$(wpath "$source_dir/backend/Dockerfile.$tag")" \
+    "$(wpath "$source_dir/backend")"
 
   echo "===> frontend:$tag"
   "$DOCKER" build "${extra[@]}" \
     --tag "charity-frontend:$tag" \
-    -f "$(wpath "$WORK_DIR/frontend/Dockerfile.$tag")" \
-    "$(wpath "$WORK_DIR/frontend")"
+    --label "charity.branch=$branch" \
+    --label "charity.source=$source_mode" \
+    -f "$(wpath "$source_dir/frontend/Dockerfile.$tag")" \
+    "$(wpath "$source_dir/frontend")"
 
   cleanup
   trap - EXIT
-  echo "===> done: $tag ($branch)"
+  local image_id
+  image_id="$("$DOCKER" image inspect "charity-frontend:$tag" --format '{{.Id}}' 2>/dev/null || true)"
+  echo "===> done: $tag ($branch, $source_mode)"
+  [[ -n "$image_id" ]] && echo "     frontend image: ${image_id:0:28}"
+  if [[ "$tag" == "dev" ]]; then
+    echo "     open: http://localhost:8080"
+  else
+    echo "     open: http://localhost"
+  fi
 }
 
 targets=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-cache) NCACHE="--no-cache" ;;
+    --committed) COMMITTED_ONLY="1" ;;
     all) targets=(dev master) ;;
     dev|master) targets+=("$1") ;;
     *) echo "مشکل: آرگومان ناشناخته \"$1\"" >&2; exit 1 ;;
