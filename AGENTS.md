@@ -104,6 +104,22 @@ identical; what used to differ (which backend to proxy to) is now `NUXT_API_ORIG
 one image can serve either environment. `app/server/routes/api/[...path].ts` replaces
 the old nginx `/api/` proxy block.
 
+**Building from a connection that cannot reach Docker Hub reliably.** Reaching
+`registry-1.docker.io` from here fails intermittently with `TLS handshake timeout` — not
+a hard block, just a link that drops most handshakes. So `docker-build.sh` pre-pulls the
+three base images in a retry loop before building (`node:22-alpine` needed 6 attempts,
+`maven:...` needed 6), then builds with `--pull=false` so BuildKit resolves `FROM` from
+the local cache and never touches the registry again. Once cached, builds are offline.
+Raise `PULL_RETRIES` if the link is worse than usual. Do not put a per-attempt `timeout`
+around the pull — the Maven image is 585 MB and a short cap kills it mid-download every
+time, which looks exactly like a hard failure.
+
+Do not add `apk add` to the frontend Dockerfiles. Alpine's CDN *is* hard-blocked here, so
+any `apk` call fails the build outright. Neither package it used to install was needed:
+busybox already provides `wget` for the healthcheck, and Node resolves `TZ=Asia/Tehran`
+through its bundled ICU — verified in the running container, which has no
+`/usr/share/zoneinfo` at all and still reports `GMT+0330`.
+
 `NUXT_PUBLIC_INDEXABLE` must stay `"false"` anywhere that is not production, otherwise
 two identical sites compete for the same queries.
 

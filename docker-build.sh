@@ -47,6 +47,43 @@ wpath() {
   fi
 }
 
+# --- تصاویر پایه ---
+# اتصال به Docker Hub از اینجا «متناوب» است، نه قطع: بعضی تلاش‌ها TLS handshake
+# timeout می‌دهند و تلاش بعدی موفق می‌شود (در تست، تلاش ششم جواب داد). بدون این حلقه
+# یک timeout گذرا کل build را از پایه می‌شکند. تصاویر یک‌بار کشیده و کش می‌شوند، و از
+# آن پس build کاملاً آفلاین است.
+BASE_IMAGES=(
+  "maven:3.9-eclipse-temurin-21-alpine"
+  "eclipse-temurin:21-jre-alpine"
+  "node:22-alpine"
+)
+PULL_RETRIES="${PULL_RETRIES:-25}"
+
+ensure_base_images() {
+  local img i ok
+  for img in "${BASE_IMAGES[@]}"; do
+    if "$DOCKER" image inspect "$img" >/dev/null 2>&1; then
+      echo "===> [base] $img — موجود است"
+      continue
+    fi
+    echo "===> [base] $img — در حال دریافت (حداکثر $PULL_RETRIES تلاش)"
+    ok=0
+    for ((i = 1; i <= PULL_RETRIES; i++)); do
+      if "$DOCKER" pull -q "$img" >/dev/null 2>&1; then
+        echo "     دریافت شد (تلاش $i)"
+        ok=1
+        break
+      fi
+      sleep 3
+    done
+    if [[ "$ok" != "1" ]]; then
+      echo "مشکل: دریافت تصویر پایه \"$img\" پس از $PULL_RETRIES تلاش ناموفق بود." >&2
+      echo "      اتصال به registry-1.docker.io برقرار نشد. اتصال را بررسی و دوباره اجرا کنید." >&2
+      exit 1
+    fi
+  done
+}
+
 # نامِ تگِ تصویر -> برنچِ گیت
 branch_of() {
   case "$1" in
@@ -92,8 +129,10 @@ build_branch() {
   }
   trap cleanup EXIT
 
+  # --pull=false: تصاویر پایه از قبل محلی هستند، پس BuildKit نباید دوباره سراغ رجیستری
+  # برود. با اتصال متناوب، همان یک درخواستِ اضافه کافی است که build را بشکند.
   echo "===> backend:$tag"
-  "$DOCKER" build "${extra[@]}" \
+  "$DOCKER" build "${extra[@]}" --pull=false \
     --tag "charity-backend:$tag" \
     --label "charity.branch=$branch" \
     --label "charity.source=$source_mode" \
@@ -101,7 +140,7 @@ build_branch() {
     "$(wpath "$source_dir/backend")"
 
   echo "===> frontend:$tag"
-  "$DOCKER" build "${extra[@]}" \
+  "$DOCKER" build "${extra[@]}" --pull=false \
     --tag "charity-frontend:$tag" \
     --label "charity.branch=$branch" \
     --label "charity.source=$source_mode" \
@@ -134,6 +173,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ ${#targets[@]} -eq 0 ]] && targets=(dev)
+ensure_base_images
 for b in "${targets[@]}"; do
   build_branch "$b" "${NCACHE:-}"
 done
