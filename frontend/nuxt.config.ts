@@ -1,5 +1,15 @@
 import tailwindcss from '@tailwindcss/vite'
 
+/**
+ * Cached on the server, revalidated by the browser.
+ *
+ * `max-age=0` is the point: it forces a conditional request on every visit, so a reload
+ * always reaches us and gets whatever the server cache holds now. `s-maxage` keeps the
+ * server-side `swr` window, and applies to a CDN if one is ever put in front.
+ */
+const BROWSER_MUST_REVALIDATE = (seconds: number) =>
+  `public, max-age=0, must-revalidate, s-maxage=${seconds}, stale-while-revalidate`
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-08-01',
   srcDir: 'app/',
@@ -72,9 +82,17 @@ export default defineNuxtConfig({
     // renders its own 404 -- so every detail page looked correct to curl and broken in a
     // browser. The listing paths are ASCII and unaffected; the slug routes are not, and the
     // slugs are Persian by design, so those two rules are gone.
-    '/': { swr: 300 },
-    '/requests': { swr: 120 },
-    '/centers': { swr: 600 },
+    //
+    // The explicit cache-control is the second half of the freshness story. Nuxt emits
+    // `s-maxage=300, stale-while-revalidate` with no `max-age`, and a response with no
+    // max-age and no expires lets a browser invent its own freshness lifetime from
+    // last-modified. So even after the server cache is dropped, a reload could be answered
+    // out of the visitor's own browser cache without ever asking us — the centre publishes,
+    // refreshes, and sees nothing change. `max-age=0` makes the browser revalidate every
+    // time; `s-maxage` still governs the server cache and any CDN put in front later.
+    '/': { swr: 300, headers: { 'cache-control': BROWSER_MUST_REVALIDATE(300) } },
+    '/requests': { swr: 120, headers: { 'cache-control': BROWSER_MUST_REVALIDATE(120) } },
+    '/centers': { swr: 600, headers: { 'cache-control': BROWSER_MUST_REVALIDATE(600) } },
     '/about': { prerender: true },
     '/contact': { prerender: true },
     '/faq': { prerender: true },
