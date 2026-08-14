@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ep } from '~/api/endpoints'
-import type { CenterResponse, CityRef, RequestDetail } from '~/types/api'
+import type { CenterResponse, RequestDetail } from '~/types/api'
 
 definePageMeta({ layout: 'dashboard', middleware: 'auth', role: 'CENTER' })
 
@@ -12,20 +12,17 @@ const toast = useToast()
 const id = Number(route.params.id)
 const request = ref<RequestDetail | null>(null)
 const center = ref<CenterResponse | null>(null)
-const cities = ref<CityRef[]>([])
 const loading = ref(true)
 const submitting = ref(false)
 
 onMounted(async () => {
   try {
-    const [requestData, centerData, cityData] = await Promise.all([
+    const [requestData, centerData] = await Promise.all([
       $api<RequestDetail>(ep.centerRequest(id)),
       $api<CenterResponse>(ep.centerMe),
-      $api<CityRef[]>(ep.cities),
     ])
     request.value = requestData
     center.value = centerData
-    cities.value = cityData
   }
   catch (error) {
     toast.error(apiErrorMessage(error))
@@ -70,12 +67,11 @@ useHead({ title: 'ویرایش درخواست — یاری‌جو' })
         class="p-4 rounded-[14px] text-[14px] leading-7"
         style="background: var(--color-danger-bg); color: var(--color-danger)"
       >
-        <strong>دلیل رد شدن:</strong> {{ request.statusNote }}
+        <strong>دلیل غیرفعال شدن:</strong> {{ request.statusNote }}
       </div>
 
       <RequestForm
         :allowed-categories="center?.categories ?? []"
-        :cities="cities"
         :initial="request"
         :submitting="submitting"
         editing

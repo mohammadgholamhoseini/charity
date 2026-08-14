@@ -43,6 +43,9 @@ public class CenterMapper {
                 center.getContactPhone(),
                 center.getResponseHours(),
                 center.getCity() == null ? null : center.getCity().getName(),
+                center.getCity() == null || center.getCity().getProvince() == null
+                        ? null
+                        : center.getCity().getProvince().getName(),
                 activeRequestCount);
     }
 

@@ -109,8 +109,10 @@ export function useJsonLd() {
           'price': request.amountNeeded,
           'priceCurrency': request.amountCurrency,
         },
-        'availabilityEnds': request.deadline ?? undefined,
-        'areaServed': request.city ? { '@type': 'City', 'name': request.city.name } : undefined,
+        // The area served is the registering centre's city; a request has no location of its own.
+        'areaServed': request.center?.cityName
+          ? { '@type': 'City', 'name': request.center.cityName }
+          : undefined,
       },
     })
   }

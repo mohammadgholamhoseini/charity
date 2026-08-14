@@ -1,3 +1,8 @@
+/**
+ * PENDING and REJECTED are no longer produced — centres publish their own requests and nothing
+ * is approved or turned down. They stay in the union, and keep their chip colours, because the
+ * backend enum keeps them too: a row written before V9 can still carry one.
+ */
 export type RequestStatus =
   | 'DRAFT'
   | 'PENDING'
@@ -42,6 +47,7 @@ export interface CenterRef {
   contactPhone: string | null
   responseHours: string | null
   cityName: string | null
+  provinceName: string | null
   activeRequestCount: number
 }
 
@@ -89,14 +95,13 @@ export interface RequestSummary {
   title: string
   summary: string | null
   amountNeeded: number
-  deadline: string | null
   status: RequestStatus
   statusLabel: string
   urgency: Urgency
   urgencyLabel: string
   category: CategoryRef | null
+  /** A request has no location of its own — the city shown is the centre's. */
   center: CenterRef | null
-  city: CityRef | null
   createdAt: string | null
   publishedAt: string | null
   updatedAt: string | null
@@ -109,7 +114,6 @@ export interface RequestDetail extends RequestSummary {
   isActive: boolean
   statusNote: string | null
   imageUrl: string | null
-  contactInfo: string | null
   documents: string[]
   details: Record<string, unknown>
   metaTitle: string | null

@@ -21,9 +21,11 @@ that only in the `local` profile). Categories, provinces and cities are seeded.
 
 ## No tests, no lint gate
 
-There are **zero tests** in either project and no lint/typecheck step in CI. The
-frontend has `npm run typecheck` and `npm run lint` available but nothing enforces
-them. Do not go looking for a test command.
+There are **zero tests** in either project and no lint/typecheck step in CI. Do not go
+looking for a test command. `npm run lint` works; **`npm run typecheck` does not** — it
+aborts with "Cannot find matching tsconfig.json" because the repo has no root tsconfig
+and `nuxt typecheck` looks for one before consulting `.nuxt/`. Use `npm run build` to
+find breakage instead.
 
 ## Backend
 
@@ -50,7 +52,17 @@ because it cannot be expressed portably in SQL.
 
 Key domain notes:
 - The entity is `Request` (table `requests`), formerly `CharityCase`.
-- New requests default to `PENDING`; an admin publishes them. Rejecting requires a note.
+- **A centre publishes its own requests; there is no admin approval.** Creating with
+  `submit: true` lands straight in `PUBLISHED`; `false` saves a `DRAFT`. `PENDING` and
+  `REJECTED` are unreachable and kept only so pre-V9 rows still deserialise — the live
+  workflow is whatever `RequestStatusPolicy.ALLOWED` says, nothing else. An admin can take
+  a request down (`INACTIVE`, note required), put it back, or mark it `COMPLETED`.
+- **A request has no city, deadline, contact details or beneficiary name.** The city and
+  phone belong to the centre and are read from there — `?city=` and `?province=` filter
+  through `request → center → city`, which is where `requests.city_id` was backfilled from
+  in V2 anyway. The beneficiary is never named: the bot used to print
+  `details.beneficiaryName` into a public channel while the site and the privacy page both
+  promised it was never published.
 - Deletion is **soft** (`deleted_at`), so a removed request answers **410**, not 404.
 - A request's slug is frozen once published; changing it records the old one in
   `request_slug_history` so the old URL 301s.

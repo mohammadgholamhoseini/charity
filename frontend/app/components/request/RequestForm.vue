@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CategoryRef, CityRef, RequestDetail, Urgency } from '~/types/api'
+import type { CategoryRef, RequestDetail, Urgency } from '~/types/api'
 
 /**
  * Create/edit form for a request.
@@ -7,28 +7,27 @@ import type { CategoryRef, CityRef, RequestDetail, Urgency } from '~/types/api'
  * The category select is limited to the centre's own allowed categories — the backend
  * enforces the same rule, so offering anything wider would only produce a rejected
  * submission.
+ *
+ * A request carries no city, deadline, contact details or beneficiary name. The location and
+ * phone number belong to the centre and are shown from there; the beneficiary is never named
+ * anywhere, which is what the privacy page promises.
  */
 const props = defineProps<{
   allowedCategories: CategoryRef[]
-  cities: CityRef[]
   initial?: RequestDetail | null
   submitting?: boolean
-  /** Edit mode drops the draft/submit split; the request already has a status. */
+  /** Edit mode drops the draft/publish split; the request already has a status. */
   editing?: boolean
 }>()
 
-const emit = defineEmits<{ submit: [payload: Record<string, unknown>, submitForReview: boolean] }>()
+const emit = defineEmits<{ submit: [payload: Record<string, unknown>, publish: boolean] }>()
 
 const form = reactive({
   title: props.initial?.title ?? '',
   categoryId: props.initial?.category?.id ?? null as number | null,
-  cityId: props.initial?.city?.id ?? null as number | null,
   urgency: (props.initial?.urgency ?? 'MEDIUM') as Urgency,
   amountNeeded: props.initial?.amountNeeded != null ? String(props.initial.amountNeeded) : '',
-  deadline: props.initial?.deadline ?? '',
   description: props.initial?.description ?? '',
-  contactInfo: props.initial?.contactInfo ?? '',
-  beneficiaryName: (props.initial?.details?.beneficiaryName as string) ?? '',
 })
 
 const errors = reactive<Record<string, string>>({})
@@ -44,7 +43,6 @@ function validate(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
   if (!form.title.trim()) errors.title = 'عنوان درخواست الزامی است'
   if (!form.categoryId) errors.categoryId = 'انتخاب دسته‌بندی الزامی است'
-  if (!form.cityId) errors.cityId = 'انتخاب شهر الزامی است'
   const amount = Number(form.amountNeeded)
   if (!form.amountNeeded || Number.isNaN(amount) || amount <= 0) {
     errors.amountNeeded = 'مبلغ مورد نیاز را به عدد وارد کنید'
@@ -56,19 +54,15 @@ function buildPayload() {
   return {
     title: form.title.trim(),
     categoryId: form.categoryId,
-    cityId: form.cityId,
     urgency: form.urgency,
     amountNeeded: Number(form.amountNeeded),
-    deadline: form.deadline || null,
     description: form.description.trim() || null,
-    contactInfo: form.contactInfo.trim() || null,
-    details: form.beneficiaryName.trim() ? { beneficiaryName: form.beneficiaryName.trim() } : {},
   }
 }
 
-function send(submitForReview: boolean) {
+function send(publish: boolean) {
   if (!validate()) return
-  emit('submit', buildPayload(), submitForReview)
+  emit('submit', buildPayload(), publish)
 }
 </script>
 
@@ -88,31 +82,18 @@ function send(submitForReview: boolean) {
       placeholder="مثلاً: جراحی قلب برای کودک ۷ ساله"
     />
 
-    <div class="grid gap-5 sm:grid-cols-2">
-      <div class="flex flex-col">
-        <label class="label" for="category">دسته‌بندی <span class="text-danger">*</span></label>
-        <select id="category" v-model="form.categoryId" class="field" :class="{ 'is-error': errors.categoryId }">
-          <option :value="null" disabled>انتخاب کنید…</option>
-          <option v-for="category in allowedCategories" :key="category.id" :value="category.id">
-            {{ category.name }}
-          </option>
-        </select>
-        <span v-if="errors.categoryId" class="error-text mt-2">{{ errors.categoryId }}</span>
-        <span v-else-if="!allowedCategories.length" class="help mt-2">
-          هنوز دسته‌بندی مجازی برای مرکز شما تعیین نشده است. با ادمین تماس بگیرید.
-        </span>
-      </div>
-
-      <div class="flex flex-col">
-        <label class="label" for="city">شهر <span class="text-danger">*</span></label>
-        <select id="city" v-model="form.cityId" class="field" :class="{ 'is-error': errors.cityId }">
-          <option :value="null" disabled>انتخاب کنید…</option>
-          <option v-for="city in cities" :key="city.id" :value="city.id">
-            {{ city.name }}<template v-if="city.provinceName"> — {{ city.provinceName }}</template>
-          </option>
-        </select>
-        <span v-if="errors.cityId" class="error-text mt-2">{{ errors.cityId }}</span>
-      </div>
+    <div class="flex flex-col">
+      <label class="label" for="category">دسته‌بندی <span class="text-danger">*</span></label>
+      <select id="category" v-model="form.categoryId" class="field" :class="{ 'is-error': errors.categoryId }">
+        <option :value="null" disabled>انتخاب کنید…</option>
+        <option v-for="category in allowedCategories" :key="category.id" :value="category.id">
+          {{ category.name }}
+        </option>
+      </select>
+      <span v-if="errors.categoryId" class="error-text mt-2">{{ errors.categoryId }}</span>
+      <span v-else-if="!allowedCategories.length" class="help mt-2">
+        هنوز دسته‌بندی مجازی برای مرکز شما تعیین نشده است. با ادمین تماس بگیرید.
+      </span>
     </div>
 
     <fieldset class="flex flex-col gap-3">
@@ -134,18 +115,15 @@ function send(submitForReview: boolean) {
       </div>
     </fieldset>
 
-    <div class="grid gap-5 sm:grid-cols-2">
-      <UiField
-        v-model="form.amountNeeded"
-        label="مبلغ مورد نیاز (تومان)"
-        required
-        ltr
-        :error="errors.amountNeeded"
-        placeholder="450000000"
-        hint="این مبلغ به بازدیدکننده نشان داده می‌شود."
-      />
-      <UiField v-model="form.deadline" label="مهلت" type="date" ltr />
-    </div>
+    <UiField
+      v-model="form.amountNeeded"
+      label="مبلغ مورد نیاز (تومان)"
+      required
+      ltr
+      :error="errors.amountNeeded"
+      placeholder="450000000"
+      hint="این مبلغ به بازدیدکننده نشان داده می‌شود."
+    />
 
     <UiField
       v-model="form.description"
@@ -157,18 +135,14 @@ function send(submitForReview: boolean) {
       placeholder="توضیح دهید نیاز چیست، چرا ضروری است و مرکز چه بررسی‌ای انجام داده است."
     />
 
-    <div class="grid gap-5 sm:grid-cols-2">
-      <UiField
-        v-model="form.beneficiaryName"
-        label="نام مددجو (منتشر نمی‌شود)"
-        hint="فقط برای بررسی داخلی و پیام‌رسان‌ها استفاده می‌شود."
-      />
-      <UiField v-model="form.contactInfo" label="اطلاعات تماس" :maxlength="500" />
-    </div>
+    <p class="help">
+      شهر و اطلاعات تماس از پروفایل مرکز شما نمایش داده می‌شود. نام و مشخصات مددجو در هیچ‌جا
+      ثبت و منتشر نمی‌شود.
+    </p>
 
     <div class="flex flex-wrap items-center gap-3 border-t border-cream-200 pt-6">
       <button type="submit" class="btn btn-primary" :disabled="submitting">
-        {{ submitting ? 'در حال ارسال…' : (editing ? 'ذخیره تغییرات' : 'ارسال برای بررسی') }}
+        {{ submitting ? 'در حال ارسال…' : (editing ? 'ذخیره تغییرات' : 'انتشار درخواست') }}
       </button>
       <button
         v-if="!editing"
@@ -180,7 +154,8 @@ function send(submitForReview: boolean) {
         ذخیره پیش‌نویس
       </button>
       <p v-if="!editing" class="help">
-        پیش‌نویس در سایت منتشر نمی‌شود و هر زمان می‌توانید آن را برای بررسی ارسال کنید.
+        درخواست بلافاصله در سایت منتشر می‌شود. پیش‌نویس منتشر نمی‌شود و هر زمان می‌توانید آن را
+        منتشر کنید.
       </p>
     </div>
   </form>

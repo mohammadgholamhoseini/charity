@@ -22,7 +22,6 @@ public class RequestMapper {
 
     private final CategoryMapper categoryMapper;
     private final CenterMapper centerMapper;
-    private final LocationMapper locationMapper;
     private final AppUrls urls;
 
     public RequestSummary toSummary(Request request) {
@@ -33,14 +32,12 @@ public class RequestMapper {
                 request.getTitle(),
                 summarize(request.getDescription()),
                 request.getAmountNeeded(),
-                request.getDeadline(),
                 request.getStatus(),
                 request.getStatus() == null ? null : request.getStatus().label(),
                 request.getUrgency(),
                 request.getUrgency() == null ? null : request.getUrgency().label(),
                 categoryMapper.toRef(request.getCategory()),
                 centerMapper.toRef(request.getCenter(), 0),
-                locationMapper.toRef(request.getCity()),
                 urls.iso(request.getCreatedAt()),
                 urls.iso(request.getPublishedAt()),
                 urls.iso(request.getUpdatedAt()));
@@ -48,7 +45,7 @@ public class RequestMapper {
 
     /**
      * @param includePrivateNotes true for the owning centre and for admins. The status note explains
-     *                            why something was rejected and is not for public consumption.
+     *                            why something was deactivated and is not for public consumption.
      */
     public RequestDetailResponse toDetail(Request request,
                                           long centerActiveRequests,
@@ -63,7 +60,6 @@ public class RequestMapper {
                 request.getDescription(),
                 request.getAmountNeeded(),
                 CURRENCY,
-                request.getDeadline(),
                 request.getStatus(),
                 request.getStatus() == null ? null : request.getStatus().label(),
                 request.getStatus() == RequestStatus.PUBLISHED,
@@ -72,9 +68,7 @@ public class RequestMapper {
                 request.getUrgency() == null ? null : request.getUrgency().label(),
                 categoryMapper.toRef(request.getCategory()),
                 centerMapper.toRef(request.getCenter(), centerActiveRequests),
-                locationMapper.toRef(request.getCity()),
                 urls.fileUrl(request.getImageUrl()),
-                request.getContactInfo(),
                 documentUrls(request),
                 request.getDetails() == null ? Map.of() : request.getDetails(),
                 metaTitle(request),

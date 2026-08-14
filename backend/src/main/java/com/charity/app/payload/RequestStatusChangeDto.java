@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 /**
  * An admin moving a request to a new status.
  *
- * <p>The note is mandatory for REJECTED, but that is enforced in {@code RequestStatusPolicy} rather
+ * <p>The note is mandatory for INACTIVE, but that is enforced in {@code RequestStatusPolicy} rather
  * than by an annotation here, because whether it is required depends on the target status.
  */
 public record RequestStatusChangeDto(

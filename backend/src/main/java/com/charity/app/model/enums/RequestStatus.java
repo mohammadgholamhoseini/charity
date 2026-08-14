@@ -9,28 +9,32 @@ import java.util.Set;
  * <p>Extracted from the entity so it no longer clashes with {@link CenterStatus} and can be
  * referenced from specifications, DTOs and the status policy without qualification.
  *
- * <p>{@code DRAFT} is new: the centre panel offers «ذخیره پیش‌نویس» alongside «ارسال برای بررسی»,
- * which is a genuinely different state from «در انتظار انتشار». No migration was needed because the
- * column stores enum names as text.
+ * <p>A centre publishes its own requests; there is no admin queue in between. {@code PENDING} and
+ * {@code REJECTED} are therefore no longer reachable — see {@code RequestStatusPolicy} for the
+ * workflow that remains. They are kept as constants rather than deleted because the column stores
+ * enum names as text, and an enum that throws on a row written by an older version of the app is a
+ * worse outcome than two values nothing produces.
  */
 public enum RequestStatus {
 
-    /** Saved by the centre but never submitted. Visible only to its own centre. */
+    /** Saved by the centre but not published. Visible only to its own centre. */
     DRAFT("پیش‌نویس"),
 
-    /** Submitted and awaiting an admin decision. The default for anything newly submitted. */
+    /** @deprecated no longer reachable; kept so pre-V9 rows still deserialise. */
+    @Deprecated
     PENDING("در انتظار انتشار"),
 
-    /** Live on the public site. */
+    /** Live on the public site. Where a request lands the moment its centre publishes it. */
     PUBLISHED("منتشرشده"),
 
-    /** Turned down by an admin, who must record a reason. */
+    /** @deprecated no longer reachable; kept so pre-V9 rows still deserialise. */
+    @Deprecated
     REJECTED("رد شده"),
 
     /** Help was received. Drops out of the active list but keeps its URL. */
     COMPLETED("تکمیل‌شده"),
 
-    /** Withdrawn from the listing without being deleted. */
+    /** Taken down by an admin, with a recorded reason. Not deleted, so it can go back up. */
     INACTIVE("غیرفعال");
 
     private final String label;

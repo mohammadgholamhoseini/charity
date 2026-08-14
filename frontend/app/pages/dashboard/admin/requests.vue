@@ -10,20 +10,20 @@ const toast = useToast()
 
 const tabs: { value: RequestStatus | '', label: string }[] = [
   { value: '', label: 'همه' },
-  { value: 'PENDING', label: 'در انتظار انتشار' },
   { value: 'PUBLISHED', label: 'منتشرشده' },
+  { value: 'DRAFT', label: 'پیش‌نویس' },
   { value: 'COMPLETED', label: 'تکمیل‌شده' },
-  { value: 'REJECTED', label: 'رد شده' },
   { value: 'INACTIVE', label: 'غیرفعال' },
 ]
 
-/** Every transition the admin can make, with the explanation the design calls for. */
+/**
+ * Every transition the admin can make. Approving is not among them any more: centres publish
+ * their own requests, so what is left is taking one down, putting it back, or marking it met.
+ */
 const statusOptions: { value: RequestStatus, label: string, description: string }[] = [
-  { value: 'PENDING', label: 'در انتظار انتشار', description: 'بازگرداندن به صف بررسی؛ در سایت دیده نمی‌شود.' },
   { value: 'PUBLISHED', label: 'منتشرشده', description: 'در فهرست عمومی و صفحه دسته نمایش داده می‌شود.' },
   { value: 'COMPLETED', label: 'تکمیل‌شده', description: 'کمک دریافت شده؛ از فهرست فعال خارج می‌شود اما نشانی آن باقی می‌ماند.' },
-  { value: 'REJECTED', label: 'رد شده', description: 'رد درخواست با ثبت دلیل؛ ثبت یادداشت اجباری است.' },
-  { value: 'INACTIVE', label: 'غیرفعال', description: 'خروج موقت از فهرست بدون حذف.' },
+  { value: 'INACTIVE', label: 'غیرفعال', description: 'خروج از فهرست بدون حذف؛ ثبت دلیل اجباری است.' },
 ]
 
 const activeTab = ref<RequestStatus | ''>('')
@@ -44,7 +44,7 @@ const note = ref('')
 const saving = ref(false)
 const deleteTarget = ref<RequestSummary | null>(null)
 
-const noteRequired = computed(() => nextStatus.value === 'REJECTED')
+const noteRequired = computed(() => nextStatus.value === 'INACTIVE')
 
 async function load() {
   loading.value = true
@@ -91,14 +91,14 @@ watch([activeTab, categoryFilter, centerFilter, urgencyFilter], load)
 
 function openStatusChange(request: RequestSummary) {
   selected.value = request
-  nextStatus.value = request.status === 'PENDING' ? 'PUBLISHED' : request.status
+  nextStatus.value = request.status
   note.value = request.statusNote ?? ''
 }
 
 async function saveStatus() {
   if (!selected.value) return
   if (noteRequired.value && !note.value.trim()) {
-    toast.error('برای رد کردن درخواست، ثبت دلیل الزامی است.')
+    toast.error('برای غیرفعال کردن درخواست، ثبت دلیل الزامی است.')
     return
   }
   saving.value = true
@@ -300,7 +300,7 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
           :required="noteRequired"
           :maxlength="1000"
           :hint="noteRequired
-            ? 'برای رد کردن درخواست، ثبت دلیل اجباری است و به مرکز نمایش داده می‌شود.'
+            ? 'برای غیرفعال کردن درخواست، ثبت دلیل اجباری است و به مرکز نمایش داده می‌شود.'
             : 'اختیاری — برای مرکز ثبت‌کننده قابل مشاهده است.'"
         />
 

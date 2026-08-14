@@ -173,18 +173,19 @@ public class RequestService {
             throw new ForbiddenException("حساب مرکز شما غیرفعال است");
         }
 
+        boolean publishNow = dto.submit();
+
         Request request = Request.builder()
                 .center(center)
                 .category(allowedCategory(center, dto.categoryId()))
-                .city(loadCity(dto.cityId()))
                 .title(dto.title())
                 .description(dto.description())
                 .amountNeeded(dto.amountNeeded())
-                .deadline(dto.deadline())
                 .imageUrl(dto.imageUrl())
-                .contactInfo(dto.contactInfo())
                 .details(dto.details() == null ? Map.of() : dto.details())
-                .status(dto.submit() ? RequestStatus.PENDING : RequestStatus.DRAFT)
+                // Publishing is the centre's own decision now; nothing waits for an admin.
+                .status(publishNow ? RequestStatus.PUBLISHED : RequestStatus.DRAFT)
+                .publishedAt(publishNow ? LocalDateTime.now(urls.zone()) : null)
                 .build();
         request.setUrgency(dto.urgency());
 
@@ -193,8 +194,14 @@ public class RequestService {
         request = requests.save(request);
         request.setCode(buildCode(request.getId()));
         request.setSlug(SlugUtil.requestSlug(request.getTitle(), request.getCode()));
+        Request saved = requests.save(request);
 
-        return mapper.toDetail(requests.save(request), 0, true);
+        if (publishNow) {
+            // After commit, not inside it: the listener posts to Telegram and Bale over HTTP, and
+            // doing that within the transaction held it open for as long as the slowest bot API.
+            events.publishEvent(new RequestPublishedEvent(saved.getId()));
+        }
+        return mapper.toDetail(saved, 0, true);
     }
 
     @Transactional
@@ -216,14 +223,24 @@ public class RequestService {
         return mapper.toDetail(requests.save(request), 0, true);
     }
 
-    /** «ارسال برای بررسی» -- moves a draft or rejected request into the admin queue. */
+    /** «انتشار درخواست» -- takes a draft live. Was «ارسال برای بررسی» when an admin had to approve. */
     @Transactional
-    public RequestDetailResponse submitForReview(Long id) {
+    public RequestDetailResponse publishByCenter(Long id) {
         Request request = ownedByCurrentCenter(id);
-        statusPolicy.assertTransition(request.getStatus(), RequestStatus.PENDING);
-        request.setStatus(RequestStatus.PENDING);
+        statusPolicy.assertTransition(request.getStatus(), RequestStatus.PUBLISHED);
+
+        boolean firstPublication = request.getPublishedAt() == null;
+        request.setStatus(RequestStatus.PUBLISHED);
         request.setStatusNote(null);
-        return mapper.toDetail(requests.save(request), 0, true);
+        if (firstPublication) {
+            request.setPublishedAt(LocalDateTime.now(urls.zone()));
+        }
+        Request saved = requests.save(request);
+
+        if (firstPublication) {
+            events.publishEvent(new RequestPublishedEvent(saved.getId()));
+        }
+        return mapper.toDetail(saved, 0, true);
     }
 
     @Transactional
@@ -241,15 +258,12 @@ public class RequestService {
         if (firstPublication) {
             request.setPublishedAt(LocalDateTime.now(urls.zone()));
         }
-        Request saved = requests.save(request);
+        Request savedRequest = requests.save(request);
 
         if (firstPublication) {
-            // Announced after the transaction commits, not inside it. Publishing used to run
-            // synchronously within the create transaction against an HTTP client with no timeouts,
-            // so a slow messaging API held a database transaction open indefinitely.
-            events.publishEvent(new RequestPublishedEvent(saved.getId()));
+            events.publishEvent(new RequestPublishedEvent(savedRequest.getId()));
         }
-        return mapper.toDetail(saved, 0, true);
+        return mapper.toDetail(savedRequest, 0, true);
     }
 
     @Transactional
@@ -285,7 +299,7 @@ public class RequestService {
         Specification<Request> spec = Specification.allOf(
                 notDeleted(),
                 centerIdEquals(centerId),
-                statusIn(List.of(RequestStatus.PUBLISHED, RequestStatus.PENDING, RequestStatus.DRAFT)));
+                statusIn(List.of(RequestStatus.PUBLISHED, RequestStatus.DRAFT)));
         requests.findAll(spec, Pageable.unpaged()).forEach(request -> {
             request.setStatus(RequestStatus.INACTIVE);
             requests.save(request);
@@ -329,12 +343,9 @@ public class RequestService {
     private void applyUpdate(Request request, RequestUpdateDto dto, Category category) {
         request.setTitle(dto.title());
         request.setCategory(category);
-        request.setCity(loadCity(dto.cityId()));
         request.setDescription(dto.description());
         request.setAmountNeeded(dto.amountNeeded());
-        request.setDeadline(dto.deadline());
         request.setImageUrl(dto.imageUrl());
-        request.setContactInfo(dto.contactInfo());
         if (dto.urgency() != null) {
             request.setUrgency(dto.urgency());
         }
@@ -386,13 +397,6 @@ public class RequestService {
             throw new ValidationException("این دسته‌بندی در فهرست دسته‌های مجاز مرکز نیست");
         }
         return category;
-    }
-
-    private City loadCity(Long cityId) {
-        if (cityId == null) {
-            return null;
-        }
-        return cities.findById(cityId).orElseThrow(() -> new NotFoundException("شهر یافت نشد"));
     }
 
     private RuntimeException notFoundOrGone(String slug) {

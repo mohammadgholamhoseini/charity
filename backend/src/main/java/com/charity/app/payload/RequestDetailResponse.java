@@ -5,7 +5,6 @@ import com.charity.app.model.enums.Urgency;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -18,8 +17,8 @@ import java.util.Map;
  *                     and issues a 301 when a slug has since changed
  * @param isActive     false once COMPLETED -- the page stays up and keeps its URL, but renders as
  *                     «تأمین شد» and drops out of the active listing
- * @param statusNote   why it was rejected or deactivated; only populated for the owning centre and
- *                     admins, never for the public
+ * @param statusNote   why it was deactivated; only populated for the owning centre and admins,
+ *                     never for the public
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record RequestDetailResponse(Long id,
@@ -31,7 +30,6 @@ public record RequestDetailResponse(Long id,
                                     String description,
                                     BigDecimal amountNeeded,
                                     String amountCurrency,
-                                    LocalDate deadline,
                                     RequestStatus status,
                                     String statusLabel,
                                     boolean isActive,
@@ -40,9 +38,7 @@ public record RequestDetailResponse(Long id,
                                     String urgencyLabel,
                                     CategoryRef category,
                                     CenterRef center,
-                                    CityRef city,
                                     String imageUrl,
-                                    String contactInfo,
                                     List<String> documents,
                                     Map<String, Object> details,
                                     String metaTitle,

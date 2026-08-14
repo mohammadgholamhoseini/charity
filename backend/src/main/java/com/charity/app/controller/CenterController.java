@@ -88,9 +88,10 @@ public class CenterController {
         return requests.updateByCenter(id, request);
     }
 
+    /** Publishes a draft. The path is kept so existing panel builds keep working. */
     @PostMapping("/requests/{id}/submit")
-    public RequestDetailResponse submitRequest(@PathVariable Long id) {
-        return requests.submitForReview(id);
+    public RequestDetailResponse publishRequest(@PathVariable Long id) {
+        return requests.publishByCenter(id);
     }
 
     @PostMapping("/requests/{id}/complete")

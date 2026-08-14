@@ -14,11 +14,16 @@ charity/
 
 | Role | How it is created | What it can do |
 |---|---|---|
-| `ADMIN` | seeded from `ADMIN_INITIAL_PASSWORD` | publish/reject requests, manage centres, categories, announcements, locations |
+| `ADMIN` | seeded from `ADMIN_INITIAL_PASSWORD` | take requests down, manage centres, categories, announcements, locations |
 | `CENTER` | created by an admin only | publish requests in its allowed categories |
 
-There is no public registration. A request goes `DRAFT` → `PENDING` → `PUBLISHED`, and
-only an admin can publish it; rejecting requires a written reason.
+There is no public registration. A centre publishes its own requests — they go live
+immediately, with no approval step. A centre may save a `DRAFT` first and publish it
+later. An admin can take a published request down (`INACTIVE`, which requires a written
+reason), put it back up, or mark it `COMPLETED`.
+
+A request describes a need and nothing else: no city, no deadline, no contact details and
+no beneficiary name. The location and phone number shown belong to the registering centre.
 
 ## Requirements
 
@@ -90,7 +95,7 @@ Public endpoints are unauthenticated and cacheable:
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/public/requests` | faceted: `category`, `urgency`, `city`, `status`, `q`, `sort`, `page`, `size` — all combinable |
+| GET | `/api/public/requests` | faceted: `category`, `urgency`, `city`, `province`, `status`, `q`, `sort`, `page`, `size` — all combinable; `city`/`province` match the centre's |
 | GET | `/api/public/requests/{slug}` | 200 / 301 stale slug / 404 / 410 removed |
 | GET | `/api/public/requests/by-code/{code}` | 301 to the canonical URL |
 | GET | `/api/public/centers`, `/api/public/centers/{slug}` | |

@@ -49,12 +49,11 @@ const { data: similar } = await useAsyncData(
 const similarRequests = computed(() =>
   (similar.value?.content ?? []).filter(item => item.id !== request.value?.id).slice(0, 3))
 
+// Only the statuses a visitor can actually land on. A public URL never resolves to anything
+// else -- the others answer 404 -- so listing them here only invited questions.
 const statusExplainer = [
-  { value: 'PENDING', label: 'در انتظار انتشار' },
   { value: 'PUBLISHED', label: 'منتشرشده' },
   { value: 'COMPLETED', label: 'تکمیل‌شده' },
-  { value: 'REJECTED', label: 'رد شده' },
-  { value: 'INACTIVE', label: 'غیرفعال' },
 ]
 
 useSeo(() => ({
@@ -119,16 +118,10 @@ useJsonLd().requestDetail(request.value!)
               <dt class="text-muted">مبلغ مورد نیاز</dt>
               <dd class="text-body-2 font-bold">{{ toman(request.amountNeeded) }}</dd>
             </div>
-            <div v-if="request.deadline" class="grid grid-cols-[130px_1fr] gap-3 text-[14px]">
-              <dt class="text-muted">مهلت</dt>
-              <dd class="text-body-2">
-                <time :datetime="isoDate(request.deadline)">تا {{ date(request.deadline) }}</time>
-              </dd>
-            </div>
-            <div v-if="request.city" class="grid grid-cols-[130px_1fr] gap-3 text-[14px]">
+            <div v-if="request.center?.cityName" class="grid grid-cols-[130px_1fr] gap-3 text-[14px]">
               <dt class="text-muted">محل انجام</dt>
               <dd class="text-body-2">
-                {{ request.city.name }}<template v-if="request.city.provinceName">، {{ request.city.provinceName }}</template>
+                {{ request.center.cityName }}<template v-if="request.center.provinceName">، {{ request.center.provinceName }}</template>
               </dd>
             </div>
             <div class="grid grid-cols-[130px_1fr] gap-3 text-[14px]">
@@ -219,7 +212,7 @@ useJsonLd().requestDetail(request.value!)
                 {{ item.title }}
               </NuxtLink>
               <p class="text-[12px] text-muted mt-1">
-                {{ item.center?.name }}<template v-if="item.city"> — {{ item.city.name }}</template>
+                {{ item.center?.name }}<template v-if="item.center?.cityName"> — {{ item.center.cityName }}</template>
               </p>
             </li>
           </ul>

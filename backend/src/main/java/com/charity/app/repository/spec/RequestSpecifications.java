@@ -4,10 +4,11 @@ import com.charity.app.common.SlugUtil;
 import com.charity.app.model.Request;
 import com.charity.app.model.enums.RequestStatus;
 import com.charity.app.model.enums.Urgency;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Locale;
 
@@ -19,9 +20,9 @@ import java.util.Locale;
  * Every predicate here returns null when it has nothing to say, so
  * {@code Specification.allOf(...)} simply skips it and any combination works.
  *
- * <p>Note the explicit {@link JoinType#LEFT} joins. A traversal like {@code root.get("city").get("province")}
- * produces an INNER join, which would silently hide every request whose city is null -- and city is
- * nullable, because it was backfilled from centres that do not all have one.
+ * <p>Note the explicit {@link JoinType#LEFT} joins. A traversal like
+ * {@code root.get("center").get("city")} produces an INNER join, which would silently hide every
+ * request whose centre has no city recorded -- and a centre's city is optional.
  */
 public final class RequestSpecifications {
 
@@ -51,22 +52,37 @@ public final class RequestSpecifications {
         return (root, query, cb) -> isEmpty(urgencies) ? null : root.get("urgency").in(urgencies);
     }
 
+    /*
+     * The three location facets reach the city through the centre.
+     *
+     * A request has no city of its own. It used to, but that column was populated from
+     * centers.city_id when it was introduced and nothing ever set it independently, so all the
+     * second copy achieved was a way for a request and its centre to claim different cities.
+     * Filtering through the join keeps every existing URL -- ?city=مشهد, ?province=8 -- answering
+     * the same rows it did before.
+     */
+
     public static Specification<Request> cityIdIn(Collection<Long> cityIds) {
         return (root, query, cb) -> isEmpty(cityIds)
                 ? null
-                : root.join("city", JoinType.LEFT).get("id").in(cityIds);
+                : centerCity(root).get("id").in(cityIds);
     }
 
     public static Specification<Request> cityNameIn(Collection<String> names) {
         return (root, query, cb) -> isEmpty(names)
                 ? null
-                : root.join("city", JoinType.LEFT).get("name").in(names);
+                : centerCity(root).get("name").in(names);
     }
 
     public static Specification<Request> provinceIdEquals(Long provinceId) {
         return (root, query, cb) -> provinceId == null
                 ? null
-                : cb.equal(root.join("city", JoinType.LEFT).join("province", JoinType.LEFT).get("id"), provinceId);
+                : cb.equal(centerCity(root).join("province", JoinType.LEFT).get("id"), provinceId);
+    }
+
+    /** Left joins so a centre with no city recorded does not vanish from unfiltered listings. */
+    private static Join<?, ?> centerCity(Root<Request> root) {
+        return root.join("center", JoinType.LEFT).join("city", JoinType.LEFT);
     }
 
     public static Specification<Request> centerIdEquals(Long centerId) {
@@ -97,13 +113,6 @@ public final class RequestSpecifications {
                     cb.like(cb.lower(root.get("description")), like),
                     cb.equal(cb.lower(root.get("code")), normalized));
         };
-    }
-
-    /** Hides requests whose deadline has passed. */
-    public static Specification<Request> deadlineNotPassed(LocalDate today) {
-        return (root, query, cb) -> cb.or(
-                cb.isNull(root.get("deadline")),
-                cb.greaterThanOrEqualTo(root.get("deadline"), today));
     }
 
     private static boolean isEmpty(Collection<?> c) {

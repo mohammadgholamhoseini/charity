@@ -7,15 +7,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.Map;
 
 /**
  * What a centre or admin submits to edit an existing request.
  *
- * <p>Editing a PUBLISHED request deliberately does <em>not</em> send it back for re-moderation:
- * re-approving every typo fix would repeatedly de-index a live URL. The admin list instead flags
- * rows whose {@code updatedAt} is later than their {@code publishedAt}.
+ * <p>Editing never changes the status. That mattered more when an admin had to approve each
+ * request; now that publication is immediate it simply means a typo fix cannot take a live URL
+ * out of the index.
  */
 public record RequestUpdateDto(
 
@@ -26,9 +25,6 @@ public record RequestUpdateDto(
         @NotNull(message = "انتخاب دسته‌بندی الزامی است")
         Long categoryId,
 
-        @NotNull(message = "انتخاب شهر الزامی است")
-        Long cityId,
-
         @Size(max = 3000, message = "شرح نیاز نمی‌تواند بیش از ۳۰۰۰ نویسه باشد")
         String description,
 
@@ -36,15 +32,10 @@ public record RequestUpdateDto(
         @DecimalMin(value = "0.0", inclusive = false, message = "مبلغ مورد نیاز باید بزرگ‌تر از صفر باشد")
         BigDecimal amountNeeded,
 
-        LocalDate deadline,
-
         Urgency urgency,
 
         @Size(max = 255)
         String imageUrl,
-
-        @Size(max = 500, message = "اطلاعات تماس نمی‌تواند بیش از ۵۰۰ نویسه باشد")
-        String contactInfo,
 
         Map<String, Object> details,
 

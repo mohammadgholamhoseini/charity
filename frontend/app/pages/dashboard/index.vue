@@ -38,7 +38,7 @@ onMounted(load)
 
 const cards = computed(() => [
   { key: 'PUBLISHED' as const, label: 'منتشرشده' },
-  { key: 'PENDING' as const, label: 'در انتظار انتشار' },
+  { key: 'DRAFT' as const, label: 'پیش‌نویس' },
   { key: 'INACTIVE' as const, label: 'غیرفعال' },
   { key: 'COMPLETED' as const, label: 'تکمیل‌شده' },
 ])
@@ -53,7 +53,7 @@ useHead({ title: 'داشبورد مرکز — یاری‌جو' })
         درخواست‌های {{ center?.name ?? 'مرکز شما' }}
       </h1>
       <p v-if="stats" class="text-[14px] text-muted">
-        {{ num(stats.PUBLISHED) }} درخواست فعال · {{ num(stats.PENDING) }} در انتظار تأیید
+        {{ num(stats.PUBLISHED) }} درخواست فعال · {{ num(stats.DRAFT) }} پیش‌نویس
       </p>
     </div>
 

@@ -41,9 +41,9 @@ const to = computed(() => `/requests/${encodeURIComponent(props.request.slug)}`)
         <dt class="text-muted">مرکز ثبت‌کننده</dt>
         <dd class="text-body-2 font-semibold truncate">{{ request.center.name }}</dd>
       </div>
-      <div v-if="request.city" class="flex items-center justify-between gap-3">
+      <div v-if="request.center?.cityName" class="flex items-center justify-between gap-3">
         <dt class="text-muted">شهر</dt>
-        <dd class="text-body-2">{{ request.city.name }}</dd>
+        <dd class="text-body-2">{{ request.center.cityName }}</dd>
       </div>
       <div class="flex items-center justify-between gap-3">
         <dt class="text-muted">مبلغ مورد نیاز</dt>

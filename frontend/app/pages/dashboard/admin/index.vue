@@ -32,7 +32,7 @@ async function load() {
 onMounted(load)
 
 const shortcuts = [
-  { label: 'بررسی درخواست‌های در انتظار', to: '/dashboard/admin/requests', hint: 'انتشار یا رد با ثبت دلیل' },
+  { label: 'درخواست‌ها', to: '/dashboard/admin/requests', hint: 'غیرفعال‌کردن با ثبت دلیل، ویرایش سئو' },
   { label: 'مدیریت مراکز خیریه', to: '/dashboard/admin/centers', hint: 'ایجاد حساب و تعیین دسته‌های مجاز' },
   { label: 'دسته‌بندی‌ها', to: '/dashboard/admin/categories', hint: 'نام، نشانی یکتا و رنگ برچسب' },
   { label: 'اطلاعیه‌ها', to: '/dashboard/admin/announcements', hint: 'بنر بالای صفحه و پاورقی' },
@@ -53,23 +53,11 @@ useHead({ title: 'داشبورد ادمین — یاری‌جو' })
           <div v-for="n in 4" :key="n" class="card-flat p-5"><UiSkeleton :lines="2" /></div>
         </template>
         <template v-else>
-          <UiStatCard :value="stats?.PENDING ?? 0" label="در انتظار انتشار" />
           <UiStatCard :value="stats?.PUBLISHED ?? 0" label="منتشرشده" />
+          <UiStatCard :value="stats?.INACTIVE ?? 0" label="غیرفعال" />
           <UiStatCard :value="centerCount" label="مرکز خیریه" />
           <UiStatCard :value="categoryCount" label="دسته‌بندی" />
         </template>
-      </div>
-
-      <div
-        v-if="!loading && (stats?.PENDING ?? 0) > 0"
-        class="card-flat p-5 flex flex-wrap items-center justify-between gap-4"
-        style="border-color: var(--color-line)"
-      >
-        <p class="text-[15px] leading-8">
-          <strong>{{ stats?.PENDING }}</strong> درخواست منتظر بررسی شماست.
-          تا زمانی که منتشر نشوند، در سایت دیده نمی‌شوند.
-        </p>
-        <NuxtLink to="/dashboard/admin/requests" class="btn btn-primary btn-sm">بررسی کن</NuxtLink>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">

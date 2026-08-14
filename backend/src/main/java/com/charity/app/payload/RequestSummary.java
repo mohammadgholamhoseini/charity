@@ -4,7 +4,6 @@ import com.charity.app.model.enums.RequestStatus;
 import com.charity.app.model.enums.Urgency;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 /**
@@ -13,6 +12,9 @@ import java.time.OffsetDateTime;
  * <p>Request cards carry no image by design, so nothing here is about media. Timestamps are
  * ISO-8601 with a real offset rather than the old {@code "yyyy-MM-dd HH:mm"} string, so they can be
  * dropped straight into {@code <time datetime>} and JSON-LD.
+ *
+ * <p>There is no city field: the location a card shows is the centre's, and it arrives on
+ * {@link CenterRef}.
  */
 public record RequestSummary(Long id,
                              String code,
@@ -20,14 +22,12 @@ public record RequestSummary(Long id,
                              String title,
                              String summary,
                              BigDecimal amountNeeded,
-                             LocalDate deadline,
                              RequestStatus status,
                              String statusLabel,
                              Urgency urgency,
                              String urgencyLabel,
                              CategoryRef category,
                              CenterRef center,
-                             CityRef city,
                              OffsetDateTime createdAt,
                              OffsetDateTime publishedAt,
                              OffsetDateTime updatedAt) {

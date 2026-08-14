@@ -66,7 +66,8 @@ public class AdminController {
 
     /**
      * The single status-change endpoint behind the admin panel's «تغییر وضعیت درخواست» card.
-     * Rejecting without a note is refused.
+     * Admins no longer approve requests -- centres publish their own -- so what is left here is
+     * taking one down, putting it back up, or marking it met. Deactivating without a note is refused.
      */
     @PostMapping("/requests/{id}/status")
     public RequestDetailResponse changeStatus(@PathVariable Long id,

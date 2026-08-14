@@ -8,13 +8,13 @@ const { $api } = useNuxtApp()
 const { shortDate } = useFormat()
 const toast = useToast()
 
+// No «در انتظار انتشار» or «رد شده» tab: a centre publishes its own requests, so neither
+// status can be reached any more.
 const tabs: { value: RequestStatus | '', label: string }[] = [
   { value: '', label: 'همه' },
   { value: 'DRAFT', label: 'پیش‌نویس' },
-  { value: 'PENDING', label: 'در انتظار انتشار' },
   { value: 'PUBLISHED', label: 'منتشرشده' },
   { value: 'COMPLETED', label: 'تکمیل‌شده' },
-  { value: 'REJECTED', label: 'رد شده' },
   { value: 'INACTIVE', label: 'غیرفعال' },
 ]
 
@@ -45,10 +45,10 @@ async function load() {
 onMounted(load)
 watch(activeTab, load)
 
-async function submitForReview(request: RequestSummary) {
+async function publish(request: RequestSummary) {
   try {
     await $api(ep.centerRequestSubmit(request.id), { method: 'POST' })
-    toast.success('درخواست برای بررسی ارسال شد.')
+    toast.success('درخواست منتشر شد.')
     load()
   }
   catch (error) {
@@ -138,12 +138,12 @@ useHead({ title: 'درخواست‌های من — یاری‌جو' })
                   ویرایش
                 </NuxtLink>
                 <button
-                  v-if="request.status === 'DRAFT' || request.status === 'REJECTED'"
+                  v-if="request.status === 'DRAFT'"
                   type="button"
                   class="text-brick-500 hover:text-brick-600"
-                  @click="submitForReview(request)"
+                  @click="publish(request)"
                 >
-                  ارسال برای بررسی
+                  انتشار
                 </button>
                 <button type="button" class="text-danger hover:underline" @click="deleteTarget = request">
                   حذف

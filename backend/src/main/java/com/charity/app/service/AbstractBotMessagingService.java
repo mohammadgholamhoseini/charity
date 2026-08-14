@@ -82,13 +82,14 @@ public abstract class AbstractBotMessagingService implements MessagingService {
         if (request.getCategory() != null) {
             text.append("🏷 *دسته‌بندی:* ").append(escape(request.getCategory().getName())).append("\n");
         }
-        beneficiary(request).ifPresent(name ->
-                text.append("👤 *ذینفع:* ").append(escape(name)).append("\n"));
+        // The beneficiary's name used to be printed here, out of details.beneficiaryName. The site
+        // never showed it and the privacy page promises it is never published, so posting it to a
+        // public channel contradicted both. The field is gone from the model entirely now.
         if (request.getCenter() != null) {
             text.append("🏥 *مرکز:* ").append(escape(request.getCenter().getName())).append("\n");
-        }
-        if (request.getCity() != null) {
-            text.append("📍 *شهر:* ").append(escape(request.getCity().getName())).append("\n");
+            if (request.getCenter().getCity() != null) {
+                text.append("📍 *شهر:* ").append(escape(request.getCenter().getCity().getName())).append("\n");
+            }
         }
         if (request.getDescription() != null && !request.getDescription().isBlank()) {
             text.append("📝 *توضیحات:* ").append(escape(request.getDescription())).append("\n");
@@ -96,25 +97,14 @@ public abstract class AbstractBotMessagingService implements MessagingService {
         if (request.getAmountNeeded() != null) {
             text.append("💰 *مبلغ مورد نیاز:* ").append(numbers.format(request.getAmountNeeded())).append(" تومان\n");
         }
-        if (request.getContactInfo() != null && !request.getContactInfo().isBlank()) {
-            text.append("📞 *تماس:* ").append(escape(request.getContactInfo())).append("\n");
+        if (request.getCenter() != null && request.getCenter().getContactPhone() != null) {
+            text.append("📞 *تماس:* ").append(escape(request.getCenter().getContactPhone())).append("\n");
         }
         // Points at the public site. This used to be built from the backend's own base URL, so every
         // link posted to the channel pointed at the API port and 404'd.
         text.append("\n🌐 مشاهده در سایت: ").append(urls.requestUrl(request.getSlug()));
 
         return text.toString();
-    }
-
-    private java.util.Optional<String> beneficiary(Request request) {
-        Map<String, Object> details = request.getDetails();
-        if (details == null) {
-            return java.util.Optional.empty();
-        }
-        Object value = details.get("beneficiaryName");
-        return value == null || value.toString().isBlank()
-                ? java.util.Optional.empty()
-                : java.util.Optional.of(value.toString());
     }
 
     private Integer sendMessage(String text) {

@@ -10,7 +10,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,13 +52,15 @@ public class Request {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    /**
-     * Where the help is needed. Nullable in the database because it is backfilled from the owning
-     * centre, whose own city is optional; new requests require it at the DTO level instead.
+    /*
+     * A request has no city, deadline or contact details of its own.
+     *
+     * The city came from the centre to begin with -- V2 backfilled requests.city_id straight
+     * out of centers.city_id -- so carrying a second copy only created a way for the two to
+     * disagree. The city and province facets read it through the centre now. Likewise the
+     * contact details: visitors are meant to reach the centre, and a per-request copy of the
+     * same phone number is one more thing to keep current.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "city_id")
-    private City city;
 
     @Column(nullable = false)
     private String title;
@@ -70,14 +71,8 @@ public class Request {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amountNeeded;
 
-    /** When the need stops being useful to meet, e.g. a surgery date. */
-    private LocalDate deadline;
-
     @Column(name = "image_url")
     private String imageUrl;
-
-    @Column(name = "contact_info", length = 500)
-    private String contactInfo;
 
     @Convert(converter = JsonMapConverter.class)
     @Column(name = "details_json", columnDefinition = "TEXT")
@@ -91,9 +86,9 @@ public class Request {
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private RequestStatus status = RequestStatus.PENDING;
+    private RequestStatus status = RequestStatus.PUBLISHED;
 
-    /** Why an admin rejected or deactivated this. Mandatory when rejecting. */
+    /** Why an admin deactivated this. */
     @Column(name = "status_note", length = 1000)
     private String statusNote;
 
