@@ -257,7 +257,8 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
       <h2 class="text-[17px] font-bold text-ondark">قاعده وضعیت‌ها</h2>
       <ul class="flex flex-col gap-2 text-[14px] text-ondark-2 leading-8">
         <li v-for="option in statusOptions" :key="option.value" class="flex flex-wrap items-baseline gap-2">
-          <code class="ltr text-gold-400 font-bold">{{ option.value }}</code>
+          <!-- The label, not the enum name: this legend is read by admins, not developers. -->
+          <strong class="text-gold-400">{{ option.label }}</strong>
           <span>— {{ option.description }}</span>
         </li>
       </ul>
