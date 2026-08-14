@@ -27,12 +27,15 @@ import java.util.Optional;
 public interface RequestRepository extends JpaRepository<Request, Long>, JpaSpecificationExecutor<Request> {
 
     /**
-     * Every listing renders the centre, category and city of each row, which was previously an N+1.
-     * All the paths are to-one, so Hibernate can still do the paging in SQL -- do not be tempted to
-     * add {@code center.categories} here, a to-many would force it to page in memory.
+     * Every listing renders the centre, its city and the category of each row, which was previously
+     * an N+1. All the paths are to-one, so Hibernate can still do the paging in SQL -- do not be
+     * tempted to add {@code center.categories} here, a to-many would force it to page in memory.
+     *
+     * <p>The city is reached through the centre; a request has none of its own.
      */
     @Override
-    @EntityGraph(attributePaths = {"center", "center.city", "center.province", "category", "city", "city.province"})
+    @EntityGraph(attributePaths = {
+            "center", "center.city", "center.city.province", "center.province", "category"})
     Page<Request> findAll(Specification<Request> spec, Pageable pageable);
 
     Optional<Request> findBySlugAndDeletedAtIsNull(String slug);

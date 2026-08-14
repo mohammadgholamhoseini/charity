@@ -118,7 +118,6 @@ watchEffect(() => {
             <option value="urgent">فوری‌ترین</option>
             <option value="newest">جدیدترین</option>
             <option value="oldest">قدیمی‌ترین</option>
-            <option value="deadline">نزدیک‌ترین مهلت</option>
             <option value="amount_desc">بیشترین مبلغ</option>
             <option value="amount_asc">کمترین مبلغ</option>
           </select>

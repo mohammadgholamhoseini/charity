@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.data.domain.Sort.Direction.ASC;
 import static org.springframework.data.domain.Sort.Direction.DESC;
@@ -29,11 +30,19 @@ public final class Paging {
             "urgent", Sort.by(DESC, "urgencyRank").and(Sort.by(DESC, "createdAt")),
             "newest", Sort.by(DESC, "createdAt"),
             "oldest", Sort.by(ASC, "createdAt"),
-            "deadline", Sort.by(Sort.Order.asc("deadline").nullsLast()).and(Sort.by(DESC, "createdAt")),
             "amount_desc", Sort.by(DESC, "amountNeeded"),
             "amount_asc", Sort.by(ASC, "amountNeeded"));
 
     public static final String DEFAULT_SORT = "urgent";
+
+    /**
+     * Sort keys that used to work and now fall back to the default instead of being rejected.
+     *
+     * <p>{@code sort} is part of a public, indexable URL. «نزدیک‌ترین مهلت» went away with the
+     * deadline field, and an unknown key throws -- so without this, every crawled or bookmarked
+     * {@code /requests?sort=deadline} would start answering 400 rather than simply listing.
+     */
+    private static final Set<String> RETIRED_SORTS = Set.of("deadline");
 
     private Paging() {
     }
@@ -49,6 +58,9 @@ public final class Paging {
 
     public static Sort resolveSort(String sort) {
         String key = (sort == null || sort.isBlank()) ? DEFAULT_SORT : sort.trim().toLowerCase(Locale.ROOT);
+        if (RETIRED_SORTS.contains(key)) {
+            key = DEFAULT_SORT;
+        }
         Sort resolved = SORTS.get(key);
         if (resolved == null) {
             throw new ValidationException("پارامتر مرتب‌سازی نامعتبر است");
