@@ -376,18 +376,20 @@
      essentially untouched. Swap in a transparent PNG and this line should go. */
   .hero-art {
     display: block;
-    width: 112%;
-    max-width: none;
+    width: 100%;
     height: auto;
-    margin-inline-start: -12%;
     mix-blend-mode: multiply;
   }
-  /* Below the two-column breakpoint the bleed has nowhere to go — there is no gutter,
-     and a negative margin would push the artwork under the page edge. */
-  @media (max-width: 900px) {
+  /* The bleed only makes sense once the hero is in two columns and there is a gutter to
+     bleed into. That is Tailwind's `lg`, not the 900px the brief names -- the hero grid
+     is `lg:grid-cols-[1.05fr_.95fr]`. Keyed to 900px it overflowed the viewport by 44px
+     across the whole 901-1023px band, where the layout has already collapsed to one
+     column and the negative margin has nowhere to go but off the edge of the page. */
+  @media (min-width: 1024px) {
     .hero-art {
-      width: 100%;
-      margin-inline-start: 0;
+      width: 112%;
+      max-width: none;
+      margin-inline-start: -12%;
     }
   }
 
