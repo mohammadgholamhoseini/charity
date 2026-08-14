@@ -76,6 +76,7 @@ Set in `.env` at the repo root:
 | `ADMIN_INITIAL_PASSWORD` | Creates the first admin. No admin is seeded if unset. |
 | `APP_SITE_URL` | Public site URL — used for canonical URLs and channel links. |
 | `APP_BASE_URL` | API URL — used only to build file URLs. |
+| `CORS_ORIGINS` | Only for direct browser access to the API port; the site itself proxies through its own origin. |
 | `MYSQL_*` | Database credentials. |
 | `TELEGRAM_*`, `BALE_*` | Optional announcement channels; disabled by default. |
 

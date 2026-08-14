@@ -76,6 +76,13 @@ Things that are easy to break:
 - **Anything auth-dependent in a server-rendered layout must be inside `<ClientOnly>`**
   with a same-width fallback. The token lives in localStorage, so SSR always renders
   the signed-out state; this invariant is what makes the `swr` route rules safe.
+- **`app/server/routes/api/[...path].ts` deletes the incoming `Origin` header** before
+  proxying, and must keep doing so. The browser attaches Origin to every non-GET
+  request, same-origin included; forwarded on, it makes Spring's CORS filter reject the
+  call with 403 unless the site's own URL is in `cors.allowed-origins`. The symptom is
+  narrow and misleading — public pages work (GETs send no Origin) and only login fails,
+  200 from curl and 403 from the browser. Note that h3's `mergeHeaders` ignores
+  `undefined`, so the header cannot be dropped through `proxyRequest`'s options.
 - Status and urgency chip colours are static CSS keyed on `data-` attributes. Category
   colours come from the API as inline styles. Never build a class name by interpolation.
 - Use logical properties (`ps-`/`pe-`/`ms-`/`me-`), never `pl-`/`pr-`/`left-`/`right-`.
