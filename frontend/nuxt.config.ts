@@ -18,6 +18,22 @@ export default defineNuxtConfig({
 
   typescript: { strict: true, typeCheck: false },
 
+  experimental: {
+    /**
+     * Off because the slugs are Persian.
+     *
+     * Prerendering the five static pages switches payload extraction on for the whole app,
+     * and the client then asks for `<route>/_payload.json` on every server-rendered page too.
+     * It builds that URL by encoding a path that is already percent-encoded, so
+     * `/requests/%DA%A9…` becomes `/requests/%25DA%25A9…/_payload.json`, which matches no
+     * route. Nitro answers with the HTML 404 page, parsing it as JSON throws, the payload is
+     * lost, and hydration re-runs the page with no data — so every request and centre detail
+     * page rendered a 404 in the browser while curl saw the correct page. The extraction only
+     * ever saved a request on five static ASCII pages.
+     */
+    payloadExtraction: false,
+  },
+
   runtimeConfig: {
     // Server-only. SSR fetches the API directly rather than looping back through our
     // own proxy. Overridden per environment by NUXT_API_ORIGIN.

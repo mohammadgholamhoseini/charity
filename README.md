@@ -95,7 +95,7 @@ Public endpoints are unauthenticated and cacheable:
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/public/requests` | faceted: `category`, `urgency`, `city`, `province`, `status`, `q`, `sort`, `page`, `size` — all combinable; `city`/`province` match the centre's |
+| GET | `/api/public/requests` | faceted: `category`, `urgency`, `city`, `cityId`, `provinceId`, `center`, `status`, `q`, `sort`, `page`, `size` — all combinable; the location facets match the registering centre's |
 | GET | `/api/public/requests/{slug}` | 200 / 301 stale slug / 404 / 410 removed |
 | GET | `/api/public/requests/by-code/{code}` | 301 to the canonical URL |
 | GET | `/api/public/centers`, `/api/public/centers/{slug}` | |
