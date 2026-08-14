@@ -85,6 +85,15 @@ Things that are easy to break:
   that origin is unreliable from Iran and sits in the critical path of the LCP element.
 - **Route params are percent-encoded.** Decode exactly once via `useRouteSlug()`, and
   do not encode again in `app/api/endpoints.ts` — the URL layer does that.
+- **Never put a `swr`/`isr` route rule on a path with a Persian slug.** `swr` makes Nuxt
+  serve the payload separately and emit `<link rel="preload" href="<route>/_payload.json">`,
+  and it builds that href by encoding a path that is already percent-encoded:
+  `/requests/%DA%A9…` is requested as `/requests/%25DA%25A9…/_payload.json`. Nothing matches,
+  Nitro returns the HTML 404 page, parsing it as JSON throws, and the page hydrates with no
+  data and renders its own 404 — a correct server-rendered page destroyed the moment
+  JavaScript runs. `curl` sees 200 and the right content throughout. `/` and `/requests` are
+  ASCII and cache fine; `/requests/**` and `/centers/**` cannot. `experimental.payloadExtraction:
+  false` does *not* suppress it — only removing the route rule does.
 - **Anything auth-dependent in a server-rendered layout must be inside `<ClientOnly>`**
   with a same-width fallback. The token lives in localStorage, so SSR always renders
   the signed-out state; this invariant is what makes the `swr` route rules safe.
