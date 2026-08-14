@@ -52,12 +52,16 @@ so neither branch has to be checked out to build it:
 docker compose up -d
 ```
 
-| Service | Branch | URL |
-|---|---|---|
-| frontend-master | master | http://localhost |
-| frontend-dev | development | http://localhost:8080 |
-| backend-master | master | http://localhost:81 |
-| backend-dev | development | http://localhost:8081 |
+| Service | Branch | URL | Database |
+|---|---|---|---|
+| frontend-master | master | http://localhost | — |
+| frontend-dev | development | http://localhost:8080 | — |
+| backend-master | master | http://localhost:81 | `YARIJU` |
+| backend-dev | development | http://localhost:8081 | `YARIJU_DEVELOPMENT` |
+
+Each branch has its own MySQL schema in the shared `mysql` service, so resetting or
+migrating development never touches master's data. Both are created and granted by
+`docker/mysql/init/01-databases.sql` on a fresh volume.
 
 Only the master deployment sets `NUXT_PUBLIC_INDEXABLE=true`; the dev site serves a
 `robots.txt` that disallows everything so it cannot compete with production in search.

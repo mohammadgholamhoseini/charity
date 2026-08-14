@@ -93,11 +93,28 @@ docker compose up -d
 
 | Service | Branch | Host port | Notes |
 |---|---|---|---|
-| `frontend-master` | master | 80 | Nuxt SSR on 3000 |
+| `frontend-master` | master | 80 | **nginx on container port 80** — master has not been migrated to Nuxt yet |
 | `frontend-dev` | development | 8080 | Nuxt SSR on 3000, `robots.txt` disallows all |
-| `backend-master` | master | 81 | MySQL |
-| `backend-dev` | development | 8081 | H2 |
-| `mysql` | — | 127.0.0.1:3307 | |
+| `backend-master` | master | 81 | MySQL schema `YARIJU` |
+| `backend-dev` | development | 8081 | MySQL schema `YARIJU_DEVELOPMENT` |
+| `mysql` | — | 127.0.0.1:3307 | both schemas live in this one server |
+
+**Each branch owns a MySQL schema**, so development can be reset without touching master's
+data. `backend-dev` used to run the in-memory H2 `local` profile and lost everything on
+restart; it now runs the same `default` profile as production against
+`YARIJU_DEVELOPMENT`, with two deliberate differences: `ddl-auto: validate` (the schema is
+Flyway-built from V1, so the entities can be checked against it — this is the drift guard
+production's `none` gives up) and `baseline-on-migrate: false` (nothing to baseline, and a
+non-empty schema with no history should fail loudly rather than silently skip V1).
+
+`MYSQL_DATABASE` can only ever create one schema, so `docker/mysql/init/01-databases.sql`
+creates the second and grants `charity_user` on both. It runs only on a fresh `mysql_data`
+volume. When granting, escape the underscore — MySQL reads the database name in `GRANT` as
+a LIKE pattern, where a bare `_` is a wildcard.
+
+The two frontends publish **different container ports** because they are different servers:
+master's nginx listens on 80, development's Nuxt on 3000. Mapping master's host 80 to
+container 3000 silently serves nothing at all. Fix this when master gets the Nuxt app.
 
 The frontend containers run Node, not nginx — SSR needs a runtime. Both Dockerfiles are
 identical; what used to differ (which backend to proxy to) is now `NUXT_API_ORIGIN`, so

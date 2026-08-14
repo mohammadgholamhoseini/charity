@@ -7,12 +7,17 @@ services:
       - "127.0.0.1:3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-charity}
+      # Each branch owns a schema. MYSQL_DATABASE can only create one, so the second is
+      # created by the init script below.
+      MYSQL_DATABASE: ${MYSQL_DATABASE_MASTER:-YARIJU}
       MYSQL_USER: ${MYSQL_USER:-charity_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
       TZ: Asia/Tehran
     volumes:
       - mysql_data:/var/lib/mysql
+      # Creates the dev schema and grants charity_user on both. Runs only on a fresh
+      # volume, so it will not disturb the schemas that already exist.
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -29,9 +34,10 @@ services:
       SPRING_PROFILES_ACTIVE: default
       # serverTimezone matches app.timezone; they disagreed before, which made the
       # absolute meaning of stored timestamps ambiguous.
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-charity}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Tehran&characterEncoding=utf8
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE_MASTER:-YARIJU}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Tehran&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-charity_user}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-root}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:81}
       APP_SITE_URL: ${APP_SITE_URL:-http://localhost}
       APP_TIMEZONE: Asia/Tehran
@@ -52,7 +58,25 @@ services:
       - "8081:8082"
     env_file: .env
     environment:
-      SPRING_PROFILES_ACTIVE: local
+      # Was the in-memory H2 `local` profile, which threw the data away on every restart.
+      # Development now has its own MySQL schema, so it runs the same profile as production
+      # and differs only in which schema it points at.
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE_DEV:-YARIJU_DEVELOPMENT}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Tehran&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-charity_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-root}
+      # This schema is built by Flyway from V1, so Hibernate can validate the entities
+      # against it. Production uses `none` only because its schema predates Flyway; keeping
+      # the check here is what catches migration/entity drift before it reaches production.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      # Nothing to baseline — the schema starts empty, so V1 onward all apply. Explicitly
+      # off so that a non-empty schema with no history fails loudly instead of silently
+      # baselining at V1 and skipping it.
+      FLYWAY_BASELINE_ON_MIGRATE: "false"
+      # The `local` profile used to seed this; on the production profile there is no
+      # default, and without it the empty schema gets no admin and nobody can log in.
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-admin123}
+      SPRINGDOC_ENABLED: "true"
       APP_BASE_URL: http://localhost:8081
       APP_SITE_URL: http://localhost:8080
       APP_TIMEZONE: Asia/Tehran
@@ -60,13 +84,19 @@ services:
       TZ: Asia/Tehran
     volumes:
       - backend_dev_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
 
   frontend-master:
     image: charity-frontend:master
     restart: unless-stopped
     ports:
-      # Nuxt SSR listens on 3000; the published host port is unchanged.
-      - "80:3000"
+      # Container port 80, not 3000: the master branch still ships the old static nginx
+      # frontend, which listens on 80. The Nuxt SSR rewrite (which listens on 3000) is on
+      # development and has not been merged. Change this to "80:3000" in the same commit
+      # that merges it, or the master site answers nothing.
+      - "80:80"
     environment:
       NUXT_API_ORIGIN: http://backend-master:8082
       NUXT_PUBLIC_SITE_URL: ${APP_SITE_URL:-http://localhost}
