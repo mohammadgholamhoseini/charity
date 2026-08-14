@@ -38,6 +38,11 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-charity_user}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-root}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
+      # The site reaches the API through the frontend's own /api route, which strips
+      # Origin, so this list governs only direct browser access to port 81 (Swagger, a
+      # REST client). It still has to name the real site URL: leaving it at the built-in
+      # default is what made the dev deployment answer 403 to every login.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:81}
       APP_SITE_URL: ${APP_SITE_URL:-http://localhost}
       APP_TIMEZONE: Asia/Tehran
@@ -76,6 +81,10 @@ services:
       # The `local` profile used to seed this; on the production profile there is no
       # default, and without it the empty schema gets no admin and nobody can log in.
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-admin123}
+      # Swagger is on here and is opened straight from the browser against port 8081,
+      # which is a genuinely cross-origin call and needs the allow-list. The dev site
+      # itself no longer depends on this.
+      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080,http://localhost:8081,http://localhost:3000
       SPRINGDOC_ENABLED: "true"
       APP_BASE_URL: http://localhost:8081
       APP_SITE_URL: http://localhost:8080

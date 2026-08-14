@@ -17,5 +17,27 @@ export default defineEventHandler(async (event) => {
   // Uploaded files are served through here; none of it should be indexed.
   setHeader(event, 'X-Robots-Tag', 'noindex')
 
+  /**
+   * Drop the browser's Origin before forwarding.
+   *
+   * The browser attaches Origin to every non-GET request, including same-origin ones.
+   * Forwarded verbatim, it makes Spring's CORS filter treat a hop that is not
+   * cross-origin at all — the browser talks only to this server, and this server talks
+   * to the backend as an ordinary HTTP client — as a cross-origin one, and reject it
+   * with 403 unless the site's own URL happens to be in `cors.allowed-origins`. That is
+   * exactly how login broke on the dev deployment: GETs sent no Origin so the public
+   * pages looked fine, while POST /auth/login answered 403 from behind the proxy and
+   * 200 from curl.
+   *
+   * Stripping it does not weaken anything. CORS protects the browser, not the server:
+   * a page on another origin calling this proxy still cannot read the response, because
+   * we return no Access-Control-Allow-Origin. And the API authenticates with a bearer
+   * token rather than a cookie, so a cross-site request carries no credentials to abuse.
+   *
+   * h3's mergeHeaders skips undefined values, so a header cannot be removed through
+   * proxyRequest's options — it has to go before the request headers are collected.
+   */
+  delete event.node.req.headers.origin
+
   return proxyRequest(event, `${apiOrigin}${event.path}`)
 })
