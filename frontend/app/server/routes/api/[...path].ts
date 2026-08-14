@@ -39,5 +39,55 @@ export default defineEventHandler(async (event) => {
    */
   delete event.node.req.headers.origin
 
-  return proxyRequest(event, `${apiOrigin}${event.path}`)
+  const method = event.method
+  const result = await proxyRequest(event, `${apiOrigin}${event.path}`)
+
+  // proxyRequest has already copied the upstream status onto the response by this point.
+  if (mutates(method) && event.node.res.statusCode < 400 && !isAuthCall(event.path)) {
+    await invalidateRenderedPages()
+  }
+
+  return result
 })
+
+function mutates(method: string) {
+  return method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS'
+}
+
+/** Signing in changes nothing a public page renders, and it is the most frequent write. */
+function isAuthCall(path: string) {
+  return path.startsWith('/api/auth/')
+}
+
+/**
+ * Drops the cached renders of the `swr` pages.
+ *
+ * Without this a centre publishes a request and then waits — up to five minutes on the
+ * home page, two on the listing — watching a page that looks like nothing happened. The
+ * cache is doing exactly what it was told; the missing half was ever telling it that the
+ * content changed.
+ *
+ * This route is the right place to notice, and the only practical one. Every write from
+ * either panel travels through here, because the panels are client-rendered and talk to
+ * the API through this same origin. The alternative is the Java backend calling back into
+ * Nitro after each publish, which means a shared secret, a URL each service has to know,
+ * and a failure mode where a slow HTTP call is holding a database transaction open.
+ *
+ * The clear is deliberately not selective. A published request changes the home page and
+ * the listing; a renamed category changes both plus the category pages; a new centre
+ * changes `/centers`; an announcement changes every page that renders the banner. Any
+ * mapping from endpoint to affected pages would be a list to forget to update, and the
+ * cache is a handful of HTML documents that cost one render each to rebuild.
+ *
+ * `cache:` is Nitro's own mount for `defineCachedEventHandler` and the `swr` route rules,
+ * which store under `cache:nitro:handlers:`. Nothing else in this app writes there.
+ */
+async function invalidateRenderedPages() {
+  try {
+    await useStorage('cache').clear()
+  }
+  catch {
+    // A cache that would not clear is not a reason to fail a write that already succeeded:
+    // the visitor's request went through, and the worst case is the delay we had before.
+  }
+}
