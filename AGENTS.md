@@ -22,10 +22,14 @@ that only in the `local` profile). Categories, provinces and cities are seeded.
 ## No tests, no lint gate
 
 There are **zero tests** in either project and no lint/typecheck step in CI. Do not go
-looking for a test command. `npm run lint` works; **`npm run typecheck` does not** — it
-aborts with "Cannot find matching tsconfig.json" because the repo has no root tsconfig
-and `nuxt typecheck` looks for one before consulting `.nuxt/`. Use `npm run build` to
-find breakage instead.
+looking for a test command, and do not trust the two scripts that look like one:
+
+- `npm run typecheck` aborts with "Cannot find matching tsconfig.json" — the repo has no
+  root tsconfig and `nuxt typecheck` looks for one before consulting `.nuxt/`.
+- `npm run lint` aborts with "ESLint couldn't find an eslint.config.js" — `@nuxt/eslint`
+  is in devDependencies but no flat config was ever committed.
+
+**`npm run build` is the only gate that runs.** Use it.
 
 ## Backend
 
@@ -80,6 +84,24 @@ Tailwind v4 is wired through `@tailwindcss/vite`, **not** `@nuxtjs/tailwindcss` 
 module is for v3 and expects a `tailwind.config.js`). All design tokens are in the
 `@theme` block of `app/assets/css/main.css`.
 
+**Tokens are named for their role, never for their colour.** `accent`, `ink`, `surface`,
+`muted` — not `brick`, `gold`, `cream`. The site has been repainted three times (coral,
+then brick-and-gold, now the lapis-and-lacquer of `redesign.md` 7c) and the first two
+naming schemes left ~50 files claiming a colour that had not been true for two palettes.
+A repaint should be an edit to the `@theme` block and nothing else. Two things stop that
+being literally true, and both are unavoidable:
+
+- `BrandMark.vue` and `public/favicon.svg` hold hex values, because an SVG `stroke` takes
+  no Tailwind class and `var(--color-…)` breaks wherever the mark is inlined without the
+  stylesheet. Keep the two in step by hand.
+- The ten `.chip[data-status]` / `[data-urgency]` rules are written out longhand. Tailwind
+  only emits classes it can see literally, so `bg-${status}` produces no CSS at all.
+
+**Text colours are contrast-bound, not taste-bound.** `redesign.md` specifies `#7489B0`
+for helper text, which is 3.16:1 on the page ground and fails WCAG AA — and `muted` is
+the most-used text colour on the site. Every value in the text block clears 4.5:1 against
+`--color-page`; check any replacement before shipping it rather than copying the brief.
+
 Things that are easy to break:
 - **Vazirmatn is self-hosted** in `public/fonts/`. Do not switch it to Google Fonts —
   that origin is unreliable from Iran and sits in the critical path of the LCP element.
@@ -123,6 +145,16 @@ Things that are easy to break:
   `undefined`, so the header cannot be dropped through `proxyRequest`'s options.
 - Status and urgency chip colours are static CSS keyed on `data-` attributes. Category
   colours come from the API as inline styles. Never build a class name by interpolation.
+- **The category label palette lives in four places and a repaint needs all four.** The
+  admin picks a background/foreground pair per category and it is stored *on the row*, so
+  changing CSS does nothing: `dashboard/admin/categories.vue` (the swatch picker),
+  `CategorySeeder` (fresh installs), `CategoryMapper` (the fallback pair), and a migration
+  for the rows that already exist — `V10` is the worked example. Guard that migration on
+  the old colour, not on the slug alone: `CategorySeeder` promises never to overwrite an
+  admin's own choice, and an unconditional `UPDATE` breaks that promise silently.
+- The hero image is the only photography on the site. It is a lossless WebP with **no
+  alpha channel**, so `.hero-art` carries `mix-blend-mode: multiply` to dissolve its white
+  background into the page. Replace it with a transparent PNG and that line should go.
 - Use logical properties (`ps-`/`pe-`/`ms-`/`me-`), never `pl-`/`pr-`/`left-`/`right-`.
 
 ## Docker

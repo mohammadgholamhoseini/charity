@@ -76,11 +76,11 @@ useJsonLd().faq(entries)
         :key="entry.question"
         class="card-flat p-5"
       >
-        <summary class="text-[16px] font-bold text-ink-900 cursor-pointer list-none flex items-center justify-between gap-4">
+        <summary class="text-[16px] font-bold text-ink cursor-pointer list-none flex items-center justify-between gap-4">
           {{ entry.question }}
-          <span class="text-brick-500 text-lg leading-none shrink-0" aria-hidden="true">+</span>
+          <span class="text-accent text-lg leading-none shrink-0" aria-hidden="true">+</span>
         </summary>
-        <p class="mt-3 pt-3 border-t border-cream-200 leading-[2]">{{ entry.answer }}</p>
+        <p class="mt-3 pt-3 border-t border-surface-3 leading-[2]">{{ entry.answer }}</p>
       </details>
     </div>
   </LayoutProsePage>

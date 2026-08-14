@@ -27,7 +27,7 @@ const to = computed(() => `/requests/${encodeURIComponent(props.request.slug)}`)
     </div>
 
     <h3 class="text-[20px] font-bold leading-[1.7]" :class="{ 'text-[17px]': compact }">
-      <NuxtLink :to="to" class="hover:text-brick-500 transition-colors">{{ request.title }}</NuxtLink>
+      <NuxtLink :to="to" class="hover:text-accent transition-colors">{{ request.title }}</NuxtLink>
     </h3>
 
     <p v-if="request.summary" class="text-[14px] leading-7 text-body line-clamp-3">
@@ -36,7 +36,7 @@ const to = computed(() => `/requests/${encodeURIComponent(props.request.slug)}`)
 
     <!-- Meta table. The amount row is an addition to the design: requests carry a
          required amount, and a visitor needs to see the scale of the need. -->
-    <dl class="border-t border-cream-200 pt-4 mt-auto flex flex-col gap-2.5 text-[13px]">
+    <dl class="border-t border-surface-3 pt-4 mt-auto flex flex-col gap-2.5 text-[13px]">
       <div v-if="request.center" class="flex items-center justify-between gap-3">
         <dt class="text-muted">مرکز ثبت‌کننده</dt>
         <dd class="text-body-2 font-semibold truncate">{{ request.center.name }}</dd>

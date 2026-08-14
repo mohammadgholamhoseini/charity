@@ -35,26 +35,33 @@ public class CategorySeeder {
                         String description, List<String> aliases) {
     }
 
+    /**
+     * The colours are the design's eight label swatches. They are duplicated in the admin
+     * panel's swatch picker ({@code dashboard/admin/categories.vue}) and their neutral
+     * fallback in {@link com.charity.app.mapper.CategoryMapper}; change one and change all
+     * three. Because each chosen pair is stored on the row, changing them here only affects
+     * a fresh install -- existing rows need a migration, as V10 did for this palette.
+     */
     private static final List<Seed> DESIGN_CATEGORIES = List.of(
-            new Seed("درمان", "darman", "#F3E6D6", "#8E5A22", 1,
+            new Seed("درمان", "darman", "#D6F2F6", "#0B7F91", 1,
                     "هزینه درمان، جراحی، دارو و خدمات پزشکی", List.of("درمانی")),
-            new Seed("بلایای طبیعی", "balaya-tabiei", "#F7E3E0", "#96422F", 2,
+            new Seed("بلایای طبیعی", "balaya-tabiei", "#FBE4E8", "#9B1C31", 2,
                     "کمک‌رسانی در سیل، زلزله و حوادث طبیعی", List.of()),
-            new Seed("تحصیل", "tahsil", "#E7EDF3", "#3D5A76", 3,
+            new Seed("تحصیل", "tahsil", "#DEE9FC", "#1F5FC0", 3,
                     "حمایت تحصیلی از دانش‌آموزان و دانشجویان", List.of("آموزش")),
-            new Seed("معیشت", "maishat", "#F1E4EC", "#7A4166", 4,
+            new Seed("معیشت", "maishat", "#E7E6F7", "#4B3F9E", 4,
                     "سبد غذایی، اقلام ضروری و هزینه‌های روزمره", List.of("غذا و تغذیه")),
-            new Seed("مسکن", "maskan", "#E6EFEC", "#3B6B5C", 5,
+            new Seed("مسکن", "maskan", "#DCEFE8", "#1E6E57", 5,
                     "ودیعه اجاره، تعمیر و تأمین سرپناه", List.of("ساخت‌وساز")),
-            new Seed("اشتغال", "eshteghal", "#EFEAD9", "#7A6A2F", 6,
+            new Seed("اشتغال", "eshteghal", "#E4EEDC", "#4A6B2E", 6,
                     "ابزار کار، سرمایه خرد و راه‌اندازی کسب‌وکار", List.of()),
-            new Seed("جهیزیه", "jahizieh", "#F0E7F3", "#5E4478", 7,
+            new Seed("جهیزیه", "jahizieh", "#F2E4F2", "#7A3E75", 7,
                     "تأمین جهیزیه و لوازم ضروری زندگی", List.of()),
-            new Seed("ایتام", "aytam", "#E9EDF2", "#3F4F66", 8,
+            new Seed("ایتام", "aytam", "#E3EAF7", "#254F8E", 8,
                     "حمایت از کودکان بی‌سرپرست و بدسرپرست", List.of("ایتام و کودکان")));
 
-    private static final String FALLBACK_BG = "#EFEAE3";
-    private static final String FALLBACK_TEXT = "#8A7F72";
+    private static final String FALLBACK_BG = "#E9F0FC";
+    private static final String FALLBACK_TEXT = "#576E96";
 
     private final CategoryRepository categories;
 

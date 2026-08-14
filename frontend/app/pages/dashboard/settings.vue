@@ -101,7 +101,7 @@ useHead({ title: 'تنظیمات مرکز — یاری‌جو' })
       <UiField v-model="form.description" label="معرفی مرکز" textarea :rows="3" :maxlength="1000" />
       <UiField v-model="form.address" label="نشانی" textarea :rows="2" :maxlength="1000" />
 
-      <div class="grid gap-5 sm:grid-cols-2 border-t border-cream-200 pt-5">
+      <div class="grid gap-5 sm:grid-cols-2 border-t border-surface-3 pt-5">
         <UiField v-model="form.cardNumber" label="شماره کارت" ltr :maxlength="255" />
         <UiField v-model="form.sheba" label="شماره شبا" ltr :maxlength="255" />
       </div>
@@ -109,7 +109,7 @@ useHead({ title: 'تنظیمات مرکز — یاری‌جو' })
         این اطلاعات در صفحه عمومی مرکز نمایش داده می‌شود، چون پرداخت مستقیماً با خود مرکز انجام می‌شود.
       </p>
 
-      <div class="border-t border-cream-200 pt-5">
+      <div class="border-t border-surface-3 pt-5">
         <button type="submit" class="btn btn-primary" :disabled="saving">
           {{ saving ? 'در حال ذخیره…' : 'ذخیره تغییرات' }}
         </button>

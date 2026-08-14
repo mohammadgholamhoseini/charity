@@ -36,7 +36,7 @@ const statuses = [
   <aside class="card-flat p-6 self-start flex flex-col gap-7">
     <div class="flex items-center justify-between">
       <h2 class="text-[17px] font-bold">فیلترها</h2>
-      <button type="button" class="text-[13px] text-brick-500 hover:text-brick-600" @click="emit('clear')">
+      <button type="button" class="text-[13px] text-accent hover:text-accent-600" @click="emit('clear')">
         پاک کردن
       </button>
     </div>
@@ -50,7 +50,7 @@ const statuses = [
       >
         <input
           type="checkbox"
-          class="w-[17px] h-[17px] rounded-[5px] accent-[#B24A2E]"
+          class="w-[17px] h-[17px] rounded-[5px] accent-[var(--color-accent)]"
           :checked="isSelected('category', category.slug)"
           @change="emit('toggle', 'category', category.slug)"
         >
@@ -68,7 +68,7 @@ const statuses = [
       >
         <input
           type="checkbox"
-          class="w-[17px] h-[17px] rounded-[5px] accent-[#B24A2E]"
+          class="w-[17px] h-[17px] rounded-[5px] accent-[var(--color-accent)]"
           :checked="isSelected('urgency', urgency.value)"
           @change="emit('toggle', 'urgency', urgency.value)"
         >
@@ -86,7 +86,7 @@ const statuses = [
         >
           <input
             type="checkbox"
-            class="w-[17px] h-[17px] rounded-[5px] accent-[#B24A2E]"
+            class="w-[17px] h-[17px] rounded-[5px] accent-[var(--color-accent)]"
             :checked="isSelected('city', city.name)"
             @change="emit('toggle', 'city', city.name)"
           >
@@ -104,7 +104,7 @@ const statuses = [
       >
         <input
           type="checkbox"
-          class="w-[17px] h-[17px] rounded-[5px] accent-[#B24A2E]"
+          class="w-[17px] h-[17px] rounded-[5px] accent-[var(--color-accent)]"
           :checked="isSelected('status', status.value)"
           @change="emit('toggle', 'status', status.value)"
         >

@@ -6,7 +6,7 @@ defineProps<{ title: string, description?: string }>()
 <template>
   <div class="card-flat px-8 py-14 text-center flex flex-col items-center gap-3">
     <div
-      class="w-14 h-14 rounded-full bg-cream-100 flex items-center justify-center text-2xl text-muted-2"
+      class="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center text-2xl text-muted-2"
       aria-hidden="true"
     >
       ؟

@@ -81,7 +81,7 @@ useHead({ title: 'تنظیمات حساب — پنل ادمین' })
       <UiField v-model="form.fullName" label="نام و نام خانوادگی" :maxlength="255" />
       <UiField v-model="form.email" label="ایمیل" type="email" ltr />
 
-      <div class="border-t border-cream-200 pt-5 flex flex-col gap-5">
+      <div class="border-t border-surface-3 pt-5 flex flex-col gap-5">
         <h2 class="text-[16px] font-bold">تغییر رمز عبور</h2>
         <UiField v-model="form.currentPassword" label="رمز عبور فعلی" type="password" revealable />
         <UiField
@@ -93,7 +93,7 @@ useHead({ title: 'تنظیمات حساب — پنل ادمین' })
         />
       </div>
 
-      <div class="border-t border-cream-200 pt-5">
+      <div class="border-t border-surface-3 pt-5">
         <button type="submit" class="btn btn-primary" :disabled="saving">
           {{ saving ? 'در حال ذخیره…' : 'ذخیره تغییرات' }}
         </button>

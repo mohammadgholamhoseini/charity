@@ -234,13 +234,13 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
             </td>
             <td>
               <div class="flex items-center gap-3 text-[13px]">
-                <button type="button" class="text-brick-500 hover:text-brick-600" @click="openStatusChange(request)">
+                <button type="button" class="text-accent hover:text-accent-600" @click="openStatusChange(request)">
                   تغییر وضعیت
                 </button>
                 <NuxtLink
                   :to="`/requests/${encodeURIComponent(request.slug)}`"
                   target="_blank"
-                  class="text-brick-500 hover:text-brick-600"
+                  class="text-accent hover:text-accent-600"
                 >مشاهده</NuxtLink>
                 <button type="button" class="text-danger hover:underline" @click="deleteTarget = request">
                   حذف
@@ -254,11 +254,11 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
 
     <!-- status rules, spelled out with the enum codes -->
     <section class="dark-panel rounded-[20px] p-6 flex flex-col gap-3">
-      <h2 class="text-[17px] font-bold text-ondark">قاعده وضعیت‌ها</h2>
-      <ul class="flex flex-col gap-2 text-[14px] text-ondark-2 leading-8">
+      <h2 class="text-[17px] font-bold text-onink">قاعده وضعیت‌ها</h2>
+      <ul class="flex flex-col gap-2 text-[14px] text-onink-2 leading-8">
         <li v-for="option in statusOptions" :key="option.value" class="flex flex-wrap items-baseline gap-2">
           <!-- The label, not the enum name: this legend is read by admins, not developers. -->
-          <strong class="text-gold-400">{{ option.label }}</strong>
+          <strong class="text-accent-2">{{ option.label }}</strong>
           <span>— {{ option.description }}</span>
         </li>
       </ul>
@@ -283,9 +283,9 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
             v-for="option in statusOptions"
             :key="option.value"
             class="flex items-start gap-3 p-4 rounded-[12px] border cursor-pointer transition-colors"
-            :class="nextStatus === option.value ? 'border-brick-500 bg-brick-50' : 'border-line-soft'"
+            :class="nextStatus === option.value ? 'border-accent bg-accent-50' : 'border-line-soft'"
           >
-            <input v-model="nextStatus" type="radio" :value="option.value" class="mt-1.5 accent-[#B24A2E]">
+            <input v-model="nextStatus" type="radio" :value="option.value" class="mt-1.5 accent-[var(--color-accent)]">
             <span class="flex flex-col gap-1">
               <span class="text-[14px] font-bold">{{ option.label }}</span>
               <span class="help">{{ option.description }}</span>

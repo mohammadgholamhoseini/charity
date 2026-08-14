@@ -11,7 +11,7 @@ const props = defineProps<{
   status?: string
   urgency?: string
   color?: { bg: string, text: string }
-  variant?: 'dark' | 'gold' | 'neutral'
+  variant?: 'dark' | 'highlight' | 'neutral'
   label: string
   closable?: boolean
 }>()
@@ -33,7 +33,7 @@ const isPlain = computed(() =>
     class="chip"
     :class="{
       'chip-dark': variant === 'dark',
-      'chip-gold': variant === 'gold',
+      'chip-highlight': variant === 'highlight',
       'chip-neutral': isPlain,
     }"
     :data-status="status"

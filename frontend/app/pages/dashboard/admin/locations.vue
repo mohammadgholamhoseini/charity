@@ -121,7 +121,7 @@ useHead({ title: 'استان‌ها و شهرها — پنل ادمین' })
           </button>
         </div>
 
-        <ul class="flex flex-col divide-y max-h-[420px] overflow-y-auto" style="border-color: var(--color-cream-200)">
+        <ul class="flex flex-col divide-y max-h-[420px] overflow-y-auto" style="border-color: var(--color-surface-3)">
           <li
             v-for="province in provinces"
             :key="province.id"
@@ -130,7 +130,7 @@ useHead({ title: 'استان‌ها و شهرها — پنل ادمین' })
             <button
               type="button"
               class="text-[14px] flex-1 text-start"
-              :class="activeProvince === province.id ? 'font-bold text-brick-500' : ''"
+              :class="activeProvince === province.id ? 'font-bold text-accent' : ''"
               @click="activeProvince = province.id"
             >{{ province.name }}</button>
             <button type="button" class="text-[12px] text-danger hover:underline" @click="removeProvince(province)">
@@ -163,7 +163,7 @@ useHead({ title: 'استان‌ها و شهرها — پنل ادمین' })
 
         <UiEmptyState v-if="!cities.length" title="شهری ثبت نشده است" />
 
-        <ul v-else class="flex flex-col divide-y max-h-[420px] overflow-y-auto" style="border-color: var(--color-cream-200)">
+        <ul v-else class="flex flex-col divide-y max-h-[420px] overflow-y-auto" style="border-color: var(--color-surface-3)">
           <li v-for="city in cities" :key="city.id" class="flex items-center justify-between gap-3 py-2.5">
             <span class="text-[14px]">{{ city.name }}</span>
             <button type="button" class="text-[12px] text-danger hover:underline" @click="removeCity(city)">

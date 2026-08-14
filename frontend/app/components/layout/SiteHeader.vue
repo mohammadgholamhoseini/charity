@@ -14,17 +14,17 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
 </script>
 
 <template>
-  <header class="bg-cream-50 border-b border-line-soft">
+  <header class="bg-surface border-b border-line-soft">
     <div class="page-shell flex items-center justify-between gap-6 py-5">
       <BrandLogo :size="42" />
 
-      <nav class="hidden lg:flex items-center gap-8 text-[15px]" style="color: #4A4038">
+      <nav class="hidden lg:flex items-center gap-8 text-[15px] text-body-2">
         <NuxtLink
           v-for="item in nav"
           :key="item.to"
           :to="item.to"
-          class="hover:text-brick-500 transition-colors"
-          active-class="text-brick-500 font-semibold"
+          class="hover:text-accent transition-colors"
+          active-class="text-accent font-semibold"
         >{{ item.label }}</NuxtLink>
       </nav>
 
@@ -38,12 +38,12 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
           <NuxtLink
             v-if="auth.isAuthenticated.value"
             :to="auth.homePath.value"
-            class="text-[15px] font-semibold text-brick-500 px-4 py-2.5 hover:text-brick-600"
+            class="text-[15px] font-semibold text-accent px-4 py-2.5 hover:text-accent-600"
           >پنل من</NuxtLink>
           <NuxtLink
             v-else
             to="/login"
-            class="text-[15px] font-semibold text-brick-500 px-4 py-2.5 hover:text-brick-600"
+            class="text-[15px] font-semibold text-accent px-4 py-2.5 hover:text-accent-600"
           >ورود مراکز</NuxtLink>
           <template #fallback>
             <span class="text-[15px] font-semibold px-4 py-2.5 opacity-0" aria-hidden="true">ورود مراکز</span>
@@ -71,12 +71,12 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
             v-for="item in nav"
             :key="item.to"
             :to="item.to"
-            class="py-3 text-[15px] border-b border-cream-200 last:border-0"
+            class="py-3 text-[15px] border-b border-surface-3 last:border-0"
           >{{ item.label }}</NuxtLink>
           <ClientOnly>
             <NuxtLink
               :to="auth.isAuthenticated.value ? auth.homePath.value : '/login'"
-              class="py-3 text-[15px] font-semibold text-brick-500"
+              class="py-3 text-[15px] font-semibold text-accent"
             >{{ auth.isAuthenticated.value ? 'پنل من' : 'ورود مراکز' }}</NuxtLink>
           </ClientOnly>
         </div>

@@ -6,7 +6,7 @@ const { num } = useFormat()
 <template>
   <div
     class="card-flat p-5 flex flex-col gap-2 text-start w-full transition-colors"
-    :class="active ? 'border-brick-500' : ''"
+    :class="active ? 'border-accent' : ''"
   >
     <span class="text-[26px] font-extrabold leading-none">
       {{ typeof value === 'number' ? num(value) : value }}

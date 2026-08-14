@@ -21,7 +21,7 @@ const tabs = [
         :key="tab.to"
         :to="tab.to"
         class="flex flex-col items-center justify-center gap-1 min-h-[56px] text-[11px] text-muted"
-        active-class="text-brick-500"
+        active-class="text-accent"
       >
         <span class="text-lg leading-none" aria-hidden="true">{{ tab.icon }}</span>
         {{ tab.label }}
@@ -31,7 +31,7 @@ const tabs = [
         <NuxtLink
           :to="auth.isAuthenticated.value ? auth.homePath.value : '/login'"
           class="flex flex-col items-center justify-center gap-1 min-h-[56px] text-[11px] text-muted"
-          active-class="text-brick-500"
+          active-class="text-accent"
         >
           <span class="text-lg leading-none" aria-hidden="true">◍</span>
           {{ auth.isAuthenticated.value ? 'پنل' : 'ورود' }}

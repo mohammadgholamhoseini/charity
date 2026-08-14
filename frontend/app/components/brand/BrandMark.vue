@@ -21,14 +21,20 @@ const small = computed(() => props.size < 32)
 const strokeWidth = computed(() => (small.value ? 8.5 : 6.5))
 const nodeRadius = computed(() => (small.value ? 5.8 : 5.2))
 
+/**
+ * Written out rather than read from the CSS tokens: an SVG `stroke` cannot take a
+ * Tailwind class, and `var(--color-accent)` inside an attribute breaks the moment the
+ * mark is inlined somewhere without the stylesheet (the favicon, an OG card, an email).
+ * Keep these in step with the @theme block and with public/favicon.svg by hand.
+ */
 const ringColor = computed(() => {
-  if (props.mono) return '#241E19'
-  return props.onDark ? '#F6EFE6' : '#B24A2E'
+  if (props.mono) return '#0F3070'
+  return props.onDark ? '#FFFFFF' : '#C4234F'
 })
-const nodeColor = computed(() => (props.mono ? '#241E19' : '#E8A33D'))
+const nodeColor = computed(() => (props.mono ? '#0F3070' : '#12ADBC'))
 const centerColor = computed(() => {
-  if (props.mono) return '#241E19'
-  return props.onDark ? '#E8A33D' : '#B24A2E'
+  if (props.mono) return '#0F3070'
+  return props.onDark ? '#12ADBC' : '#C4234F'
 })
 </script>
 

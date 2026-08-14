@@ -52,7 +52,7 @@ useHead({ title: 'دسته‌های مجاز مرکز — یاری‌جو' })
           :color="{ bg: category.labelBg, text: category.labelText }"
         />
       </div>
-      <p class="help border-t border-cream-200 pt-4">
+      <p class="help border-t border-surface-3 pt-4">
         اگر دسته‌بندی دیگری لازم دارید، از ادمین بخواهید آن را به فهرست مجاز مرکز اضافه کند.
       </p>
     </section>

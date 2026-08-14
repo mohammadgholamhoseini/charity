@@ -48,13 +48,13 @@ useJsonLd().centerProfile(center.value!)
       <div class="flex items-center gap-4">
         <BrandMark :size="56" on-dark />
         <div class="flex flex-col gap-1">
-          <h1 class="text-[24px] lg:text-[30px] font-extrabold text-ondark">{{ center.name }}</h1>
-          <p v-if="center.city" class="text-[14px] text-ondark-3">
+          <h1 class="text-[24px] lg:text-[30px] font-extrabold text-onink">{{ center.name }}</h1>
+          <p v-if="center.city" class="text-[14px] text-onink-3">
             {{ center.city.name }}<template v-if="center.city.provinceName">، {{ center.city.provinceName }}</template>
           </p>
         </div>
       </div>
-      <a v-if="center.contactPhone" :href="`tel:${center.contactPhone}`" class="btn btn-gold">
+      <a v-if="center.contactPhone" :href="`tel:${center.contactPhone}`" class="btn btn-highlight">
         تماس با مرکز
       </a>
     </section>
@@ -116,7 +116,7 @@ useJsonLd().centerProfile(center.value!)
           </div>
         </dl>
 
-        <div v-if="center.categories.length" class="border-t border-cream-200 pt-4 flex flex-col gap-3">
+        <div v-if="center.categories.length" class="border-t border-surface-3 pt-4 flex flex-col gap-3">
           <span class="label mb-0">دسته‌های فعال</span>
           <div class="flex flex-wrap gap-1.5">
             <UiChip

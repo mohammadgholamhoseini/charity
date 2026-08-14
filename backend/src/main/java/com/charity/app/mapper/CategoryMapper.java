@@ -11,9 +11,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CategoryMapper {
 
-    /** Fallback chip colours for categories created before the swatch picker existed. */
-    private static final String DEFAULT_LABEL_BG = "#EFEAE3";
-    private static final String DEFAULT_LABEL_TEXT = "#8A7F72";
+    /**
+     * Fallback chip colours for categories created before the swatch picker existed.
+     * Kept in step with {@code CategorySeeder.FALLBACK_BG} and the admin swatch list.
+     */
+    private static final String DEFAULT_LABEL_BG = "#E9F0FC";
+    private static final String DEFAULT_LABEL_TEXT = "#576E96";
 
     private final AppUrls urls;
 

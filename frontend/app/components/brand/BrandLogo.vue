@@ -24,13 +24,13 @@ const wordmarkSize = computed(() => `${Math.round(props.size * 0.48)}px`)
     <span class="flex flex-col leading-tight">
       <span
         class="font-extrabold"
-        :class="onDark ? 'text-ondark' : 'text-ink-900'"
+        :class="onDark ? 'text-onink' : 'text-ink'"
         :style="{ fontSize: wordmarkSize }"
       >{{ config.public.siteName }}</span>
       <span
         v-if="showTagline"
         class="text-[11px] tracking-[1px]"
-        :class="onDark ? 'text-ondark-3' : 'text-muted-2'"
+        :class="onDark ? 'text-onink-3' : 'text-muted-2'"
       >{{ config.public.siteTagline }}</span>
     </span>
   </NuxtLink>
@@ -40,13 +40,13 @@ const wordmarkSize = computed(() => `${Math.round(props.size * 0.48)}px`)
     <span class="flex flex-col leading-tight">
       <span
         class="font-extrabold"
-        :class="onDark ? 'text-ondark' : 'text-ink-900'"
+        :class="onDark ? 'text-onink' : 'text-ink'"
         :style="{ fontSize: wordmarkSize }"
       >{{ config.public.siteName }}</span>
       <span
         v-if="showTagline"
         class="text-[11px] tracking-[1px]"
-        :class="onDark ? 'text-ondark-3' : 'text-muted-2'"
+        :class="onDark ? 'text-onink-3' : 'text-muted-2'"
       >{{ config.public.siteTagline }}</span>
     </span>
   </div>

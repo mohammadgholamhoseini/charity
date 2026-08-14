@@ -105,8 +105,8 @@ function send(publish: boolean) {
           type="button"
           class="py-3 rounded-[10px] text-[14px] border transition-colors"
           :class="form.urgency === option.value
-            ? 'border-brick-500 bg-brick-50 font-bold text-brick-500'
-            : 'border-line-soft text-body hover:bg-cream-100'"
+            ? 'border-accent bg-accent-50 font-bold text-accent'
+            : 'border-line-soft text-body hover:bg-surface-2'"
           :aria-pressed="form.urgency === option.value"
           @click="form.urgency = option.value"
         >
@@ -140,7 +140,7 @@ function send(publish: boolean) {
       ثبت و منتشر نمی‌شود.
     </p>
 
-    <div class="flex flex-wrap items-center gap-3 border-t border-cream-200 pt-6">
+    <div class="flex flex-wrap items-center gap-3 border-t border-surface-3 pt-6">
       <button type="submit" class="btn btn-primary" :disabled="submitting">
         {{ submitting ? 'در حال ارسال…' : (editing ? 'ذخیره تغییرات' : 'انتشار درخواست') }}
       </button>

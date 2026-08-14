@@ -23,7 +23,7 @@ const width = computed(() => ({ sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-3xl' 
       <div
         v-if="open"
         class="fixed inset-0 z-50 flex items-center justify-center p-5"
-        style="background: rgb(36 30 25 / 0.45)"
+        style="background: rgb(15 48 112 / 0.45)"
         @click.self="emit('close')"
       >
         <div
@@ -39,7 +39,7 @@ const width = computed(() => ({ sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-3xl' 
             <h2 class="text-[20px] font-bold leading-8">{{ title }}</h2>
             <button
               type="button"
-              class="text-muted hover:text-ink-900 leading-none text-lg"
+              class="text-muted hover:text-ink leading-none text-lg"
               aria-label="بستن"
               @click="emit('close')"
             >✕</button>

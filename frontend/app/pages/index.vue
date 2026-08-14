@@ -34,7 +34,7 @@ useSeo({
     <!-- hero -->
     <section class="page-shell grid gap-12 py-14 lg:py-16 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
       <div class="flex flex-col gap-6">
-        <span class="chip self-start" style="background:#F3E6D6; color:#8E5A22; font-weight:600">
+        <span class="chip chip-stat self-start">
           اکنون {{ num(activeRequests) }} درخواست فعال از {{ num(centerCount) }} مرکز
         </span>
 
@@ -53,44 +53,43 @@ useSeo({
           <NuxtLink to="/requests" class="btn btn-primary">مرور درخواست‌ها</NuxtLink>
           <NuxtLink to="/centers" class="btn btn-secondary">مراکز خیریه</NuxtLink>
         </div>
+
+        <!-- These chips used to live in a card floating over the artwork. The design
+             wants the artwork frameless, and a translucent card over a multiplied
+             image reads as a smudge, so they sit under the buttons instead. -->
+        <div v-if="categories?.length" class="flex flex-wrap items-center gap-2">
+          <span class="eyebrow">دسته‌های فعال</span>
+          <UiChip
+            v-for="category in categories.slice(0, 3)"
+            :key="category.id"
+            :label="category.name"
+            :color="{ bg: category.labelBg, text: category.labelText }"
+          />
+        </div>
       </div>
 
-      <!-- The design ships no photography; this is the specified placeholder shape. -->
-      <div class="relative hidden lg:block">
-        <div
-          class="placeholder h-[420px]"
-          style="border-radius: 220px 220px 24px 24px"
-          aria-hidden="true"
+      <!-- Frameless by design: no card, border or shadow -- see .hero-art in main.css,
+           which also explains why the blend mode is there. -->
+      <div class="flex items-center justify-center">
+        <img
+          src="/hero-hands.webp"
+          width="900"
+          height="533"
+          alt="دست‌های برافراشته، نماد مشارکت داوطلبانه در کار خیر"
+          class="hero-art"
         >
-          تصویر معرفی
-        </div>
-        <div
-          class="card absolute w-[230px] p-5 flex flex-col gap-3"
-          style="bottom: -18px; inset-inline-end: -18px; background: rgb(255 255 255 / 0.96)"
-        >
-          <span class="eyebrow">درخواست‌های تازه این هفته</span>
-          <span class="text-[32px] font-extrabold leading-none">{{ num(activeRequests) }}</span>
-          <div class="flex flex-wrap gap-1.5">
-            <UiChip
-              v-for="category in (categories ?? []).slice(0, 3)"
-              :key="category.id"
-              :label="category.name"
-              :color="{ bg: category.labelBg, text: category.labelText }"
-            />
-          </div>
-        </div>
       </div>
     </section>
 
     <!-- latest requests -->
-    <section class="bg-cream-100 py-14">
+    <section class="bg-surface-2 py-14">
       <div class="page-shell">
         <div class="flex items-end justify-between gap-4 mb-8">
           <div class="flex flex-col gap-2">
             <span class="eyebrow">تازه‌ترین‌ها</span>
             <h2 class="text-[26px] lg:text-[32px] font-extrabold">آخرین درخواست‌ها</h2>
           </div>
-          <NuxtLink to="/requests" class="text-[15px] font-semibold text-brick-500 hover:text-brick-600">
+          <NuxtLink to="/requests" class="text-[15px] font-semibold text-accent hover:text-accent-600">
             همه درخواست‌ها ←
           </NuxtLink>
         </div>
@@ -148,15 +147,15 @@ useSeo({
     <section class="dark-panel py-16">
       <div class="page-shell grid gap-10 lg:grid-cols-2 lg:items-center">
         <div class="flex flex-col gap-5">
-          <h2 class="text-[28px] lg:text-[38px] font-extrabold text-ondark leading-[1.4]">
+          <h2 class="text-[28px] lg:text-[38px] font-extrabold text-onink leading-[1.4]">
             مرکز خیریه هستید؟
           </h2>
-          <p class="text-[16px] leading-[2] text-ondark-2 max-w-[520px]">
+          <p class="text-[16px] leading-[2] text-onink-2 max-w-[520px]">
             حساب مراکز فقط توسط ادمین ایجاد می‌شود. پس از دریافت حساب، می‌توانید درخواست‌های مرکز خود را
             در دسته‌بندی‌های مجاز ثبت کنید و وضعیت آن‌ها را دنبال کنید.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
-            <NuxtLink to="/login" class="btn btn-gold">ورود به پنل مراکز</NuxtLink>
+            <NuxtLink to="/login" class="btn btn-highlight">ورود به پنل مراکز</NuxtLink>
             <NuxtLink to="/contact" class="btn btn-outline-light">درخواست ایجاد حساب</NuxtLink>
           </div>
         </div>
@@ -171,10 +170,10 @@ useSeo({
             ]"
             :key="stat.label"
             class="rounded-[16px] p-5 flex flex-col gap-1.5"
-            style="background: var(--color-ink-800)"
+            style="background: var(--color-ink-2)"
           >
-            <span class="text-[28px] font-extrabold text-gold-400 leading-none">{{ num(stat.value) }}</span>
-            <span class="text-[13px] text-ondark-3">{{ stat.label }}</span>
+            <span class="text-[28px] font-extrabold text-accent-2 leading-none">{{ num(stat.value) }}</span>
+            <span class="text-[13px] text-onink-3">{{ stat.label }}</span>
           </div>
         </div>
       </div>

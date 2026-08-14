@@ -175,7 +175,7 @@ useHead({ title: 'اطلاعیه‌ها — پنل ادمین' })
                 <td class="ltr">{{ shortDate(notice.startAt ?? notice.createdAt) }}</td>
                 <td>
                   <div class="flex items-center gap-3 text-[13px]">
-                    <button type="button" class="text-brick-500 hover:text-brick-600" @click="startEdit(notice)">
+                    <button type="button" class="text-accent hover:text-accent-600" @click="startEdit(notice)">
                       ویرایش
                     </button>
                     <button type="button" class="text-danger hover:underline" @click="deleteTarget = notice">
@@ -197,23 +197,23 @@ useHead({ title: 'اطلاعیه‌ها — پنل ادمین' })
               class="dark-panel flex items-center justify-between gap-3 px-4 py-3"
             >
               <div class="flex items-center gap-2 min-w-0">
-                <span class="chip chip-gold shrink-0">اطلاعیه</span>
+                <span class="chip chip-highlight shrink-0">اطلاعیه</span>
                 <span class="text-[13px] truncate">{{ form.title || 'عنوان اطلاعیه' }}</span>
               </div>
               <div class="flex items-center gap-3 shrink-0 text-[12px]">
-                <span v-if="form.linkUrl" class="text-gold-400 font-semibold">مشاهده</span>
-                <span class="text-ondark-3">✕</span>
+                <span v-if="form.linkUrl" class="text-accent-2 font-semibold">مشاهده</span>
+                <span class="text-onink-3">✕</span>
               </div>
             </div>
 
-            <div class="flex items-center justify-between px-4 py-3 bg-cream-50 border-b border-line-soft">
+            <div class="flex items-center justify-between px-4 py-3 bg-surface border-b border-line-soft">
               <BrandLogo :size="26" :show-tagline="false" static />
               <span class="text-[11px] text-muted">درخواست‌ها · مراکز · درباره</span>
             </div>
 
             <div class="px-4 py-8 text-center text-[12px] text-muted-2 bg-surface">محتوای صفحه</div>
 
-            <div class="px-4 py-3 bg-cream-50 border-t border-line-soft flex flex-col gap-1">
+            <div class="px-4 py-3 bg-surface border-t border-line-soft flex flex-col gap-1">
               <span v-if="form.placement === 'FOOTER'" class="text-[11px] text-muted leading-6">
                 <strong>{{ form.title || 'عنوان اطلاعیه' }}:</strong> {{ previewLine || 'متن اطلاعیه' }}
               </span>
@@ -243,9 +243,9 @@ useHead({ title: 'اطلاعیه‌ها — پنل ادمین' })
             v-for="option in placements"
             :key="option.value"
             class="flex items-start gap-3 p-4 rounded-[12px] border cursor-pointer transition-colors"
-            :class="form.placement === option.value ? 'border-brick-500 bg-brick-50' : 'border-line-soft'"
+            :class="form.placement === option.value ? 'border-accent bg-accent-50' : 'border-line-soft'"
           >
-            <input v-model="form.placement" type="radio" :value="option.value" class="mt-1.5 accent-[#B24A2E]">
+            <input v-model="form.placement" type="radio" :value="option.value" class="mt-1.5 accent-[var(--color-accent)]">
             <span class="flex flex-col gap-1">
               <span class="text-[14px] font-bold">{{ option.label }}</span>
               <span class="help">{{ option.description }}</span>
@@ -262,7 +262,7 @@ useHead({ title: 'اطلاعیه‌ها — پنل ادمین' })
 
         <UiSwitch v-model="form.active" label="وضعیت" description="اطلاعیه غیرفعال در سایت نمایش داده نمی‌شود." />
 
-        <div class="flex flex-wrap items-center gap-3 border-t border-cream-200 pt-5">
+        <div class="flex flex-wrap items-center gap-3 border-t border-surface-3 pt-5">
           <button type="button" class="btn btn-primary" :disabled="saving" @click="save(true)">
             {{ saving ? 'در حال ذخیره…' : 'انتشار اطلاعیه' }}
           </button>

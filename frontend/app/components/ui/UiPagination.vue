@@ -53,8 +53,8 @@ function linkTo(page: number) {
         :to="linkTo(item)"
         class="w-[42px] h-[42px] inline-flex items-center justify-center rounded-[10px] text-[14px] transition-colors"
         :class="item === page
-          ? 'bg-brick-500 text-white font-bold'
-          : 'border border-line-soft text-body hover:bg-cream-100'"
+          ? 'bg-accent text-white font-bold'
+          : 'border border-line-soft text-body hover:bg-surface-2'"
         :aria-current="item === page ? 'page' : undefined"
       >
         {{ item }}

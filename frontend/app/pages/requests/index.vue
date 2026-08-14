@@ -125,7 +125,7 @@ watchEffect(() => {
       </div>
     </div>
 
-    <div class="bg-cream-100 py-8">
+    <div class="bg-surface-2 py-8">
       <div class="page-shell grid gap-7 lg:grid-cols-[260px_1fr] items-start">
         <RequestFilterSidebar
           :categories="categories ?? []"

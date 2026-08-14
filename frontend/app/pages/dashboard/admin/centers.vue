@@ -210,7 +210,7 @@ useHead({ title: 'مراکز خیریه — پنل ادمین' })
               </td>
               <td>
                 <div class="flex items-center gap-3 text-[13px]">
-                  <button type="button" class="text-brick-500 hover:text-brick-600" @click="startEdit(center)">
+                  <button type="button" class="text-accent hover:text-accent-600" @click="startEdit(center)">
                     ویرایش
                   </button>
                   <button type="button" class="text-danger hover:underline" @click="deleteTarget = center">
@@ -254,7 +254,7 @@ useHead({ title: 'مراکز خیریه — پنل ادمین' })
               class="chip transition-all"
               :style="form.categoryIds.includes(category.id)
                 ? { backgroundColor: category.labelBg, color: category.labelText, boxShadow: 'inset 0 0 0 1.5px currentColor' }
-                : { backgroundColor: 'var(--color-cream-100)', color: 'var(--color-muted)' }"
+                : { backgroundColor: 'var(--color-surface-2)', color: 'var(--color-muted)' }"
               :aria-pressed="form.categoryIds.includes(category.id)"
               @click="toggleCategory(category.id)"
             >
@@ -264,7 +264,7 @@ useHead({ title: 'مراکز خیریه — پنل ادمین' })
           </div>
         </fieldset>
 
-        <div v-if="!selected" class="flex flex-col gap-4 border-t border-cream-200 pt-5">
+        <div v-if="!selected" class="flex flex-col gap-4 border-t border-surface-3 pt-5">
           <h3 class="text-[15px] font-bold">حساب کاربری</h3>
           <UiField v-model="form.username" label="نام کاربری" ltr required :maxlength="60" />
           <UiField v-model="form.email" label="ایمیل" ltr type="email" required />
@@ -284,7 +284,7 @@ useHead({ title: 'مراکز خیریه — پنل ادمین' })
           description="غیرفعال کردن مرکز، درخواست‌های فعالش را هم از سایت خارج می‌کند."
         />
 
-        <div class="flex items-center gap-3 border-t border-cream-200 pt-5">
+        <div class="flex items-center gap-3 border-t border-surface-3 pt-5">
           <button type="button" class="btn btn-primary" :disabled="saving" @click="save">
             {{ saving ? 'در حال ذخیره…' : (selected ? 'ذخیره تغییرات' : 'ایجاد مرکز') }}
           </button>

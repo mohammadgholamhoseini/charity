@@ -27,7 +27,7 @@ useSeo(() => ({
       </p>
     </div>
 
-    <div class="bg-cream-100 py-8">
+    <div class="bg-surface-2 py-8">
       <div class="page-shell">
         <div v-if="pending" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <UiSkeleton v-for="n in 6" :key="n" variant="card" />
@@ -66,7 +66,7 @@ useSeo(() => ({
               />
             </div>
 
-            <dl class="border-t border-cream-200 pt-4 mt-auto flex items-center justify-between text-[13px]">
+            <dl class="border-t border-surface-3 pt-4 mt-auto flex items-center justify-between text-[13px]">
               <div class="flex flex-col">
                 <dt class="text-muted">شهر</dt>
                 <dd class="text-body-2 font-semibold">{{ center.city?.name ?? '—' }}</dd>

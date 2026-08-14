@@ -34,20 +34,20 @@ function dismiss() {
   <div v-if="visible && notice" class="dark-panel">
     <div class="page-shell flex items-center justify-between gap-4 py-3.5">
       <div class="flex items-center gap-3 min-w-0">
-        <span class="chip chip-gold shrink-0">اطلاعیه</span>
+        <span class="chip chip-highlight shrink-0">اطلاعیه</span>
         <p class="text-[15px] leading-7 truncate">{{ notice.title }}</p>
-        <p class="text-[15px] leading-7 text-ondark-2 truncate hidden lg:block">{{ firstLine }}</p>
+        <p class="text-[15px] leading-7 text-onink-2 truncate hidden lg:block">{{ firstLine }}</p>
       </div>
       <div class="flex items-center gap-4 shrink-0">
         <a
           v-if="notice.linkUrl"
           :href="notice.linkUrl"
           rel="noopener"
-          class="text-[14px] font-semibold text-gold-400 hover:underline"
+          class="text-[14px] font-semibold text-accent-2 hover:underline"
         >مشاهده</a>
         <button
           type="button"
-          class="text-ondark-3 hover:text-ondark leading-none text-base p-1"
+          class="text-onink-3 hover:text-onink leading-none text-base p-1"
           aria-label="بستن اطلاعیه"
           @click="dismiss"
         >✕</button>

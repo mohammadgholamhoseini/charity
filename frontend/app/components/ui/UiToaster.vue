@@ -2,9 +2,9 @@
 const { toasts, dismiss } = useToast()
 
 const tone: Record<string, string> = {
-  success: 'bg-[#EAF0E7] text-[#4F6B45] border-[#CFE0C8]',
+  success: 'bg-success-bg text-success border-success-line',
   error: 'bg-danger-bg text-danger border-danger-line',
-  info: 'bg-cream-100 text-body border-line-soft',
+  info: 'bg-surface-2 text-body border-line-soft',
 }
 </script>
 

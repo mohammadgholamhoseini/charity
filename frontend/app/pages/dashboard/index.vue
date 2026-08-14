@@ -76,7 +76,7 @@ useHead({ title: 'داشبورد مرکز — یاری‌جو' })
       <section class="card-flat overflow-hidden">
         <div class="flex items-center justify-between gap-4 px-6 py-4 border-b border-line-soft">
           <h2 class="text-[17px] font-bold">آخرین درخواست‌ها</h2>
-          <NuxtLink to="/dashboard/requests" class="text-[13px] text-brick-500 hover:text-brick-600">
+          <NuxtLink to="/dashboard/requests" class="text-[13px] text-accent hover:text-accent-600">
             همه درخواست‌ها ←
           </NuxtLink>
         </div>

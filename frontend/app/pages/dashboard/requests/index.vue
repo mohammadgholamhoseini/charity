@@ -134,13 +134,13 @@ useHead({ title: 'درخواست‌های من — یاری‌جو' })
             <td><UiChip :label="request.statusLabel" :status="request.status" /></td>
             <td>
               <div class="flex items-center gap-3 text-[13px]">
-                <NuxtLink :to="`/dashboard/requests/${request.id}`" class="text-brick-500 hover:text-brick-600">
+                <NuxtLink :to="`/dashboard/requests/${request.id}`" class="text-accent hover:text-accent-600">
                   ویرایش
                 </NuxtLink>
                 <button
                   v-if="request.status === 'DRAFT'"
                   type="button"
-                  class="text-brick-500 hover:text-brick-600"
+                  class="text-accent hover:text-accent-600"
                   @click="publish(request)"
                 >
                   انتشار

@@ -77,7 +77,7 @@ watchEffect(() => {
       <p class="text-[14px] text-muted">{{ num(data?.totalElements ?? 0) }} درخواست فعال در این دسته</p>
     </div>
 
-    <div class="bg-cream-100 py-8">
+    <div class="bg-surface-2 py-8">
       <div class="page-shell grid gap-7 lg:grid-cols-[260px_1fr] items-start">
         <RequestFilterSidebar
           :categories="[]"

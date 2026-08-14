@@ -8,16 +8,24 @@ const { $api } = useNuxtApp()
 const { num } = useFormat()
 const toast = useToast()
 
-/** The eight label swatches from the design. */
+/**
+ * The eight label swatches from the design, all in the cool half of the wheel so a
+ * category chip never fights the page.
+ *
+ * This list is duplicated in the backend -- CategorySeeder seeds it and CategoryMapper
+ * falls back to the last pair -- because the chosen colours are stored per row in the
+ * database, not looked up from a palette key. Change one, change all three, and add a
+ * migration for the rows that already exist.
+ */
 const SWATCHES = [
-  { bg: '#F3E6D6', text: '#8E5A22' },
-  { bg: '#F7E3E0', text: '#96422F' },
-  { bg: '#E7EDF3', text: '#3D5A76' },
-  { bg: '#F1E4EC', text: '#7A4166' },
-  { bg: '#E6EFEC', text: '#3B6B5C' },
-  { bg: '#EFEAD9', text: '#7A6A2F' },
-  { bg: '#F0E7F3', text: '#5E4478' },
-  { bg: '#E9EDF2', text: '#3F4F66' },
+  { bg: '#D6F2F6', text: '#0B7F91' },
+  { bg: '#FBE4E8', text: '#9B1C31' },
+  { bg: '#DEE9FC', text: '#1F5FC0' },
+  { bg: '#E7E6F7', text: '#4B3F9E' },
+  { bg: '#DCEFE8', text: '#1E6E57' },
+  { bg: '#E4EEDC', text: '#4A6B2E' },
+  { bg: '#F2E4F2', text: '#7A3E75' },
+  { bg: '#E3EAF7', text: '#254F8E' },
 ]
 
 const rows = ref<CategoryResponse[]>([])
@@ -158,7 +166,7 @@ useHead({ title: 'دسته‌بندی‌ها — پنل ادمین' })
               </td>
               <td>
                 <div class="flex items-center gap-3 text-[13px]">
-                  <button type="button" class="text-brick-500 hover:text-brick-600" @click="startEdit(category)">
+                  <button type="button" class="text-accent hover:text-accent-600" @click="startEdit(category)">
                     ویرایش
                   </button>
                   <button
@@ -199,7 +207,7 @@ useHead({ title: 'دسته‌بندی‌ها — پنل ادمین' })
               class="w-10 h-10 rounded-[10px] transition-all"
               :style="{
                 backgroundColor: swatch.bg,
-                boxShadow: form.labelBg === swatch.bg ? 'inset 0 0 0 2px #241E19' : 'none',
+                boxShadow: form.labelBg === swatch.bg ? 'inset 0 0 0 2px #0F3070' : 'none',
               }"
               :aria-label="`رنگ ${swatch.bg}`"
               :aria-pressed="form.labelBg === swatch.bg"
@@ -213,7 +221,7 @@ useHead({ title: 'دسته‌بندی‌ها — پنل ادمین' })
 
         <UiSwitch v-model="form.active" label="وضعیت" description="دسته‌بندی غیرفعال در سایت دیده نمی‌شود." />
 
-        <div class="flex items-center gap-3 border-t border-cream-200 pt-5">
+        <div class="flex items-center gap-3 border-t border-surface-3 pt-5">
           <button type="button" class="btn btn-primary" :disabled="saving" @click="save">
             {{ saving ? 'در حال ذخیره…' : 'ذخیره' }}
           </button>

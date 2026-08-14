@@ -135,7 +135,7 @@ useJsonLd().requestDetail(request.value!)
             </div>
           </dl>
 
-          <p class="text-[13px] leading-7 text-muted border-t border-cream-200 pt-4">
+          <p class="text-[13px] leading-7 text-muted border-t border-surface-3 pt-4">
             جزئیات هویتی مددجو به‌درخواست خانواده منتشر نمی‌شود.
             مراکز فهرست‌شده در یاری‌جو توسط ادمین ثبت و تأیید شده‌اند.
           </p>
@@ -165,34 +165,34 @@ useJsonLd().requestDetail(request.value!)
           <div class="flex items-center gap-3">
             <BrandMark :size="38" on-dark />
             <div class="flex flex-col">
-              <span class="eyebrow" style="color: var(--color-ondark-3)">مرکز ثبت‌کننده</span>
-              <span class="text-[17px] font-bold text-ondark">{{ request.center.name }}</span>
+              <span class="eyebrow" style="color: var(--color-onink-3)">مرکز ثبت‌کننده</span>
+              <span class="text-[17px] font-bold text-onink">{{ request.center.name }}</span>
             </div>
           </div>
 
-          <dl class="flex flex-col gap-3 text-[14px] border-t pt-4" style="border-color: var(--color-ink-700)">
+          <dl class="flex flex-col gap-3 text-[14px] border-t pt-4" style="border-color: var(--color-ink-3)">
             <div v-if="request.center.cityName" class="flex justify-between gap-3">
-              <dt class="text-ondark-3">شهر</dt>
-              <dd class="text-ondark-2">{{ request.center.cityName }}</dd>
+              <dt class="text-onink-3">شهر</dt>
+              <dd class="text-onink-2">{{ request.center.cityName }}</dd>
             </div>
             <div v-if="request.center.contactPhone" class="flex justify-between gap-3">
-              <dt class="text-ondark-3">شماره تماس</dt>
-              <dd class="text-ondark-2 ltr">{{ request.center.contactPhone }}</dd>
+              <dt class="text-onink-3">شماره تماس</dt>
+              <dd class="text-onink-2 ltr">{{ request.center.contactPhone }}</dd>
             </div>
             <div v-if="request.center.responseHours" class="flex justify-between gap-3">
-              <dt class="text-ondark-3">ساعات پاسخ‌گویی</dt>
-              <dd class="text-ondark-2">{{ request.center.responseHours }}</dd>
+              <dt class="text-onink-3">ساعات پاسخ‌گویی</dt>
+              <dd class="text-onink-2">{{ request.center.responseHours }}</dd>
             </div>
             <div class="flex justify-between gap-3">
-              <dt class="text-ondark-3">درخواست فعال</dt>
-              <dd class="text-ondark-2">{{ num(request.center.activeRequestCount) }} مورد</dd>
+              <dt class="text-onink-3">درخواست فعال</dt>
+              <dd class="text-onink-2">{{ num(request.center.activeRequestCount) }} مورد</dd>
             </div>
           </dl>
 
           <a
             v-if="request.center.contactPhone"
             :href="`tel:${request.center.contactPhone}`"
-            class="btn btn-gold w-full"
+            class="btn btn-highlight w-full"
           >تماس با مرکز</a>
 
           <NuxtLink
@@ -203,11 +203,11 @@ useJsonLd().requestDetail(request.value!)
 
         <section v-if="similarRequests.length" class="card-flat p-6 flex flex-col gap-4">
           <h2 class="text-[17px] font-bold">درخواست‌های مشابه</h2>
-          <ul class="flex flex-col divide-y" style="border-color: var(--color-cream-200)">
+          <ul class="flex flex-col divide-y" style="border-color: var(--color-surface-3)">
             <li v-for="item in similarRequests" :key="item.id" class="py-3 first:pt-0 last:pb-0">
               <NuxtLink
                 :to="`/requests/${encodeURIComponent(item.slug)}`"
-                class="text-[14px] leading-7 hover:text-brick-500"
+                class="text-[14px] leading-7 hover:text-accent"
               >
                 {{ item.title }}
               </NuxtLink>

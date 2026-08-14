@@ -15,7 +15,7 @@ const emit = defineEmits<{ 'update:modelValue': [boolean] }>()
       :aria-checked="modelValue"
       :aria-label="label"
       class="relative shrink-0 w-[52px] h-[30px] rounded-full transition-colors"
-      :class="modelValue ? 'bg-brick-500' : 'bg-line'"
+      :class="modelValue ? 'bg-accent' : 'bg-line'"
       @click="emit('update:modelValue', !modelValue)"
     >
       <span

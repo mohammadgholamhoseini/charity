@@ -39,7 +39,7 @@ function signOut() {
 </script>
 
 <template>
-  <div class="min-h-screen flex" style="background: var(--color-cream-100)">
+  <div class="min-h-screen flex" style="background: var(--color-surface-2)">
     <!-- sidebar -->
     <aside
       class="dark-panel w-[230px] shrink-0 flex-col justify-between p-6 hidden lg:flex"
@@ -51,14 +51,14 @@ function signOut() {
             v-for="item in nav"
             :key="item.to"
             :to="item.to"
-            class="px-4 py-3 rounded-[10px] text-[14px] text-ondark-2 hover:text-ondark transition-colors"
-            active-class="!text-ondark"
-            :style="$route.path === item.to ? 'background: var(--color-ink-700)' : ''"
+            class="px-4 py-3 rounded-[10px] text-[14px] text-onink-2 hover:text-onink transition-colors"
+            active-class="!text-onink"
+            :style="$route.path === item.to ? 'background: var(--color-ink-3)' : ''"
           >{{ item.label }}</NuxtLink>
         </nav>
       </div>
 
-      <button type="button" class="text-[14px] text-ondark-3 hover:text-ondark text-start" @click="signOut">
+      <button type="button" class="text-[14px] text-onink-3 hover:text-onink text-start" @click="signOut">
         خروج از حساب
       </button>
     </aside>
@@ -88,7 +88,7 @@ function signOut() {
             <NuxtLink v-if="!auth.isAdmin.value" to="/dashboard/requests/new" class="btn btn-primary btn-sm">
               ثبت درخواست جدید
             </NuxtLink>
-            <NuxtLink to="/" class="text-[13px] text-muted hover:text-brick-500">مشاهده سایت</NuxtLink>
+            <NuxtLink to="/" class="text-[13px] text-muted hover:text-accent">مشاهده سایت</NuxtLink>
           </div>
         </div>
 
@@ -97,7 +97,7 @@ function signOut() {
             v-for="item in nav"
             :key="item.to"
             :to="item.to"
-            class="py-2.5 text-[14px] border-b border-cream-200 last:border-0"
+            class="py-2.5 text-[14px] border-b border-surface-3 last:border-0"
             @click="mobileNavOpen = false"
           >{{ item.label }}</NuxtLink>
           <button type="button" class="py-2.5 text-[14px] text-danger text-start" @click="signOut">

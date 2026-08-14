@@ -10,13 +10,13 @@ useJsonLd().breadcrumbs([{ name: 'خانه', path: '/' }, ...props.crumbs])
 
 <template>
   <nav aria-label="مسیر صفحه" class="flex items-center gap-2 text-[13px] text-muted flex-wrap">
-    <NuxtLink to="/" class="hover:text-brick-500">خانه</NuxtLink>
+    <NuxtLink to="/" class="hover:text-accent">خانه</NuxtLink>
     <template v-for="(crumb, index) in crumbs" :key="crumb.path">
       <span aria-hidden="true">←</span>
       <NuxtLink
         v-if="index < crumbs.length - 1"
         :to="crumb.path"
-        class="hover:text-brick-500"
+        class="hover:text-accent"
       >{{ crumb.name }}</NuxtLink>
       <span v-else class="text-body-2">{{ crumb.name }}</span>
     </template>

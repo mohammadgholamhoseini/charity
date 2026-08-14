@@ -65,7 +65,7 @@ const length = computed(() => String(props.modelValue ?? '').length)
       <button
         v-if="revealable"
         type="button"
-        class="absolute top-1/2 -translate-y-1/2 text-[13px] font-semibold text-brick-500 hover:text-brick-600"
+        class="absolute top-1/2 -translate-y-1/2 text-[13px] font-semibold text-accent hover:text-accent-600"
         style="inset-inline-end: 14px"
         @click="revealed = !revealed"
       >
