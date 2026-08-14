@@ -75,7 +75,7 @@ export default defineNuxtConfig({
     //
     // These three are also the pages that need `max-age=0` so a browser reload actually
     // asks us. That is not set here: Nitro's cache layer overwrites `cache-control` after
-    // route rules are applied, so it is done in `server/plugins/revalidate-headers.ts`.
+    // route rules are applied, so it is done in `server/middleware/revalidate-headers.ts`.
     '/': { swr: 300 },
     '/requests': { swr: 120 },
     '/centers': { swr: 600 },

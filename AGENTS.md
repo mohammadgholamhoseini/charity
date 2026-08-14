@@ -90,11 +90,18 @@ Things that are easy to break:
      non-GET, because every panel write passes through it. Clearing has to be `getKeys()` +
      `removeItem()` per key — `useStorage('cache').clear()` and `useStorage().clear('cache')`
      both resolve happily and delete nothing.
-  2. `app/server/plugins/revalidate-headers.ts` adds `max-age=0, must-revalidate`. Nitro
-     emits only `s-maxage`, and with no `max-age` a browser invents its own freshness from
-     `last-modified` and answers a reload from its own cache. The giveaway is F5 showing the
-     old page while Ctrl+F5 shows the new one. This cannot be done with a `headers` route
-     rule: Nitro's cache layer assigns `cache-control` unconditionally, after route rules.
+  2. `app/server/middleware/revalidate-headers.ts` rewrites `cache-control` to
+     `max-age=0, must-revalidate` wherever Nitro emits an `s-maxage`. Nitro sends no
+     `max-age`, and a response with neither `max-age` nor `expires` lets a browser invent
+     its own freshness from `last-modified` and answer a reload from its own cache. The
+     giveaway is F5 showing the old page while Ctrl+F5 shows the new one.
+
+     It has to be done by wrapping `res.setHeader`, and the reason is the **304**. A route
+     rule is discarded (Nitro's cache layer assigns `cache-control` after route rules run),
+     and a `beforeResponse` hook only ever sees the 200 — h3's `handleCacheHeaders` writes
+     `public, max-age=<n>, s-maxage=<n>` and calls `res.end()` itself. A 304's headers
+     *replace* those on the browser's stored copy, so that one response was telling every
+     browser "do not ask again for five minutes" the moment it revalidated successfully.
 - **Never put a `swr`/`isr` route rule on a path with a Persian slug.** `swr` makes Nuxt
   serve the payload separately and emit `<link rel="preload" href="<route>/_payload.json">`,
   and it builds that href by encoding a path that is already percent-encoded:
