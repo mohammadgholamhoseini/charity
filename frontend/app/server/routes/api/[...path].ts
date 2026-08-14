@@ -79,12 +79,20 @@ function isAuthCall(path: string) {
  * mapping from endpoint to affected pages would be a list to forget to update, and the
  * cache is a handful of HTML documents that cost one render each to rebuild.
  *
- * `cache:` is Nitro's own mount for `defineCachedEventHandler` and the `swr` route rules,
- * which store under `cache:nitro:handlers:`. Nothing else in this app writes there.
+ * `cache:` is Nitro's own mount for the `swr` route rules, which store one entry per cached
+ * page under `cache:nitro:routes:`. Nothing else in this app writes there.
+ *
+ * The keys are removed one by one rather than with `clear()`, which sounds like the obvious
+ * call and is a trap: `useStorage('cache').clear()` and `useStorage().clear('cache')` both
+ * resolve without error and leave every key in place. Verified against the running container
+ * — `getKeys()` returned the same two entries before and after each of them, and returned
+ * nothing after this loop.
  */
 async function invalidateRenderedPages() {
   try {
-    await useStorage('cache').clear()
+    const storage = useStorage('cache')
+    const keys = await storage.getKeys()
+    await Promise.all(keys.map(key => storage.removeItem(key)))
   }
   catch {
     // A cache that would not clear is not a reason to fail a write that already succeeded:

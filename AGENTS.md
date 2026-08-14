@@ -85,6 +85,12 @@ Things that are easy to break:
   that origin is unreliable from Iran and sits in the critical path of the LCP element.
 - **Route params are percent-encoded.** Decode exactly once via `useRouteSlug()`, and
   do not encode again in `app/api/endpoints.ts` — the URL layer does that.
+- **The `swr` pages are invalidated from the API proxy**, not by waiting for the window to
+  expire. Every panel write passes through `app/server/routes/api/[...path].ts`, so a
+  successful non-GET there drops the cached renders — otherwise a centre publishes a request
+  and stares at an unchanged home page for five minutes. Note that clearing the entries has
+  to be `getKeys()` + `removeItem()` per key: `useStorage('cache').clear()` and
+  `useStorage().clear('cache')` both resolve happily and delete nothing.
 - **Never put a `swr`/`isr` route rule on a path with a Persian slug.** `swr` makes Nuxt
   serve the payload separately and emit `<link rel="preload" href="<route>/_payload.json">`,
   and it builds that href by encoding a path that is already percent-encoded:
