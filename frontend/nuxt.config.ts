@@ -18,21 +18,6 @@ export default defineNuxtConfig({
 
   typescript: { strict: true, typeCheck: false },
 
-  experimental: {
-    /**
-     * Off because the slugs are Persian.
-     *
-     * Prerendering the five static pages switches payload extraction on for the whole app,
-     * and the client then asks for `<route>/_payload.json` on every server-rendered page too.
-     * It builds that URL by encoding a path that is already percent-encoded, so
-     * `/requests/%DA%A9…` becomes `/requests/%25DA%25A9…/_payload.json`, which matches no
-     * route. Nitro answers with the HTML 404 page, parsing it as JSON throws, the payload is
-     * lost, and hydration re-runs the page with no data — so every request and centre detail
-     * page rendered a 404 in the browser while curl saw the correct page. The extraction only
-     * ever saved a request on five static ASCII pages.
-     */
-    payloadExtraction: false,
-  },
 
   runtimeConfig: {
     // Server-only. SSR fetches the API directly rather than looping back through our
@@ -78,11 +63,18 @@ export default defineNuxtConfig({
   routeRules: {
     // Public pages are identical for every visitor -- the panel is client-rendered and
     // the header's auth state is client-only -- so the rendered HTML is safe to cache.
+    //
+    // Only the listings, though. `swr` makes Nuxt serve the payload separately and emit a
+    // <link rel=preload> for `<route>/_payload.json`, and it builds that href by encoding a
+    // path that is already percent-encoded: `/requests/%DA%A9…` is asked for as
+    // `/requests/%25DA%25A9…/_payload.json`. That matches no route, Nitro answers with the
+    // HTML 404 page, parsing it as JSON throws, and the page hydrates with no data and
+    // renders its own 404 -- so every detail page looked correct to curl and broken in a
+    // browser. The listing paths are ASCII and unaffected; the slug routes are not, and the
+    // slugs are Persian by design, so those two rules are gone.
     '/': { swr: 300 },
     '/requests': { swr: 120 },
-    '/requests/**': { swr: 300 },
     '/centers': { swr: 600 },
-    '/centers/**': { swr: 600 },
     '/about': { prerender: true },
     '/contact': { prerender: true },
     '/faq': { prerender: true },
