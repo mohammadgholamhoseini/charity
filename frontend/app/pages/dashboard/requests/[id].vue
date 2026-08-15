@@ -68,6 +68,11 @@ useHead({ title: 'ویرایش درخواست — یاری‌جو' })
         style="background: var(--color-danger-bg); color: var(--color-danger)"
       >
         <strong>دلیل غیرفعال شدن:</strong> {{ request.statusNote }}
+        <!-- Says why the status controls are absent. Without this the centre sees a deactivated
+             request it cannot restore and has nothing telling it that is deliberate. -->
+        <p v-if="request.lockedByAdmin" class="mt-1">
+          این درخواست توسط ادمین غیرفعال شده است؛ برای انتشار دوباره با ادمین تماس بگیرید.
+        </p>
       </div>
 
       <RequestForm

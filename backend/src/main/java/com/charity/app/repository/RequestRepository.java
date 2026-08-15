@@ -38,6 +38,30 @@ public interface RequestRepository extends JpaRepository<Request, Long>, JpaSpec
             "center", "center.city", "center.city.province", "center.province", "category"})
     Page<Request> findAll(Specification<Request> spec, Pageable pageable);
 
+    /**
+     * Loads a request with everything the bot message template dereferences.
+     *
+     * <p>The announcement listener is {@code @Async}, so it runs on a thread with no persistence
+     * context, and {@code open-in-view} is off. A plain {@code findById} therefore hands it a
+     * detached entity whose associations are uninitialised proxies, and the first
+     * {@code getCategory().getName()} throws {@code LazyInitializationException} -- straight into
+     * the catch-all in {@code AbstractBotMessagingService}, which logs and returns null. The
+     * result is that nothing is ever posted and {@code balePosted} stays false, with no HTTP call
+     * attempted. That is why no request had ever reached Bale.
+     *
+     * <p>Written as JPQL rather than {@code @EntityGraph} on purpose. Entity-graph attribute paths
+     * are strings that are not checked until the query runs, and a typo there has already cost this
+     * project a production 500. A bad path in this query fails at context startup instead.
+     */
+    @Query("""
+           SELECT r FROM Request r
+           LEFT JOIN FETCH r.center c
+           LEFT JOIN FETCH c.city
+           LEFT JOIN FETCH r.category
+           WHERE r.id = :id
+           """)
+    Optional<Request> findForMessaging(@Param("id") Long id);
+
     Optional<Request> findBySlugAndDeletedAtIsNull(String slug);
 
     /** Used to tell "soft-deleted" (410) apart from "never existed" (404). */

@@ -51,7 +51,11 @@ public abstract class AbstractBotMessagingService implements MessagingService {
     @Override
     public Integer publishRequest(Request request) {
         if (!isEnabled()) {
-            log.debug("{} disabled; skipping announcement for request {}", getName(), request.getId());
+            // INFO, not DEBUG. The root level is INFO and nothing configures it lower, so a channel
+            // that is switched off or half-configured used to be completely silent -- indistinguishable
+            // from one that posted successfully. That silence is most of why this took so long to find.
+            log.info("{} is disabled or not fully configured; skipping announcement for request {}",
+                    getName(), request.getId());
             return null;
         }
         try {

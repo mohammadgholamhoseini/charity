@@ -99,6 +99,20 @@ public class CenterController {
         return requests.markCompletedByCenter(id);
     }
 
+    /**
+     * A centre changing the status of its own request -- the mirror of the admin endpoint.
+     *
+     * <p>The two fixed-target verbs above stay for the panel builds that already call them; this is
+     * the one the status dialog uses, so withdrawing a request no longer means deleting it. The
+     * transitions themselves are policed by {@code RequestStatusPolicy}, ownership by the service,
+     * and a request an admin took down is refused there.
+     */
+    @PostMapping("/requests/{id}/status")
+    public RequestDetailResponse changeRequestStatus(@PathVariable Long id,
+                                                     @Valid @RequestBody RequestStatusChangeDto request) {
+        return requests.changeStatusByCenter(id, request);
+    }
+
     @DeleteMapping("/requests/{id}")
     public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
         requests.softDeleteByCenter(id);

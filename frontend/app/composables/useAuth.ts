@@ -62,8 +62,26 @@ export function useAuth() {
     }
   }
 
+  /**
+   * Signs out and leaves for the login page.
+   *
+   * Lives here rather than in the dashboard layout because signing out has to be reachable from
+   * the public pages too — a user who clicks «مشاهده سایت» out of the panel was previously stuck
+   * with no way back out of their session.
+   *
+   * Note this is a client-side discard only: there is no logout endpoint, so the JWT stays valid
+   * until it expires. Fine for a shared computer being closed, not a revocation mechanism.
+   */
+  async function logout() {
+    clear()
+    await navigateTo('/login')
+  }
+
   /** Where a given role's panel starts. */
   const homePath = computed(() => (isAdmin.value ? '/dashboard/admin' : '/dashboard'))
 
-  return { token, user, ready, isAuthenticated, role, isAdmin, isCenter, hydrate, setSession, clear, homePath }
+  return {
+    token, user, ready, isAuthenticated, role, isAdmin, isCenter,
+    hydrate, setSession, clear, logout, homePath,
+  }
 }

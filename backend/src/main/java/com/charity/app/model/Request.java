@@ -3,6 +3,7 @@ package com.charity.app.model;
 import com.charity.app.common.JsonListConverter;
 import com.charity.app.common.JsonMapConverter;
 import com.charity.app.model.enums.RequestStatus;
+import com.charity.app.model.enums.UserRole;
 import com.charity.app.model.enums.Urgency;
 import jakarta.persistence.*;
 import lombok.*;
@@ -88,9 +89,20 @@ public class Request {
     @Builder.Default
     private RequestStatus status = RequestStatus.PUBLISHED;
 
-    /** Why an admin deactivated this. */
+    /** Why this was deactivated. */
     @Column(name = "status_note", length = 1000)
     private String statusNote;
+
+    /**
+     * Which role took this out of the listing, or null when it is not deactivated.
+     *
+     * <p>A centre may withdraw and restore its own request, but an admin's takedown is a moderation
+     * decision it must not be able to reverse. Distinguishing the two needs the actor remembered.
+     * Set on the way into {@code INACTIVE} and cleared on the way out.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "deactivated_by", length = 16)
+    private UserRole deactivatedBy;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

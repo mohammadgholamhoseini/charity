@@ -35,11 +35,20 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
           the same width so the header does not jump when hydration fills it in.
         -->
         <ClientOnly>
-          <NuxtLink
-            v-if="auth.isAuthenticated.value"
-            :to="auth.homePath.value"
-            class="text-[15px] font-semibold text-accent px-4 py-2.5 hover:text-accent-600"
-          >پنل من</NuxtLink>
+          <template v-if="auth.isAuthenticated.value">
+            <NuxtLink
+              :to="auth.homePath.value"
+              class="text-[15px] font-semibold text-accent px-4 py-2.5 hover:text-accent-600"
+            >پنل من</NuxtLink>
+            <!-- Signing out has to be reachable from the public pages. Until this was here, the
+                 only logout in the app was inside the dashboard layout, so anyone who followed
+                 «مشاهده سایت» out of the panel had no way to end their session. -->
+            <button
+              type="button"
+              class="text-[15px] text-muted px-2 py-2.5 hover:text-ink transition-colors"
+              @click="auth.logout()"
+            >خروج</button>
+          </template>
           <NuxtLink
             v-else
             to="/login"
@@ -78,6 +87,12 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
               :to="auth.isAuthenticated.value ? auth.homePath.value : '/login'"
               class="py-3 text-[15px] font-semibold text-accent"
             >{{ auth.isAuthenticated.value ? 'پنل من' : 'ورود مراکز' }}</NuxtLink>
+            <button
+              v-if="auth.isAuthenticated.value"
+              type="button"
+              class="py-3 text-[15px] text-start text-danger"
+              @click="auth.logout()"
+            >خروج از حساب</button>
           </ClientOnly>
         </div>
       </nav>

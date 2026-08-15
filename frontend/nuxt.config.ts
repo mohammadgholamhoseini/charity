@@ -92,9 +92,21 @@ export default defineNuxtConfig({
     },
     '/login': { headers: { 'X-Robots-Tag': 'noindex, follow' } },
 
+    // `/profile` renders the signed-in user's own account and so needs exactly what
+    // `/dashboard/**` gets -- but it sits outside that prefix, so the rule above does not
+    // reach it and it has to say so itself. Without this the page would be server-rendered
+    // and indexable.
+    '/profile': {
+      ssr: false,
+      headers: { 'X-Robots-Tag': 'noindex, nofollow' },
+    },
+
     // Legacy URLs from the previous SPA.
     '/cases': { redirect: { to: '/requests', statusCode: 301 } },
-    '/profile': { redirect: { to: '/dashboard/settings', statusCode: 301 } },
+    // The two panel settings pages were folded back into one `/profile` for both roles;
+    // these keep old links and bookmarks working.
+    '/dashboard/settings': { redirect: { to: '/profile', statusCode: 301 } },
+    '/dashboard/admin/settings': { redirect: { to: '/profile', statusCode: 301 } },
   },
 
   nitro: {

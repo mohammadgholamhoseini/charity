@@ -97,6 +97,8 @@ export interface RequestSummary {
   amountNeeded: number
   status: RequestStatus
   statusLabel: string
+  /** An admin took this down, so the owning centre cannot put it back — only an admin can. */
+  lockedByAdmin: boolean
   urgency: Urgency
   urgencyLabel: string
   category: CategoryRef | null

@@ -6,14 +6,13 @@
  * building two layouts would just be two places to fix every future change.
  */
 const auth = useAuth()
-const router = useRouter()
 
 const centerNav = [
   { label: 'داشبورد', to: '/dashboard' },
   { label: 'درخواست‌های من', to: '/dashboard/requests' },
   { label: 'ثبت درخواست جدید', to: '/dashboard/requests/new' },
   { label: 'دسته‌های مجاز مرکز', to: '/dashboard/categories' },
-  { label: 'تنظیمات', to: '/dashboard/settings' },
+  { label: 'پروفایل من', to: '/profile' },
 ]
 
 const adminNav = [
@@ -26,16 +25,14 @@ const adminNav = [
   // every centre needs a city, so without this screen a fresh deployment cannot
   // create its first centre.
   { label: 'استان‌ها و شهرها', to: '/dashboard/admin/locations' },
-  { label: 'تنظیمات', to: '/dashboard/admin/settings' },
+  { label: 'پروفایل من', to: '/profile' },
 ]
 
 const nav = computed(() => (auth.isAdmin.value ? adminNav : centerNav))
 const mobileNavOpen = ref(false)
 
-function signOut() {
-  auth.clear()
-  router.push('/login')
-}
+// Signing out lives on the composable now, because the site header needs it too.
+const signOut = () => auth.logout()
 </script>
 
 <template>

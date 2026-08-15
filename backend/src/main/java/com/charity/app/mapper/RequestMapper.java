@@ -3,6 +3,7 @@ package com.charity.app.mapper;
 import com.charity.app.common.AppUrls;
 import com.charity.app.model.Request;
 import com.charity.app.model.enums.RequestStatus;
+import com.charity.app.model.enums.UserRole;
 import com.charity.app.payload.RequestDetailResponse;
 import com.charity.app.payload.RequestSummary;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class RequestMapper {
                 request.getAmountNeeded(),
                 request.getStatus(),
                 request.getStatus() == null ? null : request.getStatus().label(),
+                lockedByAdmin(request),
                 request.getUrgency(),
                 request.getUrgency() == null ? null : request.getUrgency().label(),
                 categoryMapper.toRef(request.getCategory()),
@@ -63,6 +65,7 @@ public class RequestMapper {
                 request.getStatus(),
                 request.getStatus() == null ? null : request.getStatus().label(),
                 request.getStatus() == RequestStatus.PUBLISHED,
+                lockedByAdmin(request),
                 includePrivateNotes ? request.getStatusNote() : null,
                 request.getUrgency(),
                 request.getUrgency() == null ? null : request.getUrgency().label(),
@@ -76,6 +79,12 @@ public class RequestMapper {
                 urls.iso(request.getCreatedAt()),
                 urls.iso(request.getPublishedAt()),
                 urls.iso(request.getUpdatedAt()));
+    }
+
+    /** True only while an admin's takedown is in force, which is the case a centre cannot undo. */
+    private static boolean lockedByAdmin(Request request) {
+        return request.getStatus() == RequestStatus.INACTIVE
+                && request.getDeactivatedBy() == UserRole.ADMIN;
     }
 
     private List<String> documentUrls(Request request) {

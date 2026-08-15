@@ -25,6 +25,63 @@ const loadError = ref(false)
 const deleteTarget = ref<RequestSummary | null>(null)
 const busy = ref(false)
 
+const statusTarget = ref<RequestSummary | null>(null)
+const nextStatus = ref<RequestStatus>('PUBLISHED')
+const note = ref('')
+const noteRequired = computed(() => nextStatus.value === 'INACTIVE')
+
+/**
+ * Mirrors RequestStatusPolicy.ALLOWED on the server, minus the transitions only an admin has.
+ * The server is still the authority — this exists so the dialog does not offer a move that
+ * would come back as a 409.
+ */
+const CENTER_TRANSITIONS: Record<string, RequestStatus[]> = {
+  DRAFT: ['PUBLISHED', 'INACTIVE'],
+  PUBLISHED: ['COMPLETED', 'INACTIVE'],
+  COMPLETED: ['PUBLISHED', 'INACTIVE'],
+  INACTIVE: ['PUBLISHED'],
+}
+
+const STATUS_LABELS: Record<string, { label: string, description: string }> = {
+  PUBLISHED: { label: 'منتشرشده', description: 'در فهرست عمومی و صفحه دسته نمایش داده می‌شود.' },
+  COMPLETED: { label: 'تکمیل‌شده', description: 'کمک دریافت شده؛ از فهرست فعال خارج می‌شود اما نشانی آن باقی می‌ماند.' },
+  INACTIVE: { label: 'غیرفعال', description: 'موقتاً از سایت برداشته می‌شود؛ بعداً می‌توانید دوباره منتشرش کنید.' },
+}
+
+const statusOptions = computed(() =>
+  (CENTER_TRANSITIONS[statusTarget.value?.status ?? ''] ?? [])
+    .map(value => ({ value, ...STATUS_LABELS[value]! })))
+
+function openStatusChange(request: RequestSummary) {
+  statusTarget.value = request
+  nextStatus.value = statusOptions.value[0]?.value ?? request.status
+  note.value = ''
+}
+
+async function saveStatus() {
+  if (!statusTarget.value) return
+  if (noteRequired.value && !note.value.trim()) {
+    toast.error('برای غیرفعال کردن درخواست، ثبت دلیل الزامی است.')
+    return
+  }
+  busy.value = true
+  try {
+    await $api(ep.centerRequestStatus(statusTarget.value.id), {
+      method: 'POST',
+      body: { status: nextStatus.value, note: note.value.trim() || null },
+    })
+    toast.success('وضعیت درخواست تغییر کرد.')
+    statusTarget.value = null
+    load()
+  }
+  catch (error) {
+    toast.error(apiErrorMessage(error))
+  }
+  finally {
+    busy.value = false
+  }
+}
+
 async function load() {
   loading.value = true
   loadError.value = false
@@ -124,8 +181,10 @@ useHead({ title: 'درخواست‌های من — یاری‌جو' })
             <td>
               <div class="flex flex-col gap-1">
                 <span class="font-semibold">{{ request.title }}</span>
-                <span v-if="request.statusNote" class="text-[12px] text-danger">
-                  دلیل: {{ request.statusNote }}
+                <!-- The full reason lives on the detail page; here it is enough to say why the
+                     status controls are missing for this row. -->
+                <span v-if="request.lockedByAdmin" class="text-[12px] text-danger">
+                  توسط ادمین غیرفعال شده است
                 </span>
               </div>
             </td>
@@ -145,6 +204,14 @@ useHead({ title: 'درخواست‌های من — یاری‌جو' })
                 >
                   انتشار
                 </button>
+                <button
+                  v-if="!request.lockedByAdmin"
+                  type="button"
+                  class="text-accent hover:text-accent-600"
+                  @click="openStatusChange(request)"
+                >
+                  تغییر وضعیت
+                </button>
                 <button type="button" class="text-danger hover:underline" @click="deleteTarget = request">
                   حذف
                 </button>
@@ -154,6 +221,54 @@ useHead({ title: 'درخواست‌های من — یاری‌جو' })
         </tbody>
       </table>
     </section>
+
+    <UiModal
+      :open="Boolean(statusTarget)"
+      title="تغییر وضعیت درخواست"
+      size="md"
+      @close="statusTarget = null"
+    >
+      <div v-if="statusTarget" class="flex flex-col gap-5">
+        <p class="text-[14px] text-muted">
+          {{ statusTarget.title }} · <span class="ltr">{{ statusTarget.code }}</span>
+        </p>
+
+        <fieldset class="flex flex-col gap-3">
+          <legend class="label">وضعیت جدید</legend>
+          <label
+            v-for="option in statusOptions"
+            :key="option.value"
+            class="flex items-start gap-3 p-4 rounded-[12px] border cursor-pointer transition-colors"
+            :class="nextStatus === option.value ? 'border-accent bg-accent-50' : 'border-line-soft'"
+          >
+            <input v-model="nextStatus" type="radio" :value="option.value" class="mt-1.5 accent-[var(--color-accent)]">
+            <span class="flex flex-col gap-1">
+              <span class="text-[14px] font-bold">{{ option.label }}</span>
+              <span class="help">{{ option.description }}</span>
+            </span>
+          </label>
+        </fieldset>
+
+        <UiField
+          v-model="note"
+          label="یادداشت"
+          textarea
+          :rows="3"
+          :required="noteRequired"
+          :maxlength="1000"
+          :hint="noteRequired
+            ? 'برای غیرفعال کردن درخواست، ثبت دلیل الزامی است.'
+            : 'اختیاری — فقط برای شما و ادمین قابل مشاهده است.'"
+        />
+
+        <div class="flex items-center gap-3">
+          <button type="button" class="btn btn-primary" :disabled="busy" @click="saveStatus">
+            {{ busy ? 'در حال ذخیره…' : 'ثبت تغییر وضعیت' }}
+          </button>
+          <button type="button" class="btn btn-secondary" @click="statusTarget = null">انصراف</button>
+        </div>
+      </div>
+    </UiModal>
 
     <UiConfirm
       :open="Boolean(deleteTarget)"

@@ -34,6 +34,7 @@ export const ep = {
   centerRequest: (id: number) => `/center/requests/${id}`,
   centerRequestSubmit: (id: number) => `/center/requests/${id}/submit`,
   centerRequestComplete: (id: number) => `/center/requests/${id}/complete`,
+  centerRequestStatus: (id: number) => `/center/requests/${id}/status`,
   centerRequestDocuments: (id: number) => `/center/requests/${id}/documents`,
 
   // admin panel

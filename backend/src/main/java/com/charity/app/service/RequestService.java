@@ -12,6 +12,7 @@ import com.charity.app.mapper.RequestMapper;
 import com.charity.app.model.*;
 import com.charity.app.model.enums.CenterStatus;
 import com.charity.app.model.enums.RequestStatus;
+import com.charity.app.model.enums.UserRole;
 import com.charity.app.model.enums.Urgency;
 import com.charity.app.payload.*;
 import com.charity.app.repository.*;
@@ -226,12 +227,64 @@ public class RequestService {
     /** «انتشار درخواست» -- takes a draft live. Was «ارسال برای بررسی» when an admin had to approve. */
     @Transactional
     public RequestDetailResponse publishByCenter(Long id) {
-        Request request = ownedByCurrentCenter(id);
-        statusPolicy.assertTransition(request.getStatus(), RequestStatus.PUBLISHED);
+        return applyStatusByCenter(ownedByCurrentCenter(id), RequestStatus.PUBLISHED, null);
+    }
 
-        boolean firstPublication = request.getPublishedAt() == null;
-        request.setStatus(RequestStatus.PUBLISHED);
-        request.setStatusNote(null);
+    @Transactional
+    public RequestDetailResponse markCompletedByCenter(Long id) {
+        return applyStatusByCenter(ownedByCurrentCenter(id), RequestStatus.COMPLETED, null);
+    }
+
+    /**
+     * A centre setting the status of its own request.
+     *
+     * <p>Centres manage their own listings -- publish a draft, mark it met, withdraw it -- so the
+     * transitions available here are the same ones an admin has, minus the ability to reverse an
+     * admin's decision. {@link #assertNotAdminTakedown} is what draws that line.
+     */
+    @Transactional
+    public RequestDetailResponse changeStatusByCenter(Long id, RequestStatusChangeDto dto) {
+        return applyStatusByCenter(ownedByCurrentCenter(id), dto.status(), dto.note());
+    }
+
+    @Transactional
+    public RequestDetailResponse changeStatus(Long id, RequestStatusChangeDto dto) {
+        return applyStatus(loadById(id), dto.status(), dto.note(), UserRole.ADMIN);
+    }
+
+    private RequestDetailResponse applyStatusByCenter(Request request, RequestStatus target, String note) {
+        assertNotAdminTakedown(request, target);
+        return applyStatus(request, target, note, UserRole.CENTER);
+    }
+
+    /**
+     * Refuses to let a centre move a request an admin took down.
+     *
+     * <p>Deactivation is the only moderation tool an admin has short of deleting the request, and
+     * until {@code deactivatedBy} existed a centre could republish straight over it -- and the old
+     * publish path cleared {@code statusNote} on the way, so the mandatory reason vanished with it.
+     * A centre's own withdrawal is untouched: it set the flag to CENTER and can undo it freely.
+     */
+    private void assertNotAdminTakedown(Request request, RequestStatus target) {
+        if (request.getStatus() == RequestStatus.INACTIVE
+                && request.getDeactivatedBy() == UserRole.ADMIN
+                && target != RequestStatus.INACTIVE) {
+            throw new ForbiddenException(
+                    "این درخواست توسط ادمین غیرفعال شده است و تنها ادمین می‌تواند وضعیت آن را تغییر دهد");
+        }
+    }
+
+    private RequestDetailResponse applyStatus(Request request, RequestStatus target, String note, UserRole actor) {
+        statusPolicy.assertTransition(request.getStatus(), target);
+        statusPolicy.assertNoteProvided(target, note);
+
+        boolean firstPublication = target == RequestStatus.PUBLISHED && request.getPublishedAt() == null;
+
+        request.setStatus(target);
+        request.setStatusNote(note);
+        // Only meaningful while the request is down; leaving it set would make a later takedown by
+        // the centre look like an admin's and lock the centre out of its own request.
+        request.setDeactivatedBy(target == RequestStatus.INACTIVE ? actor : null);
         if (firstPublication) {
             request.setPublishedAt(LocalDateTime.now(urls.zone()));
         }
@@ -241,37 +294,6 @@ public class RequestService {
             events.publishEvent(new RequestPublishedEvent(saved.getId()));
         }
         return mapper.toDetail(saved, 0, true);
-    }
-
-    @Transactional
-    public RequestDetailResponse changeStatus(Long id, RequestStatusChangeDto dto) {
-        Request request = loadById(id);
-        RequestStatus target = dto.status();
-
-        statusPolicy.assertTransition(request.getStatus(), target);
-        statusPolicy.assertNoteProvided(target, dto.note());
-
-        boolean firstPublication = target == RequestStatus.PUBLISHED && request.getPublishedAt() == null;
-
-        request.setStatus(target);
-        request.setStatusNote(dto.note());
-        if (firstPublication) {
-            request.setPublishedAt(LocalDateTime.now(urls.zone()));
-        }
-        Request savedRequest = requests.save(request);
-
-        if (firstPublication) {
-            events.publishEvent(new RequestPublishedEvent(savedRequest.getId()));
-        }
-        return mapper.toDetail(savedRequest, 0, true);
-    }
-
-    @Transactional
-    public RequestDetailResponse markCompletedByCenter(Long id) {
-        Request request = ownedByCurrentCenter(id);
-        statusPolicy.assertTransition(request.getStatus(), RequestStatus.COMPLETED);
-        request.setStatus(RequestStatus.COMPLETED);
-        return mapper.toDetail(requests.save(request), 0, true);
     }
 
     @Transactional
@@ -420,10 +442,15 @@ public class RequestService {
         return "RQ-" + (1000 + id);
     }
 
-    /** Kept for the messaging listener, which needs the entity rather than a DTO. */
+    /**
+     * Kept for the messaging listener, which needs the entity rather than a DTO.
+     *
+     * <p>Must fetch the associations eagerly: the listener is {@code @Async} and this transaction
+     * is closed by the time it reads them. See {@link RequestRepository#findForMessaging}.
+     */
     @Transactional(readOnly = true)
     public Request loadForMessaging(Long id) {
-        return requests.findById(id).orElseThrow(() -> new NotFoundException("درخواست یافت نشد"));
+        return requests.findForMessaging(id).orElseThrow(() -> new NotFoundException("درخواست یافت نشد"));
     }
 
     @Transactional

@@ -15,6 +15,10 @@ import java.time.OffsetDateTime;
  *
  * <p>There is no city field: the location a card shows is the centre's, and it arrives on
  * {@link CenterRef}.
+ *
+ * <p>{@code lockedByAdmin} tells the centre panel that this one was taken down by an admin and it
+ * cannot put it back, so the dialog can say so rather than offering an action that 403s. It is not
+ * sensitive -- a deactivated request never appears in a public listing at all.
  */
 public record RequestSummary(Long id,
                              String code,
@@ -24,6 +28,7 @@ public record RequestSummary(Long id,
                              BigDecimal amountNeeded,
                              RequestStatus status,
                              String statusLabel,
+                             boolean lockedByAdmin,
                              Urgency urgency,
                              String urgencyLabel,
                              CategoryRef category,

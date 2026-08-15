@@ -9,13 +9,9 @@ const auth = useAuth()
 const route = useRoute()
 const config = useRuntimeConfig()
 
-/**
- * The role tabs are a hint, not a gate: the backend decides the role from the account
- * itself. They exist because the design has them and they tell a centre it is in the
- * right place — but the form submits identically either way.
- */
-const tab = ref<'CENTER' | 'ADMIN'>('CENTER')
-
+// There used to be «مرکز خیریه» / «ادمین» tabs here. They were decorative: the same endpoint,
+// the same payload with no role field, and a redirect driven by the role the server returns.
+// A control that looks like it selects something but selects nothing is worse than no control.
 const username = ref('')
 const password = ref('')
 const remember = ref(true)
@@ -97,20 +93,9 @@ useSeo({
       <form class="w-full max-w-[420px] flex flex-col gap-6" novalidate @submit.prevent="submit">
         <div class="flex flex-col gap-2">
           <h2 class="text-[24px] font-extrabold">خوش آمدید</h2>
-          <p class="text-[14px] text-muted">برای ادامه وارد حساب خود شوید.</p>
-        </div>
-
-        <div class="grid grid-cols-2 p-1 rounded-[999px]" style="background: var(--color-surface-3)">
-          <button
-            v-for="option in [{ value: 'CENTER', label: 'مرکز خیریه' }, { value: 'ADMIN', label: 'ادمین' }]"
-            :key="option.value"
-            type="button"
-            class="py-2.5 rounded-[999px] text-[14px] font-semibold transition-colors"
-            :class="tab === option.value ? 'bg-surface text-ink shadow-sm' : 'text-muted'"
-            @click="tab = option.value as 'CENTER' | 'ADMIN'"
-          >
-            {{ option.label }}
-          </button>
+          <p class="text-[14px] text-muted">
+            با حساب مرکز یا ادمین وارد شوید؛ پنل متناسب با حساب شما باز می‌شود.
+          </p>
         </div>
 
         <UiField
