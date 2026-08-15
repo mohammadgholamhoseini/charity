@@ -61,6 +61,22 @@ Key domain notes:
   `REJECTED` are unreachable and kept only so pre-V9 rows still deserialise — the live
   workflow is whatever `RequestStatusPolicy.ALLOWED` says, nothing else. An admin can take
   a request down (`INACTIVE`, note required), put it back, or mark it `COMPLETED`.
+- **A centre manages its own listing; an admin's takedown outranks it.** A centre may publish,
+  complete, and withdraw its own requests through `POST /api/center/requests/{id}/status`. What it
+  may not do is reverse a deactivation an admin made — `requests.deactivated_by` records which role
+  took it down, and the centre paths refuse when it says `ADMIN`. Before V11 there was no such
+  column, `INACTIVE → PUBLISHED` was simply allowed, and the publish path cleared `status_note` on
+  the way, so a centre could undo a moderation decision and erase its stated reason with it. The
+  column is set entering `INACTIVE` and cleared leaving it; leaving it set would lock a centre out
+  of a request it withdrew itself.
+- **Anything the bot message template touches must be fetch-joined.** The announcement listener is
+  `@Async` and `open-in-view` is off, so the entity reaches it detached: a plain `findById` gives it
+  uninitialised proxies and the first association read throws `LazyInitializationException` into the
+  catch-all in `AbstractBotMessagingService`, which logs and returns null. No HTTP call is attempted
+  and `bale_posted` stays false. That is how Bale silently never worked at all. Load through
+  `RequestRepository.findForMessaging`, and if you add a field to the template, add it to that
+  query. It is JPQL rather than `@EntityGraph` deliberately — entity-graph paths are unchecked
+  strings that fail at runtime, JPQL fails at startup.
 - **A request has no city, deadline, contact details or beneficiary name.** The city and
   phone belong to the centre and are read from there — `?city=` and `?province=` filter
   through `request → center → city`, which is where `requests.city_id` was backfilled from
@@ -133,6 +149,13 @@ Things that are easy to break:
   JavaScript runs. `curl` sees 200 and the right content throughout. `/` and `/requests` are
   ASCII and cache fine; `/requests/**` and `/centers/**` cannot. `experimental.payloadExtraction:
   false` does *not* suppress it — only removing the route rule does.
+- **`/profile` needs its own `ssr: false` and noindex.** It renders the signed-in user's own
+  account for both roles, but it sits outside the `/dashboard/**` prefix, so that rule does not
+  cover it. Any other personal page added outside `/dashboard` has the same problem.
+- **File URLs from the API are already absolute.** `AppUrls.fileUrl` returns
+  `<apiBaseUrl>/api/public/files/<name>`, so a DTO's `logoUrl` / `imageUrl` / `documents` go
+  straight into `src`. The entity stores a bare filename; the DTO never exposes it. Prefixing the
+  files route onto a DTO value yields a broken path.
 - **Anything auth-dependent in a server-rendered layout must be inside `<ClientOnly>`**
   with a same-width fallback. The token lives in localStorage, so SSR always renders
   the signed-out state; this invariant is what makes the `swr` route rules safe.

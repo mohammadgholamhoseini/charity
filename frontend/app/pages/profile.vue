@@ -81,9 +81,12 @@ const centerForm = reactive({
   cardNumber: '', sheba: '',
 })
 
-/** Uploads are stored under a generated filename and served from the public files route. */
-const logoSrc = computed(() =>
-  center.value?.logoUrl ? `/api/public/files/${center.value.logoUrl}` : null)
+/**
+ * `logoUrl` arrives as an absolute URL already — the API builds it with AppUrls.fileUrl, the same
+ * helper behind a request's image and documents. Do not prefix it with the files route; the entity
+ * stores a bare filename but the DTO does not expose that.
+ */
+const logoSrc = computed(() => center.value?.logoUrl ?? null)
 
 async function loadCenter() {
   const [data, cityData] = await Promise.all([
