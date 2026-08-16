@@ -69,6 +69,17 @@ Key domain notes:
   the way, so a centre could undo a moderation decision and erase its stated reason with it. The
   column is set entering `INACTIVE` and cleared leaving it; leaving it set would lock a centre out
   of a request it withdrew itself.
+- **`COMPLETED` is terminal, and the two roles differ only there.** `RequestStatusPolicy` holds two
+  maps that are identical apart from one row: a centre can move a completed request nowhere at all,
+  and an admin can move it only to `INACTIVE`. Nobody can reopen one — republishing a request whose
+  need was already met puts a live listing back in front of donors for something already paid for.
+  The admin's `COMPLETED → INACTIVE` is the deliberate exception and the *only* remedy in the
+  product for a completed request that turns out to be fraudulent or plain wrong; without it the
+  answer would be hand-written SQL. A centre also cannot **delete** a completed request
+  (`isDeletableByCenter`), for the same reason it cannot edit one. An admin still can, and deletion
+  is soft either way. Both panels mirror these maps client-side purely so the dialog never offers a
+  move the server answers with 409 — the server is the authority, and the panels are checked
+  against it, not trusted by it.
 - **Anything the bot message template touches must be fetch-joined.** The announcement listener is
   `@Async` and `open-in-view` is off, so the entity reaches it detached: a plain `findById` gives it
   uninitialised proxies and the first association read throws `LazyInitializationException` into the
@@ -77,13 +88,28 @@ Key domain notes:
   `RequestRepository.findForMessaging`, and if you add a field to the template, add it to that
   query. It is JPQL rather than `@EntityGraph` deliberately — entity-graph paths are unchecked
   strings that fail at runtime, JPQL fails at startup.
+- **An announcement gets one automatic attempt, and a manual one after that.** The event fires on
+  create-with-publish and on the *first* transition to `PUBLISHED` — nowhere else — so a channel
+  that was down at that moment stayed missing permanently. RQ-1017 is the worked example. The loop
+  now lives in `RequestAnnouncementService`, shared by the `@Async` listener and the panel's
+  «انتشار در کانال» button (`POST /api/{admin,center}/requests/{id}/announce`). Three things about
+  it are load-bearing. It skips any channel where `MessagingService.alreadyPosted` is true, so a
+  retry never duplicates into the channel that already worked. The manual path is **synchronous**,
+  unlike the listener — that button is a rare click with nothing behind it, and running it inline
+  is what lets the response carry the true state and a failure reach the user as an error instead
+  of silence. And neither the service nor the listener is `@Transactional`: the bot HTTP calls must
+  not run inside a transaction, so every database touch goes through `RequestService`, which opens
+  its own. `RequestSummary.announced` is what the panel keys the button on; it is computed by
+  asking the enabled channels, not by reading `bale_posted`, so a disabled Telegram does not leave
+  every row looking forever unannounced.
 - **A request has no city, deadline, contact details or beneficiary name.** The city and
   phone belong to the centre and are read from there — `?city=` and `?province=` filter
   through `request → center → city`, which is where `requests.city_id` was backfilled from
   in V2 anyway. The beneficiary is never named: the bot used to print
   `details.beneficiaryName` into a public channel while the site and the privacy page both
   promised it was never published.
-- Deletion is **soft** (`deleted_at`), so a removed request answers **410**, not 404.
+- Deletion is **soft** (`deleted_at`), so a removed request answers **410**, not 404. A centre
+  cannot delete a `COMPLETED` request at all; an admin can.
 - A request's slug is frozen once published; changing it records the old one in
   `request_slug_history` so the old URL 301s.
 - Public filtering goes through `RequestSpecifications`. Every facet composes. Do not

@@ -35,6 +35,7 @@ export const ep = {
   centerRequestSubmit: (id: number) => `/center/requests/${id}/submit`,
   centerRequestComplete: (id: number) => `/center/requests/${id}/complete`,
   centerRequestStatus: (id: number) => `/center/requests/${id}/status`,
+  centerRequestAnnounce: (id: number) => `/center/requests/${id}/announce`,
   centerRequestDocuments: (id: number) => `/center/requests/${id}/documents`,
 
   // admin panel
@@ -42,6 +43,7 @@ export const ep = {
   adminRequestStats: '/admin/requests/stats',
   adminRequest: (id: number) => `/admin/requests/${id}`,
   adminRequestStatus: (id: number) => `/admin/requests/${id}/status`,
+  adminRequestAnnounce: (id: number) => `/admin/requests/${id}/announce`,
   adminCenters: '/admin/centers',
   adminCenter: (id: number) => `/admin/centers/${id}`,
   adminCenterCategories: (id: number) => `/admin/centers/${id}/categories`,

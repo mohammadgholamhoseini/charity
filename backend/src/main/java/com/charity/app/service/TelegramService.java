@@ -1,6 +1,7 @@
 package com.charity.app.service;
 
 import com.charity.app.common.AppUrls;
+import com.charity.app.model.Request;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,11 @@ public class TelegramService extends AbstractBotMessagingService {
     @Override
     public String getName() {
         return "telegram";
+    }
+
+    @Override
+    public boolean alreadyPosted(Request request) {
+        return request.isTelegramPosted();
     }
 
     @Override

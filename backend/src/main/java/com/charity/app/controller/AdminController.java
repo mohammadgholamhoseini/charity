@@ -23,6 +23,7 @@ import java.util.Map;
 public class AdminController {
 
     private final RequestService requests;
+    private final RequestAnnouncementService announcements;
     private final CenterService centers;
     private final CategoryService categories;
     private final NoticeService notices;
@@ -79,6 +80,18 @@ public class AdminController {
     public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
         requests.softDeleteByAdmin(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Sends a published request to the messaging channels that do not already carry it.
+     *
+     * <p>The automatic announcement fires once, on first publication, so a channel that was down at
+     * that moment stayed missing for good. Answers synchronously -- see
+     * {@link com.charity.app.service.RequestAnnouncementService#reannounce}.
+     */
+    @PostMapping("/requests/{id}/announce")
+    public RequestDetailResponse announceRequest(@PathVariable Long id) {
+        return announcements.reannounce(id, false);
     }
 
     // ---------------------------------------------------------------- centres

@@ -6,6 +6,7 @@ import com.charity.app.model.enums.Urgency;
 import com.charity.app.payload.*;
 import com.charity.app.service.CenterService;
 import com.charity.app.service.FileStorageService;
+import com.charity.app.service.RequestAnnouncementService;
 import com.charity.app.service.RequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class CenterController {
 
     private final CenterService centers;
     private final RequestService requests;
+    private final RequestAnnouncementService announcements;
     private final FileStorageService storage;
 
     // ---------------------------------------------------------------- profile
@@ -117,6 +119,17 @@ public class CenterController {
     public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
         requests.softDeleteByCenter(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * The mirror of the admin endpoint, for a centre's own request only.
+     *
+     * <p>Ownership is asserted in the service, not here -- the id comes from the client and a
+     * centre listing its own requests is no guarantee of what it will POST.
+     */
+    @PostMapping("/requests/{id}/announce")
+    public RequestDetailResponse announceRequest(@PathVariable Long id) {
+        return announcements.reannounce(id, true);
     }
 
     @PostMapping("/requests/{id}/documents")

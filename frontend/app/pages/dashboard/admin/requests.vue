@@ -17,14 +17,32 @@ const tabs: { value: RequestStatus | '', label: string }[] = [
 ]
 
 /**
- * Every transition the admin can make. Approving is not among them any more: centres publish
- * their own requests, so what is left is taking one down, putting it back, or marking it met.
+ * Every status an admin can put a request into. Approving is not among them any more: centres
+ * publish their own requests, so what is left is taking one down, putting it back, or marking it
+ * met. This list also feeds the stat cards and the legend at the foot of the page, which is why it
+ * is flat rather than keyed by the row's current status — for that, see ADMIN_TRANSITIONS.
  */
 const statusOptions: { value: RequestStatus, label: string, description: string }[] = [
   { value: 'PUBLISHED', label: 'منتشرشده', description: 'در فهرست عمومی و صفحه دسته نمایش داده می‌شود.' },
   { value: 'COMPLETED', label: 'تکمیل‌شده', description: 'کمک دریافت شده؛ از فهرست فعال خارج می‌شود اما نشانی آن باقی می‌ماند.' },
   { value: 'INACTIVE', label: 'غیرفعال', description: 'خروج از فهرست بدون حذف؛ ثبت دلیل اجباری است.' },
 ]
+
+/**
+ * Mirrors RequestStatusPolicy.ADMIN_ALLOWED on the server, the same way the centre panel mirrors
+ * CENTER_ALLOWED. The dialog used to offer all three statuses regardless of the row it was opened
+ * on, so it could propose a move the server answers with a 409.
+ *
+ * COMPLETED leads only to «غیرفعال», and that is deliberate: a completed request cannot be
+ * reopened by anyone, but one that turns out to be fraudulent or wrong still has to be removable
+ * from the site. It is the only way out, and only an admin has it.
+ */
+const ADMIN_TRANSITIONS: Record<string, RequestStatus[]> = {
+  DRAFT: ['PUBLISHED', 'INACTIVE'],
+  PUBLISHED: ['COMPLETED', 'INACTIVE'],
+  COMPLETED: ['INACTIVE'],
+  INACTIVE: ['PUBLISHED'],
+}
 
 const activeTab = ref<RequestStatus | ''>('')
 const categoryFilter = ref<number | ''>('')
@@ -43,8 +61,15 @@ const nextStatus = ref<RequestStatus>('PUBLISHED')
 const note = ref('')
 const saving = ref(false)
 const deleteTarget = ref<RequestSummary | null>(null)
+const announceTarget = ref<RequestSummary | null>(null)
 
 const noteRequired = computed(() => nextStatus.value === 'INACTIVE')
+
+/** The statuses the open row may actually move to, in the order statusOptions declares them. */
+const modalOptions = computed(() => {
+  const allowed = ADMIN_TRANSITIONS[selected.value?.status ?? ''] ?? []
+  return statusOptions.filter(option => allowed.includes(option.value))
+})
 
 async function load() {
   loading.value = true
@@ -91,8 +116,10 @@ watch([activeTab, categoryFilter, centerFilter, urgencyFilter], load)
 
 function openStatusChange(request: RequestSummary) {
   selected.value = request
-  nextStatus.value = request.status
-  note.value = request.statusNote ?? ''
+  // Not the current status: it is no longer among the choices for a completed request, and a
+  // radio group with nothing selected is worse than one defaulted to the only move available.
+  nextStatus.value = modalOptions.value[0]?.value ?? request.status
+  note.value = ''
 }
 
 async function saveStatus() {
@@ -109,6 +136,29 @@ async function saveStatus() {
     })
     toast.success('وضعیت درخواست تغییر کرد.')
     selected.value = null
+    load()
+  }
+  catch (error) {
+    toast.error(apiErrorMessage(error))
+  }
+  finally {
+    saving.value = false
+  }
+}
+
+/**
+ * Sends a request to the channel by hand.
+ *
+ * The automatic announcement fires once, when the request is first published, so one bad moment
+ * on the bot API leaves it unannounced for good. This is the only way back.
+ */
+async function confirmAnnounce() {
+  if (!announceTarget.value) return
+  saving.value = true
+  try {
+    await $api(ep.adminRequestAnnounce(announceTarget.value.id), { method: 'POST' })
+    toast.success('درخواست در کانال اعلام شد.')
+    announceTarget.value = null
     load()
   }
   catch (error) {
@@ -237,6 +287,15 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
                 <button type="button" class="text-accent hover:text-accent-600" @click="openStatusChange(request)">
                   تغییر وضعیت
                 </button>
+                <!-- Only shows on a live request the channel does not already carry. -->
+                <button
+                  v-if="request.status === 'PUBLISHED' && !request.announced"
+                  type="button"
+                  class="text-accent hover:text-accent-600"
+                  @click="announceTarget = request"
+                >
+                  انتشار در کانال
+                </button>
                 <NuxtLink
                   :to="`/requests/${encodeURIComponent(request.slug)}`"
                   target="_blank"
@@ -280,7 +339,7 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
         <fieldset class="flex flex-col gap-3">
           <legend class="label">وضعیت جدید</legend>
           <label
-            v-for="option in statusOptions"
+            v-for="option in modalOptions"
             :key="option.value"
             class="flex items-start gap-3 p-4 rounded-[12px] border cursor-pointer transition-colors"
             :class="nextStatus === option.value ? 'border-accent bg-accent-50' : 'border-line-soft'"
@@ -313,6 +372,16 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
         </div>
       </div>
     </UiModal>
+
+    <UiConfirm
+      :open="Boolean(announceTarget)"
+      title="انتشار در کانال"
+      :message="`«${announceTarget?.title}» در کانال بله اعلام می‌شود. پیام پس از ارسال قابل بازگشت نیست.`"
+      confirm-label="ارسال کن"
+      :busy="saving"
+      @confirm="confirmAnnounce"
+      @close="announceTarget = null"
+    />
 
     <UiConfirm
       :open="Boolean(deleteTarget)"

@@ -10,6 +10,15 @@ public interface MessagingService {
 
     boolean isEnabled();
 
+    /**
+     * Whether this channel already carries this request.
+     *
+     * <p>Asked before every send, so the manual re-announce button can retry the channel that
+     * failed without posting a second copy to the one that succeeded. Each implementation reads
+     * its own column rather than the caller switching on {@link #getName()}.
+     */
+    boolean alreadyPosted(Request request);
+
     /** @return the remote message id, or null if the announcement did not go out. */
     Integer publishRequest(Request request);
 }

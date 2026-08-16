@@ -6,6 +6,7 @@ import com.charity.app.model.enums.RequestStatus;
 import com.charity.app.model.enums.UserRole;
 import com.charity.app.payload.RequestDetailResponse;
 import com.charity.app.payload.RequestSummary;
+import com.charity.app.service.MessagingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,7 @@ public class RequestMapper {
     private final CategoryMapper categoryMapper;
     private final CenterMapper centerMapper;
     private final AppUrls urls;
+    private final List<MessagingService> channels;
 
     public RequestSummary toSummary(Request request) {
         return new RequestSummary(
@@ -36,6 +38,7 @@ public class RequestMapper {
                 request.getStatus(),
                 request.getStatus() == null ? null : request.getStatus().label(),
                 lockedByAdmin(request),
+                announced(request),
                 request.getUrgency(),
                 request.getUrgency() == null ? null : request.getUrgency().label(),
                 categoryMapper.toRef(request.getCategory()),
@@ -85,6 +88,20 @@ public class RequestMapper {
     private static boolean lockedByAdmin(Request request) {
         return request.getStatus() == RequestStatus.INACTIVE
                 && request.getDeactivatedBy() == UserRole.ADMIN;
+    }
+
+    /**
+     * Whether there is anything left to announce -- the panel offers its re-announce button when
+     * this is false.
+     *
+     * <p>The channels are asked directly rather than reading {@code bale_posted} here, because the
+     * answer depends on which of them are switched on: an installation with Telegram disabled must
+     * not be told it is missing a Telegram announcement forever. This is why the mapper knows about
+     * {@link MessagingService} at all. Injecting {@code RequestAnnouncementService} instead would
+     * close a real bean cycle -- RequestService already depends on this mapper.
+     */
+    private boolean announced(Request request) {
+        return channels.stream().noneMatch(channel -> channel.isEnabled() && !channel.alreadyPosted(request));
     }
 
     private List<String> documentUrls(Request request) {

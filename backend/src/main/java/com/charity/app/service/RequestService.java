@@ -275,7 +275,7 @@ public class RequestService {
     }
 
     private RequestDetailResponse applyStatus(Request request, RequestStatus target, String note, UserRole actor) {
-        statusPolicy.assertTransition(request.getStatus(), target);
+        statusPolicy.assertTransition(request.getStatus(), target, actor);
         statusPolicy.assertNoteProvided(target, note);
 
         boolean firstPublication = target == RequestStatus.PUBLISHED && request.getPublishedAt() == null;
@@ -298,7 +298,11 @@ public class RequestService {
 
     @Transactional
     public void softDeleteByCenter(Long id) {
-        softDelete(ownedByCurrentCenter(id));
+        Request request = ownedByCurrentCenter(id);
+        if (!statusPolicy.isDeletableByCenter(request.getStatus())) {
+            throw new ConflictException("NOT_DELETABLE", "درخواست تکمیل‌شده قابل حذف نیست");
+        }
+        softDelete(request);
     }
 
     @Transactional
@@ -451,6 +455,32 @@ public class RequestService {
     @Transactional(readOnly = true)
     public Request loadForMessaging(Long id) {
         return requests.findForMessaging(id).orElseThrow(() -> new NotFoundException("درخواست یافت نشد"));
+    }
+
+    /**
+     * The entity behind the «انتشار در کانال» button, with the permission questions already asked.
+     *
+     * <p>Loaded through the same fetch-joined query as the listener, because the caller hands it
+     * straight to the message template and this transaction is closed before the HTTP call goes
+     * out. Announcing anything other than a live request makes no sense -- a draft has no public
+     * URL to link to, and a completed or withdrawn one should not be advertised at all.
+     */
+    @Transactional(readOnly = true)
+    public Request loadForAnnounce(Long id, boolean asCenter) {
+        Request request = requests.findForMessaging(id)
+                .filter(r -> !r.isDeleted())
+                .orElseThrow(() -> new NotFoundException("درخواست یافت نشد"));
+        if (asCenter) {
+            Center center = currentUser.center();
+            if (request.getCenter() == null || !request.getCenter().getId().equals(center.getId())) {
+                throw new ForbiddenException("این درخواست متعلق به مرکز شما نیست");
+            }
+        }
+        if (request.getStatus() != RequestStatus.PUBLISHED) {
+            throw new ConflictException("NOT_PUBLISHED",
+                    "فقط درخواستی که منتشر شده باشد را می‌توان در کانال اعلام کرد");
+        }
+        return request;
     }
 
     @Transactional

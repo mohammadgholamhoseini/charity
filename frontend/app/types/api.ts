@@ -99,6 +99,11 @@ export interface RequestSummary {
   statusLabel: string
   /** An admin took this down, so the owning centre cannot put it back — only an admin can. */
   lockedByAdmin: boolean
+  /**
+   * Every enabled messaging channel already carries this request. False is what puts the
+   * «انتشار در کانال» button on the row; with no bot configured it is always true.
+   */
+  announced: boolean
   urgency: Urgency
   urgencyLabel: string
   category: CategoryRef | null

@@ -23,6 +23,7 @@ const rows = ref<RequestSummary[]>([])
 const loading = ref(true)
 const loadError = ref(false)
 const deleteTarget = ref<RequestSummary | null>(null)
+const announceTarget = ref<RequestSummary | null>(null)
 const busy = ref(false)
 
 const statusTarget = ref<RequestSummary | null>(null)
@@ -31,14 +32,18 @@ const note = ref('')
 const noteRequired = computed(() => nextStatus.value === 'INACTIVE')
 
 /**
- * Mirrors RequestStatusPolicy.ALLOWED on the server, minus the transitions only an admin has.
- * The server is still the authority — this exists so the dialog does not offer a move that
- * would come back as a 409.
+ * Mirrors RequestStatusPolicy.CENTER_ALLOWED on the server. The server is still the authority —
+ * this exists so the dialog does not offer a move that would come back as a 409.
+ *
+ * COMPLETED is empty on purpose: a completed request is the record that its need was met, and a
+ * centre republishing one would put a listing back in front of donors for something already paid
+ * for. Only an admin can move it, and only to «غیرفعال». Same reason the delete button is gone
+ * from those rows.
  */
 const CENTER_TRANSITIONS: Record<string, RequestStatus[]> = {
   DRAFT: ['PUBLISHED', 'INACTIVE'],
   PUBLISHED: ['COMPLETED', 'INACTIVE'],
-  COMPLETED: ['PUBLISHED', 'INACTIVE'],
+  COMPLETED: [],
   INACTIVE: ['PUBLISHED'],
 }
 
@@ -110,6 +115,29 @@ async function publish(request: RequestSummary) {
   }
   catch (error) {
     toast.error(apiErrorMessage(error))
+  }
+}
+
+/**
+ * Sends a request to the channel by hand.
+ *
+ * The automatic announcement fires once, when the request is first published, so one bad moment
+ * on the bot API leaves it unannounced for good. This is the only way back.
+ */
+async function confirmAnnounce() {
+  if (!announceTarget.value) return
+  busy.value = true
+  try {
+    await $api(ep.centerRequestAnnounce(announceTarget.value.id), { method: 'POST' })
+    toast.success('درخواست در کانال اعلام شد.')
+    announceTarget.value = null
+    load()
+  }
+  catch (error) {
+    toast.error(apiErrorMessage(error))
+  }
+  finally {
+    busy.value = false
   }
 }
 
@@ -204,15 +232,33 @@ useHead({ title: 'درخواست‌های من — یاری‌جو' })
                 >
                   انتشار
                 </button>
+                <!-- Only shows on a live request the channel does not already carry. -->
                 <button
-                  v-if="!request.lockedByAdmin"
+                  v-if="request.status === 'PUBLISHED' && !request.announced"
+                  type="button"
+                  class="text-accent hover:text-accent-600"
+                  @click="announceTarget = request"
+                >
+                  انتشار در کانال
+                </button>
+                <!--
+                  A completed request is frozen: no status change, no delete. It records that the
+                  need was met, and reopening or erasing it is not the centre's to do.
+                -->
+                <button
+                  v-if="!request.lockedByAdmin && request.status !== 'COMPLETED'"
                   type="button"
                   class="text-accent hover:text-accent-600"
                   @click="openStatusChange(request)"
                 >
                   تغییر وضعیت
                 </button>
-                <button type="button" class="text-danger hover:underline" @click="deleteTarget = request">
+                <button
+                  v-if="request.status !== 'COMPLETED'"
+                  type="button"
+                  class="text-danger hover:underline"
+                  @click="deleteTarget = request"
+                >
                   حذف
                 </button>
               </div>
@@ -269,6 +315,16 @@ useHead({ title: 'درخواست‌های من — یاری‌جو' })
         </div>
       </div>
     </UiModal>
+
+    <UiConfirm
+      :open="Boolean(announceTarget)"
+      title="انتشار در کانال"
+      :message="`«${announceTarget?.title}» در کانال بله اعلام می‌شود. پیام پس از ارسال قابل بازگشت نیست.`"
+      confirm-label="ارسال کن"
+      :busy="busy"
+      @confirm="confirmAnnounce"
+      @close="announceTarget = null"
+    />
 
     <UiConfirm
       :open="Boolean(deleteTarget)"
