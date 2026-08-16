@@ -185,13 +185,16 @@ Things that are easy to break:
   Compare with `String(...)` on both sides, or type the ref as the number. Chrome hides the cause
   further: its CookieStore watcher re-reads the cookie right after the write, so a ref that was
   briefly correct flips back before the next render.
-- **A cookie cannot hide anything on an `swr` route.** Nitro caches one rendered page for
-  everybody and no request cookie reaches that render, so `/`, `/requests` and `/centers` always
-  ship the banner in their HTML. Hydration then removes it, which is the layout shift the cookie
-  was chosen to avoid. `AnnouncementBanner` closes the gap with a small head script that hides
-  `#site-announcement` before first paint when the cookie matches the id baked into it — the
-  script is identical for every visitor, so it stays cacheable. Anything else that must vary per
-  visitor on a cached route needs the same treatment; do not reach for a route rule.
+- **Nothing can be hidden per-visitor on an `swr` route by reading the request.** Nitro caches one
+  rendered page for everybody and no cookie or header reaches that render, so `/`, `/requests` and
+  `/centers` ship identical HTML to all comers. The only way to vary them is a script that runs in
+  the browser and is itself the same for everyone. Do not reach for a route rule, and do not
+  assume a cookie the server *can* read on `/requests/<slug>` will also work on `/requests`.
+- **The announcement banner's ✕ is intentionally not remembered.** It holds the payment-liability
+  notice, which every visitor should meet on every visit, so the state is a plain `ref` and a
+  reload brings it back. That also means the server and client render the same thing and nothing
+  moves at hydration. Do not "fix" it by adding persistence without asking — the cookie that used
+  to be there was removed on purpose.
 - **Panel icons come from `lucide-vue-next`**, imported one name at a time so the bundle carries
   only what is used (ten icons ≈ 7 kB). They are decorative — every one sits beside its own label
   and is `aria-hidden`. `LogOut` is mirrored with `transform: scaleX(-1)` because the panel is

@@ -4,67 +4,31 @@ import type { NoticeResponse } from '~/types/api'
 const props = defineProps<{ notice: NoticeResponse | null }>()
 
 /**
- * Dismissal is stored in a cookie rather than localStorage.
+ * Dismissal is deliberately NOT persisted.
  *
- * This is an intentional deviation from the design spec, which says localStorage.
- * Under SSR the server cannot read localStorage, so it would render the banner into
- * the HTML, paint it, and then have hydration remove it — a layout shift on every
- * single page load for every returning visitor, which would dominate the CLS score.
- * A cookie is visible to the server, so a dismissed banner is simply never rendered.
- */
-/**
- * The stored value is compared as a string on both sides, and that is not cosmetic.
+ * This banner carries the payment-liability notice, which is the one thing on the site that
+ * every visitor is meant to see on every visit. A remembered dismissal defeats that: the
+ * returning donor -- exactly the person the notice is written for -- would never see it again.
+ * So ✕ means "get out of my way while I read this page", and a reload brings it back.
  *
- * `useCookie` writes the value out raw and reads it back through `destr`, so a cookie set to
- * the string "1" comes back as the NUMBER 1. The old strict `!==` against `String(notice.id)`
- * therefore never matched: the click wrote the cookie correctly and the banner stayed put, on
- * that page and on every page after it. Chrome made it look even stranger -- its CookieStore
- * watcher re-reads the cookie right after the write, so the value flipped from "1" back to 1
- * before the banner could disappear.
+ * Keeping the state in memory also makes the component honest under SSR. There is nothing for
+ * the server to read, so the server and the browser always render the same thing, and nothing
+ * is added or removed at hydration. The previous cookie could not manage that: `/`, `/requests`
+ * and `/centers` carry `swr` route rules, so Nitro serves one cached render to everybody and no
+ * cookie ever reaches it -- the banner shipped in the HTML regardless and had to be hidden again
+ * by a head script. Both are gone.
+ *
+ * If this should ever be remembered again, note the trap that made the old cookie look broken:
+ * `useCookie` reads values back through `destr`, so a stored "1" returns as the number 1 and a
+ * strict comparison never matches. See AGENTS.md.
  */
-const dismissed = useCookie<string | number | null>('yariju.banner', {
-  maxAge: 60 * 60 * 24 * 90,
-  sameSite: 'lax',
-  default: () => null,
-})
+const hidden = ref(false)
 
-const visible = computed(() =>
-  Boolean(props.notice) && String(dismissed.value) !== String(props.notice?.id),
-)
+const visible = computed(() => Boolean(props.notice) && !hidden.value)
 
 function dismiss() {
-  if (props.notice) dismissed.value = String(props.notice.id)
+  hidden.value = true
 }
-
-/**
- * A dismissed banner still arrives in the HTML of `/`, `/requests` and `/centers`, because those
- * three carry `swr` route rules: Nitro caches one rendered page for everybody and no cookie
- * reaches that render. Hydration would then rip the banner out and shift the whole page up --
- * the exact layout shift the cookie was chosen to avoid, just moved to the cached routes.
- *
- * So the id is baked into a tiny head script that hides the banner before first paint if the
- * cookie matches. The script is identical for every visitor -- it only reads the cookie at
- * runtime -- so it is safe to cache. Vue's `v-if` above is still the source of truth once the
- * app is running; this only covers the gap before hydration.
- */
-useHead(() => ({
-  script: props.notice
-    ? [{
-        key: 'yariju-banner-dismissed',
-        innerHTML: '(function(){try{'
-          + 'var c=document.cookie.split(\'; \');'
-          + 'for(var i=0;i<c.length;i++){'
-          + 'var p=c[i].split(\'=\');'
-          + 'if(p[0]!==\'yariju.banner\')continue;'
-          // Coerced through Number so nothing from the API can end this string literal early.
-          + `if(p.slice(1).join('=').split('"').join('')!=='${Number(props.notice.id)}')return;`
-          + 'var s=document.createElement(\'style\');'
-          + 's.textContent=\'#site-announcement{display:none}\';'
-          + 'document.head.appendChild(s);return;}'
-          + '}catch(e){}})()',
-      }]
-    : [],
-}))
 </script>
 
 <template>
