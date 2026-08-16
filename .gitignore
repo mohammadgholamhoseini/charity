@@ -31,4 +31,10 @@ backend/uploads/
 # Docker build worktrees
 .wtree-*
 
+# Database dumps. They carry real rows and password hashes, and one of them is the
+# pre-merge snapshot of the master schema — none of it belongs in a public repo.
+backups/
+*.sql.gz
+
+
 ISSUES.md
