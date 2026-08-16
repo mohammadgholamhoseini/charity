@@ -241,7 +241,7 @@ docker compose up -d
 
 | Service | Branch | Host port | Notes |
 |---|---|---|---|
-| `frontend-master` | master | 80 | **nginx on container port 80** — master has not been migrated to Nuxt yet |
+| `frontend-master` | master | 80 | Nuxt SSR on 3000, the only deployment that may be indexed |
 | `frontend-dev` | development | 8080 | Nuxt SSR on 3000, `robots.txt` disallows all |
 | `backend-master` | master | 81 | MySQL schema `YARIJU` |
 | `backend-dev` | development | 8081 | MySQL schema `YARIJU_DEVELOPMENT` |
@@ -260,9 +260,11 @@ creates the second and grants `charity_user` on both. It runs only on a fresh `m
 volume. When granting, escape the underscore — MySQL reads the database name in `GRANT` as
 a LIKE pattern, where a bare `_` is a wildcard.
 
-The two frontends publish **different container ports** because they are different servers:
-master's nginx listens on 80, development's Nuxt on 3000. Mapping master's host 80 to
-container 3000 silently serves nothing at all. Fix this when master gets the Nuxt app.
+Both frontends now publish container port **3000**. Master used to publish 80 because it
+still shipped the old static nginx image; that ended when the Nuxt rewrite was merged, in
+the same commit that changed the mapping. A host-80-to-container-80 mapping against the
+Node image serves nothing at all and fails silently, so check this line first if master
+answers connection-refused.
 
 The frontend containers run Node, not nginx — SSR needs a runtime. Both Dockerfiles are
 identical; what used to differ (which backend to proxy to) is now `NUXT_API_ORIGIN`, so

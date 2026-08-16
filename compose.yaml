@@ -101,11 +101,10 @@ services:
     image: charity-frontend:master
     restart: unless-stopped
     ports:
-      # Container port 80, not 3000: the master branch still ships the old static nginx
-      # frontend, which listens on 80. The Nuxt SSR rewrite (which listens on 3000) is on
-      # development and has not been merged. Change this to "80:3000" in the same commit
-      # that merges it, or the master site answers nothing.
-      - "80:80"
+      # Container port 3000, as of the merge that brought the Nuxt SSR rewrite to master.
+      # It used to be 80:80 because master shipped the old static nginx image; both
+      # frontends now run the same Node server on 3000 and differ only by environment.
+      - "80:3000"
     environment:
       NUXT_API_ORIGIN: http://backend-master:8082
       NUXT_PUBLIC_SITE_URL: ${APP_SITE_URL:-http://localhost}
