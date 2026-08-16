@@ -178,6 +178,25 @@ Things that are easy to break:
 - The hero image is the only photography on the site. It is a lossless WebP with **no
   alpha channel**, so `.hero-art` carries `mix-blend-mode: multiply` to dissolve its white
   background into the page. Replace it with a transparent PNG and that line should go.
+- **`useCookie` reads through `destr`, so what you wrote is not what you get back.** Store the
+  string `"1"` and the ref returns the **number** `1`; a strict `!==` against a `String(...)`
+  never matches. That is what made the announcement banner's dismiss button dead — the click
+  wrote the cookie correctly every time and nothing happened, on that page and every page after.
+  Compare with `String(...)` on both sides, or type the ref as the number. Chrome hides the cause
+  further: its CookieStore watcher re-reads the cookie right after the write, so a ref that was
+  briefly correct flips back before the next render.
+- **A cookie cannot hide anything on an `swr` route.** Nitro caches one rendered page for
+  everybody and no request cookie reaches that render, so `/`, `/requests` and `/centers` always
+  ship the banner in their HTML. Hydration then removes it, which is the layout shift the cookie
+  was chosen to avoid. `AnnouncementBanner` closes the gap with a small head script that hides
+  `#site-announcement` before first paint when the cookie matches the id baked into it — the
+  script is identical for every visitor, so it stays cacheable. Anything else that must vary per
+  visitor on a cached route needs the same treatment; do not reach for a route rule.
+- **Panel icons come from `lucide-vue-next`**, imported one name at a time so the bundle carries
+  only what is used (ten icons ≈ 7 kB). They are decorative — every one sits beside its own label
+  and is `aria-hidden`. `LogOut` is mirrored with `transform: scaleX(-1)` because the panel is
+  RTL. Note that Tailwind's `-scale-x-100` emitted no CSS in this v4 setup, so the flip is an
+  inline style on purpose; check the built CSS before trusting a transform utility here.
 - Use logical properties (`ps-`/`pe-`/`ms-`/`me-`), never `pl-`/`pr-`/`left-`/`right-`.
 
 ## Docker
