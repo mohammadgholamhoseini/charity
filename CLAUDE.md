@@ -17,7 +17,10 @@ Read the section that matches what you are touching, not the whole file (~4,500 
 | `## Docker` | 231–292 |
 | `## Known issues` | 299–304 |
 
-`ISSUES.md` is the standing audit. Check it for anything adjacent to your change.
+`ISSUES.md` is the last full audit, and it is **history rather than current state**: most Critical
+and High items are fixed, and some name files that no longer exist (`CharityCaseService.java`,
+`frontend/src/**`). Read it for context on anything adjacent to your change, then verify against
+source before acting on it.
 
 ## What this is
 
@@ -48,8 +51,13 @@ cd frontend && npm run build
 ```
 
 **`npm run lint` and `npm run typecheck` both abort** — no flat ESLint config was ever committed
-and there is no root tsconfig. Their failure says nothing about your change. There are zero tests
-and no CI check. Do not invent a gate that is not on this page.
+and there is no root tsconfig. Their failure says nothing about your change.
+
+There are **zero tests**, and CI does not run any. The one CI job,
+`.github/workflows/docker.yml`, fires on every push to `master` or `development` and on PRs to
+`master`: it builds both images (`mvn clean package -DskipTests` and `npm run build`) and pushes
+them to GHCR. So it catches a compile error or a broken build and nothing subtler — and note that
+pushing to `development` publishes a `:dev` image. Do not invent a gate that is not on this page.
 
 ## Subagents
 
@@ -57,11 +65,15 @@ Five specialists live in `.claude/agents/`. None pins a model, so all follow the
 
 | Agent | Use it for | Writes? |
 |---|---|---|
-| `architect` | Planning a change that crosses layers, alters status flow, adds a public endpoint or facet, changes caching/SSR, or introduces an entity | **No — read-only by tool list** |
+| `architect` | Planning a change that crosses layers, alters status flow, adds a public endpoint or facet, changes caching/SSR, or introduces an entity | **No — by instruction** |
 | `backend` | Java, JPA, security, announcements — **and the Flyway migration that accompanies an entity change** | Yes |
 | `frontend` | Nuxt, SSR, Nitro caching, styling, routing | Yes |
 | `tester` | Writing tests and reporting coverage gaps | Yes |
-| `reviewer` | Reviewing a change for bugs, security, performance, drift — CRITICAL/HIGH/MEDIUM/LOW | **No — read-only by tool list** |
+| `reviewer` | Reviewing a change for bugs, security, performance, drift — CRITICAL/HIGH/MEDIUM/LOW | **No — by instruction** |
+
+`architect` and `reviewer` have no `Write` or `Edit`. That is a guardrail, not a wall: they do
+carry `Bash`, which can write, so their read-only behaviour is a rule they keep rather than one
+the tool list enforces. `Bash` is there for git and inspection.
 
 **Invoke them deliberately, not by default.** A subagent starts with an empty context and
 re-derives what this session already knows, so it costs *more* tokens than working inline. What

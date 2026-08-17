@@ -43,8 +43,9 @@ frontend/app/
   the payload separately and emit a `_payload.json` preload whose href is built by encoding an
   already-encoded path. Nothing matches, Nitro returns the HTML 404 page, parsing it as JSON
   throws, and the page hydrates with no data and renders its own 404 — a correct server-rendered
-  page destroyed the moment JavaScript runs. `curl` sees 200 throughout. `/` and `/requests` are
-  ASCII and cache fine; `/requests/**` and `/centers/**` cannot.
+  page destroyed the moment JavaScript runs. `curl` sees 200 throughout. The **index** routes are
+  ASCII and cache fine — `nuxt.config.ts` carries `swr` on `/`, `/requests` *and* `/centers`. It
+  is the **slug** routes that cannot: `/requests/**` and `/centers/**`.
   `experimental.payloadExtraction: false` does **not** suppress it — only removing the rule does.
 - **Freshness needs both halves.** (1) `server/routes/api/[...path].ts` drops cached renders after
   any successful non-GET; the clearing must be `getKeys()` + `removeItem()` per key, because
@@ -97,11 +98,11 @@ for v3 and expects a `tailwind.config.js`). Every design token lives in the `@th
 - **The category label palette lives in four places** and a repaint needs all four:
   `dashboard/admin/categories.vue`, `CategorySeeder`, `CategoryMapper`, and a migration for
   existing rows. The last two are `backend`'s half.
-- `BrandMark.vue` and `public/favicon.svg` hold hex values by necessity — keep them in step by
-  hand. The hero image is a lossless WebP with no alpha, so `.hero-art` carries
-  `mix-blend-mode: multiply`; a transparent PNG would make that line wrong.
-- **Vazirmatn is self-hosted** in `public/fonts/`. Do not switch to Google Fonts — that origin is
-  unreliable from Iran and sits in the LCP critical path.
+- `components/brand/BrandMark.vue` and `app/public/favicon.svg` hold hex values by necessity —
+  keep them in step by hand. The hero image is a lossless WebP with no alpha, so `.hero-art`
+  carries `mix-blend-mode: multiply`; a transparent PNG would make that line wrong.
+- **Vazirmatn is self-hosted** in `app/public/fonts/`. Do not switch to Google Fonts — that origin
+  is unreliable from Iran and sits in the LCP critical path.
 - Panel icons are imported from `lucide-vue-next` one name at a time. They are decorative and
   `aria-hidden`. `LogOut` is flipped with an inline `transform: scaleX(-1)` because Tailwind's
   `-scale-x-100` emitted no CSS in this v4 setup — check built CSS before trusting a transform
@@ -117,6 +118,10 @@ cd frontend && npm run build
 **That is the only gate that runs.** Do not use `npm run lint` or `npm run typecheck` — the first
 aborts because no flat ESLint config was ever committed, the second because there is no root
 tsconfig. Neither failure means anything about your change.
+
+CI (`.github/workflows/docker.yml`) runs the same `npm run build` inside the image on every push
+to `master` or `development`, then pushes to GHCR. So a build you broke fails there too — but
+nothing beyond the build is checked, because there are no tests and no lint step in CI.
 
 For a live check:
 

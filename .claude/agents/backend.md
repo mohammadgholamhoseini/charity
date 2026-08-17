@@ -105,7 +105,12 @@ cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local
 
 That is the gate: H2 on port 8085, schema from the real migrations, entities validated against
 it, admin `admin` / `admin123` seeded. A clean start means the migration and the entity model
-agree. There is no lint step and no CI check — do not invent one.
+agree.
+
+There is no lint step and no test run. CI (`.github/workflows/docker.yml`) fires on every push to
+`master` or `development` and builds both images — `mvn clean package -DskipTests` and
+`npm run build` — then pushes them to GHCR. So it catches a compile error and nothing subtler.
+Do not invent a gate beyond these.
 
 If your change needs tests, hand it to `tester`. If it changes what a panel may offer, hand that
 half to `frontend`.
