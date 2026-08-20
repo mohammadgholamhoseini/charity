@@ -37,16 +37,32 @@ jobs:
         shell: bash
         run: |
           REPO_LOWER=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          SHORT_SHA="${GITHUB_SHA::7}"
 
           if [ "${GITHUB_REF_NAME}" = "master" ]; then
-            echo "backend_image=ghcr.io/${REPO_LOWER}-backend:latest" >> "$GITHUB_OUTPUT"
-            echo "frontend_image=ghcr.io/${REPO_LOWER}-frontend:latest" >> "$GITHUB_OUTPUT"
-            echo "dockerfile=master" >> "$GITHUB_OUTPUT"
+            CHANNEL=master
+            MOVING=latest
           else
-            echo "backend_image=ghcr.io/${REPO_LOWER}-backend:dev" >> "$GITHUB_OUTPUT"
-            echo "frontend_image=ghcr.io/${REPO_LOWER}-frontend:dev" >> "$GITHUB_OUTPUT"
-            echo "dockerfile=dev" >> "$GITHUB_OUTPUT"
+            CHANNEL=dev
+            MOVING=dev
           fi
+
+          BACKEND="ghcr.io/${REPO_LOWER}-backend"
+          FRONTEND="ghcr.io/${REPO_LOWER}-frontend"
+
+          # Two tags per image. The moving one is the convenient handle; the
+          # sha one is immutable, and it is what the deploy actually runs - so
+          # `docker compose ps` on the VPS names the commit that is live, and the
+          # previous build is still addressable when one needs rolling back to.
+          # Building only :latest, as this did for a while, left production
+          # unidentifiable and every earlier build unreachable.
+          echo "backend_tags=${BACKEND}:${MOVING},${BACKEND}:${CHANNEL}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "frontend_tags=${FRONTEND}:${MOVING},${FRONTEND}:${CHANNEL}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+          echo "backend_image=${BACKEND}:${CHANNEL}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=${FRONTEND}:${CHANNEL}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+          echo "dockerfile=${CHANNEL}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -64,7 +80,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile.${{ steps.images.outputs.dockerfile }}
           push: true
-          tags: ${{ steps.images.outputs.backend_image }}
+          tags: ${{ steps.images.outputs.backend_tags }}
 
       - name: Build and push frontend
         uses: docker/build-push-action@v6
@@ -72,7 +88,7 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile.${{ steps.images.outputs.dockerfile }}
           push: true
-          tags: ${{ steps.images.outputs.frontend_image }}
+          tags: ${{ steps.images.outputs.frontend_tags }}
 
 
   deploy:
