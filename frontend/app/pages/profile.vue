@@ -78,7 +78,7 @@ const uploadingLogo = ref(false)
 const centerForm = reactive({
   centerName: '', fullName: '', cityId: null as number | null,
   description: '', contactPhone: '', responseHours: '', address: '',
-  cardNumber: '', sheba: '',
+  cardNumber: '', sheba: '', currentPassword: '', newPassword: '',
 })
 
 /**
@@ -105,11 +105,16 @@ async function loadCenter() {
     address: data.address ?? '',
     cardNumber: data.cardNumber ?? '',
     sheba: data.sheba ?? '',
+    currentPassword: '',
+    newPassword: '',
   })
 }
 
 async function saveCenter() {
   if (!centerForm.centerName.trim()) return toast.error('نام مرکز الزامی است.')
+  if (centerForm.newPassword && !centerForm.currentPassword) {
+    return toast.error('برای تغییر رمز عبور، رمز فعلی را وارد کنید.')
+  }
   saving.value = true
   try {
     await $api(ep.centerMe, {
@@ -124,8 +129,13 @@ async function saveCenter() {
         address: centerForm.address.trim() || null,
         cardNumber: centerForm.cardNumber.trim() || null,
         sheba: centerForm.sheba.trim() || null,
+        // Both null unless the centre filled the pair in — then the password changes.
+        currentPassword: centerForm.currentPassword || null,
+        newPassword: centerForm.newPassword || null,
       },
     })
+    centerForm.currentPassword = ''
+    centerForm.newPassword = ''
     toast.success('اطلاعات مرکز ذخیره شد.')
   }
   catch (error) { toast.error(apiErrorMessage(error)) }
@@ -270,6 +280,18 @@ useHead({ title: 'پروفایل من — یاری‌جو' })
       <p class="help">
         این اطلاعات در صفحه عمومی مرکز نمایش داده می‌شود، چون پرداخت مستقیماً با خود مرکز انجام می‌شود.
       </p>
+
+      <div class="border-t border-surface-3 pt-5 flex flex-col gap-5">
+        <h2 class="text-[16px] font-bold">تغییر رمز عبور</h2>
+        <UiField v-model="centerForm.currentPassword" label="رمز عبور فعلی" type="password" revealable />
+        <UiField
+          v-model="centerForm.newPassword"
+          label="رمز عبور جدید"
+          type="password"
+          revealable
+          hint="حداقل ۸ نویسه. تغییر رمز، قفل موقت حساب را هم برمی‌دارد."
+        />
+      </div>
 
       <div class="border-t border-surface-3 pt-5">
         <button type="submit" class="btn btn-primary" :disabled="saving">

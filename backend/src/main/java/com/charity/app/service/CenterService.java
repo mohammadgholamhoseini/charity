@@ -16,6 +16,7 @@ import com.charity.app.payload.*;
 import com.charity.app.repository.*;
 import com.charity.app.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,7 @@ import java.util.*;
 import java.util.function.Function;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class CenterService {
 
@@ -38,6 +40,7 @@ public class CenterService {
     private final CenterMapper mapper;
     private final CurrentUser currentUser;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordChangeGuard passwords;
 
     // ------------------------------------------------------------------ public reads
 
@@ -67,6 +70,13 @@ public class CenterService {
     @Transactional
     public CenterResponse updateOwnProfile(UpdateCenterProfileRequest req) {
         Center center = currentUser.center();
+
+        // Checked before a single field is touched. The rollback always made this safe, but the
+        // caller was told only «رمز عبور فعلی نادرست است» with its edits still in the form, and had
+        // no way to know the phone number it fixed in the same save had gone with it. Nothing is
+        // mutated until the password is settled, so "nothing was saved" is now plainly true.
+        User passwordTarget = verifyOwnPasswordChange(center, req);
+
         center.setName(req.centerName());
         applySlugIfNameChanged(center);
         center.setFullName(req.fullName());
@@ -82,8 +92,33 @@ public class CenterService {
         if (req.cityId() != null) {
             assignCity(center, req.cityId());
         }
+        if (passwordTarget != null) {
+            passwords.applyNewPassword(passwordTarget, req.newPassword());
+            users.save(passwordTarget);
+        }
         Center saved = centers.save(center);
         return mapper.toResponse(saved, activeCount(saved.getId()));
+    }
+
+    /**
+     * Optional password change riding along with the profile form -- same shape as
+     * {@code UserService.updateProfile}, and sharing its checks through {@link PasswordChangeGuard}.
+     * Verifies only; the new hash is applied afterwards, once the rest of the form has been taken.
+     *
+     * @return the account to re-hash, or null when the form carried no password change
+     */
+    private User verifyOwnPasswordChange(Center center, UpdateCenterProfileRequest req) {
+        passwords.requireUsableNewPassword(req.newPassword());
+        if (req.newPassword() == null) {
+            return null;
+        }
+        User user = center.getUser();
+        if (user == null) {
+            throw new ConflictException("CENTER_HAS_NO_ACCOUNT",
+                    "برای این مرکز حساب کاربری ثبت نشده است");
+        }
+        passwords.verifyCurrentPassword(user, req.currentPassword());
+        return user;
     }
 
     @Transactional
@@ -190,6 +225,42 @@ public class CenterService {
         applyActive(center, active);
         Center saved = centers.save(center);
         return mapper.toResponse(saved, activeCount(saved.getId()));
+    }
+
+    /**
+     * Admin sets a new password for a centre's account. The admin types it, nothing is generated and
+     * nothing is returned -- the admin passes it on out of band.
+     *
+     * <p>This is the remedy for a centre that is locked out, so it clears the lock as well as the
+     * hash; leaving {@code failedAttempts}/{@code lockedUntil} standing would hand back a password
+     * that still cannot be used for the next fifteen minutes.
+     *
+     * <p>Tokens already issued stay valid until they expire. Deliberate: there is no blocklist and
+     * no {@code passwordChangedAt}.
+     */
+    @Transactional
+    public void resetPassword(Long centerId, ResetCenterPasswordRequest req) {
+        Center center = load(centerId);
+        User user = center.getUser();
+        if (user == null) {
+            // delete() detaches the user before removing the centre, so null is representable. An
+            // NPE surfacing as a 500 in the middle of an admin's incident response is the worst case.
+            throw new ConflictException("CENTER_HAS_NO_ACCOUNT",
+                    "برای این مرکز حساب کاربری ثبت نشده است");
+        }
+        // Belt and braces on top of the centre-id scoping: this endpoint never touches an admin.
+        if (user.getRole() != UserRole.CENTER) {
+            throw new ConflictException("NOT_A_CENTER_ACCOUNT",
+                    "این حساب کاربری متعلق به یک مرکز نیست و رمز آن از این مسیر قابل تغییر نیست");
+        }
+
+        // Mirrors the self-service paths: a new password clears any standing lock.
+        passwords.applyNewPassword(user, req.newPassword());
+        users.save(user);
+
+        // Usernames only -- never the password, never the hash, never the request body.
+        log.warn("Admin '{}' reset the password of centre account '{}'",
+                currentUser.username(), user.getUsername());
     }
 
     @Transactional

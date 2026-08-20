@@ -37,5 +37,14 @@ public record UpdateCenterProfileRequest(
         String sheba,
 
         @Size(max = 255)
-        String logoUrl) {
+        String logoUrl,
+
+        /* Optional password change, same shape as UpdateAdminProfileRequest. Both absent leaves the
+         * password untouched. */
+
+        @Size(max = 200)
+        String currentPassword,
+
+        @Size(min = 8, max = 100, message = "رمز عبور جدید باید حداقل ۸ نویسه باشد")
+        String newPassword) {
 }

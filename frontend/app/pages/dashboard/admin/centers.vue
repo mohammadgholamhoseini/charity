@@ -144,6 +144,45 @@ async function confirmDelete() {
   finally { saving.value = false }
 }
 
+/* ------------------------------------------------------- password reset */
+
+/**
+ * The admin types the new password; nothing is generated and nothing is echoed back —
+ * the endpoint answers 204, so the value only ever exists in this ref. It is cleared
+ * when the dialog opens and again when it closes, so it never lingers in the DOM or in
+ * component state after the dialog goes away.
+ */
+const passwordTarget = ref<CenterResponse | null>(null)
+const newPassword = ref('')
+
+function startPasswordReset(center: CenterResponse) {
+  newPassword.value = ''
+  passwordTarget.value = center
+}
+
+function closePasswordReset() {
+  passwordTarget.value = null
+  newPassword.value = ''
+}
+
+async function confirmPasswordReset() {
+  if (!passwordTarget.value) return
+  if (newPassword.value.length < 8) return toast.error('رمز عبور باید حداقل ۸ نویسه باشد.')
+
+  saving.value = true
+  try {
+    await $api(ep.adminCenterPassword(passwordTarget.value.id), {
+      method: 'POST',
+      body: { newPassword: newPassword.value },
+    })
+    // No load() here: nothing in CenterResponse changes when the password does.
+    toast.success('رمز عبور مرکز بازنشانی شد. آن را از راهی امن به مرکز برسانید.')
+    closePasswordReset()
+  }
+  catch (error) { toast.error(apiErrorMessage(error)) }
+  finally { saving.value = false }
+}
+
 useHead({ title: 'مراکز خیریه — پنل ادمین' })
 </script>
 
@@ -213,6 +252,9 @@ useHead({ title: 'مراکز خیریه — پنل ادمین' })
                   <button type="button" class="text-accent hover:text-accent-600" @click="startEdit(center)">
                     ویرایش
                   </button>
+                  <button type="button" class="text-accent hover:text-accent-600" @click="startPasswordReset(center)">
+                    بازنشانی رمز
+                  </button>
                   <button type="button" class="text-danger hover:underline" @click="deleteTarget = center">
                     حذف
                   </button>
@@ -274,7 +316,7 @@ useHead({ title: 'مراکز خیریه — پنل ادمین' })
             type="password"
             revealable
             required
-            hint="حداقل ۸ نویسه. مرکز پس از ورود می‌تواند آن را تغییر دهد."
+            hint="حداقل ۸ نویسه. مرکز پس از ورود می‌تواند آن را از صفحه پروفایل خود تغییر دهد."
           />
         </div>
 
@@ -292,6 +334,39 @@ useHead({ title: 'مراکز خیریه — پنل ادمین' })
         </div>
       </aside>
     </div>
+
+    <UiModal
+      :open="Boolean(passwordTarget)"
+      title="بازنشانی رمز عبور مرکز"
+      size="sm"
+      @close="closePasswordReset"
+    >
+      <div v-if="passwordTarget" class="flex flex-col gap-5">
+        <p class="text-[15px] leading-8 text-body">
+          رمز عبور تازه برای «{{ passwordTarget.name }}» با نام کاربری
+          <span class="ltr font-semibold">{{ passwordTarget.username }}</span> تعیین می‌شود.
+        </p>
+
+        <UiField
+          v-model="newPassword"
+          label="رمز عبور جدید"
+          type="password"
+          revealable
+          required
+          :maxlength="100"
+          hint="حداقل ۸ نویسه. بازنشانی، قفل موقت پانزده‌دقیقه‌ای حساب را هم برمی‌دارد. نشست‌هایی که هم‌اکنون وارد شده‌اند با بازنشانی بلافاصله بسته نمی‌شوند."
+        />
+
+        <div class="flex items-center gap-3">
+          <button type="button" class="btn btn-primary" :disabled="saving" @click="confirmPasswordReset">
+            {{ saving ? 'در حال ذخیره…' : 'بازنشانی رمز' }}
+          </button>
+          <button type="button" class="btn btn-secondary" :disabled="saving" @click="closePasswordReset">
+            انصراف
+          </button>
+        </div>
+      </div>
+    </UiModal>
 
     <UiConfirm
       :open="Boolean(deleteTarget)"

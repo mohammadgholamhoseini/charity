@@ -115,6 +115,21 @@ Key domain notes:
 - Public filtering goes through `RequestSpecifications`. Every facet composes. Do not
   add another bespoke query method — that is what the previous if/else ladder was.
 - Amounts are required and public; there is deliberately no "amount collected".
+- **The login lock is not only about logins.** Five failed attempts lock an account for 15
+  minutes through `users.failed_attempts` / `locked_until`, and a wrong `currentPassword` at
+  `PUT /api/center/me` or `PUT /api/admin/me` counts against that same lock — an admin can
+  lock itself out of the panel from the profile form, and `JwtAuthenticationFilter` re-checks
+  the lock per request, so the live session dies at once rather than at next login.
+  `LoginAttemptService` owns the counter. The increment is a `@Modifying` statement on
+  `UserRepository` and the lock is a *second* statement carrying the threshold in its `WHERE`;
+  never read the count back to decide, because that is the lost update that let 50 concurrent
+  guesses all read 0, all write 1, and never trip the lock at all.
+- **Count a failed attempt with no transaction open.** The counter used to be `REQUIRES_NEW` so
+  it survived the caller's rollback — but nested inside `updateOwnProfile`'s transaction it
+  asked Hikari for a second connection while holding the first, and 20 concurrent attempts
+  deadlocked the pool for 30 seconds with one valid token. That is why `PasswordChangeGuard`
+  rejects by throwing `IncorrectCurrentPasswordException` and `GlobalExceptionHandler` does the
+  counting, after the caller's transaction has unwound and released its connection.
 
 ## Frontend
 

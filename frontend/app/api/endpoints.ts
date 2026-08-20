@@ -49,6 +49,7 @@ export const ep = {
   adminCenterCategories: (id: number) => `/admin/centers/${id}/categories`,
   adminCenterActivate: (id: number) => `/admin/centers/${id}/activate`,
   adminCenterDeactivate: (id: number) => `/admin/centers/${id}/deactivate`,
+  adminCenterPassword: (id: number) => `/admin/centers/${id}/password`,
   adminCategories: '/admin/categories',
   adminCategory: (id: number) => `/admin/categories/${id}`,
   adminNotices: '/admin/notices',
