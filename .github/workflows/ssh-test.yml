@@ -8,10 +8,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test SSH connection
+      - name: Prepare SSH key
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
@@ -20,6 +18,17 @@ jobs:
           echo "$VPS_SSH_KEY" | base64 -d > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
+          echo "Checking private key..."
+
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > /tmp/id_ed25519.pub
+
+          echo "Private key is valid"
+
+      - name: Test SSH connection
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
 
           ssh -i ~/.ssh/id_ed25519 \
