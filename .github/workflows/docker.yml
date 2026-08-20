@@ -112,12 +112,17 @@ jobs:
           BACKEND_IMAGE: ${{ needs.build-and-push.outputs.backend_image }}
           FRONTEND_IMAGE: ${{ needs.build-and-push.outputs.frontend_image }}
         run: |
+          # The heredoc is quoted, so nothing below expands on the runner. The three
+          # values the remote side needs are handed to it as environment variables on
+          # the bash -s command line instead. An unquoted heredoc expands every $ here
+          # rather than on the VPS, which would have silently emptied the wait loop.
           ssh \
             -i ~/.ssh/id_ed25519 \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=15 \
-            "$VPS_USER@$VPS_HOST" << EOF
+            "$VPS_USER@$VPS_HOST" \
+            "PROJECT_PATH='$VPS_PROJECT_PATH' BACKEND_IMAGE='$BACKEND_IMAGE' FRONTEND_IMAGE='$FRONTEND_IMAGE' bash -s" << 'EOF'
 
           set -e
 
@@ -125,39 +130,41 @@ jobs:
           echo "Starting deployment"
           echo "================================="
 
-          cd "$VPS_PROJECT_PATH"
+          cd "$PROJECT_PATH"
 
-          echo "Backend image:"
-          echo "$BACKEND_IMAGE"
+          echo "Backend image:  $BACKEND_IMAGE"
+          echo "Frontend image: $FRONTEND_IMAGE"
 
-          echo "Frontend image:"
-          echo "$FRONTEND_IMAGE"
-
-          echo "Pulling latest images..."
-
-          BACKEND_IMAGE="$BACKEND_IMAGE" \
-          FRONTEND_IMAGE="$FRONTEND_IMAGE" \
+          echo "Pulling images..."
           docker compose -f compose.prod.yaml pull backend frontend
 
           echo "Starting containers..."
-
-          BACKEND_IMAGE="$BACKEND_IMAGE" \
-          FRONTEND_IMAGE="$FRONTEND_IMAGE" \
           docker compose -f compose.prod.yaml up -d backend frontend nginx
-
-          echo "Waiting for containers..."
-
-          sleep 10
 
           echo "Container status:"
           docker compose -f compose.prod.yaml ps
 
-          echo "Checking frontend..."
+          # This used to be `sleep 10` followed by a single `curl -f`. A push that
+          # actually changes an image recreates the containers, and a cold backend has
+          # to wait for MySQL to report healthy, run the Flyway migrations and bring
+          # Hibernate up before it listens - well past ten seconds. So nginx was still
+          # answering 502 when the one-shot curl fired, and the first deploy of any
+          # real change went red while the deployment underneath it had worked.
+          echo "Waiting for the site to answer..."
 
-          curl -f http://localhost || exit 1
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null --max-time 5 http://localhost; then
+              echo "Site answered on attempt $i"
+              echo "================================="
+              echo "Deployment successful"
+              echo "================================="
+              exit 0
+            fi
+            sleep 5
+          done
 
-          echo "================================="
-          echo "Deployment successful"
-          echo "================================="
-
+          echo "Site did not answer within five minutes."
+          docker compose -f compose.prod.yaml ps
+          docker compose -f compose.prod.yaml logs --tail=50 backend frontend nginx
+          exit 1
           EOF
