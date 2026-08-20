@@ -151,8 +151,30 @@ jobs:
           echo "Backend image:  $BACKEND_IMAGE"
           echo "Frontend image: $FRONTEND_IMAGE"
 
+          # ghcr.io is reachable from this VPS but not reliably. A pull can die on
+          # "TLS handshake timeout" while fetching the anonymous token, which docker
+          # then reports as "failed to authorize" - the wording points at credentials
+          # but the cause is the network, and there are no credentials involved: the
+          # packages are public and the token is anonymous. Under `set -e` a single
+          # flaky pull aborted the whole deploy, which is what happened on d97ffb5,
+          # where the backend pulled fine and the frontend timed out.
           echo "Pulling images..."
-          docker compose -f compose.prod.yaml pull backend frontend
+
+          pulled=0
+          for attempt in $(seq 1 5); do
+            if docker compose -f compose.prod.yaml pull backend frontend; then
+              pulled=1
+              break
+            fi
+            echo "Pull attempt $attempt failed. Retrying in 15s..."
+            sleep 15
+          done
+
+          if [ "$pulled" -ne 1 ]; then
+            echo "Could not pull the images from ghcr.io after 5 attempts."
+            echo "The running containers have been left untouched."
+            exit 1
+          fi
 
           echo "Starting containers..."
           docker compose -f compose.prod.yaml up -d backend frontend nginx
