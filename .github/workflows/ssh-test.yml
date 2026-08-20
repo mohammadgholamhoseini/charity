@@ -26,9 +26,9 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          echo "Testing SSH port..."
+          echo "Testing TCP connection to $VPS_HOST:22"
 
-          timeout 10 bash -c "</dev/tcp/$VPS_HOST/22"
+          nc -vz -w 10 "$VPS_HOST" 22
 
           echo "Port 22 is reachable"
 
