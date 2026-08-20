@@ -14,8 +14,8 @@ charity/
 
 | Role | How it is created | What it can do |
 |---|---|---|
-| `ADMIN` | seeded from `ADMIN_INITIAL_PASSWORD` | take requests down, manage centres, categories, announcements, locations |
-| `CENTER` | created by an admin only | publish requests in its allowed categories |
+| `ADMIN` | seeded from `ADMIN_INITIAL_PASSWORD` | take requests down, manage centres, categories, announcements, locations, reset a centre's password |
+| `CENTER` | created by an admin only | publish requests in its allowed categories, change its own password |
 
 There is no public registration. A centre publishes its own requests — they go live
 immediately, with no approval step. A centre may save a `DRAFT` first and publish it
@@ -102,7 +102,7 @@ Public endpoints are unauthenticated and cacheable:
 | GET | `/api/public/categories`, `/api/public/cities`, `/api/public/provinces` | |
 | GET | `/api/public/announcements` | at most one per placement |
 | GET | `/api/public/sitemap/*` | feeds the frontend's sitemap |
-| POST | `/api/auth/login` | 5 failed attempts locks the account for 15 minutes |
+| POST | `/api/auth/login` | 5 failed attempts locks the account for 15 minutes — the same counter also trips on a wrong `currentPassword` at `PUT /api/center/me` or `PUT /api/admin/me` |
 | — | `/api/center/**` | `ROLE_CENTER` |
 | — | `/api/admin/**` | `ROLE_ADMIN` |
 

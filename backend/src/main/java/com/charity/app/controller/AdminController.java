@@ -135,6 +135,17 @@ public class AdminController {
         return centers.setActive(id, false);
     }
 
+    /**
+     * Sets a new password for the centre's account, for a centre that lost it or locked itself out.
+     * The admin types the password and passes it on out of band -- it is never echoed back here.
+     */
+    @PostMapping("/centers/{id}/password")
+    public ResponseEntity<Void> resetCenterPassword(@PathVariable Long id,
+                                                    @Valid @RequestBody ResetCenterPasswordRequest request) {
+        centers.resetPassword(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/centers/{id}")
     public ResponseEntity<Void> deleteCenter(@PathVariable Long id) {
         centers.delete(id);

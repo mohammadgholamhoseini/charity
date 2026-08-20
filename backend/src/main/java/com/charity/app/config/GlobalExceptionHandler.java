@@ -1,6 +1,8 @@
 package com.charity.app.config;
 
 import com.charity.app.common.error.*;
+import com.charity.app.service.LoginAttemptService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -33,10 +35,18 @@ import java.util.UUID;
  * every denied request into a server error; which passed {@code e.getMessage()} straight to the
  * client, leaking SQL fragments, file paths and internal class names; and which built its body with
  * {@code Map.of}, so any exception with a null message made the handler itself throw.
+ *
+ * <p>It has one dependency, and that is not an accident: see
+ * {@link #handleIncorrectCurrentPassword}. Recording a failed password attempt is the one piece of
+ * state this class writes, and it is here precisely because here is the first moment in the request
+ * at which no transaction and no pooled connection is held.
  */
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final LoginAttemptService loginAttempts;
 
     // ---------------------------------------------------------------- 401 / 403
 
@@ -122,6 +132,39 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleBadRequest(RuntimeException e) {
         return ResponseEntity.badRequest()
                 .body(ApiError.of(messageOr(e, "درخواست نامعتبر است"), "BAD_REQUEST"));
+    }
+
+    /**
+     * A wrong {@code currentPassword} on {@code PUT /api/center/me} or {@code PUT /api/admin/me}.
+     * Same 400 as any other {@link ValidationException} -- this exists to count the attempt against
+     * the login throttle, and to say so in the message on the one that trips the lock.
+     *
+     * <p><b>Counting happens here rather than at the throw site, and that is the whole point of the
+     * exception.</b> The throw sites are inside the {@code @Transactional} profile-save, holding a
+     * pooled connection; counting from in there asked Hikari for a second connection while the first
+     * was held and deadlocked the pool once every connection was a holder. By the time an
+     * {@code @ExceptionHandler} runs, the service transaction has already rolled back and returned
+     * its connection -- {@code open-in-view} is false, so nothing else is holding one either -- and
+     * {@link LoginAttemptService#recordFailure} simply takes a free one. That rollback is also what
+     * guarantees the profile edits submitted alongside the wrong password were not saved, and it can
+     * no longer take the counter down with it, because the counter is no longer inside it.
+     *
+     * <p>A failure to record must not turn a 400 into a 500: the caller's answer is the same either
+     * way, and an exception thrown out of an exception handler lands in the container with no
+     * {@link ApiError} at all. So it is caught, logged, and the un-locked message is used.
+     */
+    @ExceptionHandler(IncorrectCurrentPasswordException.class)
+    public ResponseEntity<ApiError> handleIncorrectCurrentPassword(IncorrectCurrentPasswordException e) {
+        boolean locked = false;
+        try {
+            locked = loginAttempts.recordFailure(e.getUsername());
+        } catch (RuntimeException failure) {
+            log.error("Could not record a failed password-change attempt for '{}'", e.getUsername(), failure);
+        }
+        return ResponseEntity.badRequest().body(ApiError.of(
+                locked ? IncorrectCurrentPasswordException.LOCKED_MESSAGE
+                       : IncorrectCurrentPasswordException.MESSAGE,
+                "BAD_REQUEST"));
     }
 
     /** Framework parse failures: the message names internal types, so it is not echoed back. */

@@ -12,10 +12,10 @@ Read the section that matches what you are touching, not the whole file (~4,500 
 |---|---|
 | `## What this is` | 3–8 |
 | `## No tests, no lint gate` | 22–33 |
-| `## Backend` | 34–118 |
-| `## Frontend` | 119–230 |
-| `## Docker` | 231–292 |
-| `## Known issues` | 299–304 |
+| `## Backend` | 34–133 |
+| `## Frontend` | 134–245 |
+| `## Docker` | 246–307 |
+| `## Known issues` | 314–319 |
 
 `ISSUES.md` is the last full audit, and it is **history rather than current state**: most Critical
 and High items are fixed, and some name files that no longer exist (`CharityCaseService.java`,

@@ -27,7 +27,8 @@ public class AuthService {
      * and come back as a 500.
      *
      * <p>Lock state is applied by {@code CustomUserDetailsService} before the password is even
-     * checked, and the attempt counters are maintained by {@code AuthEventListener}.
+     * checked, and the attempt counters are maintained by {@link LoginAttemptService}, which
+     * {@code AuthEventListener} drives from the success and failure events this call publishes.
      */
     public AuthResponse authenticate(AuthRequest req) {
         authenticationManager.authenticate(
