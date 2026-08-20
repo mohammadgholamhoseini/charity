@@ -12,8 +12,6 @@ jobs:
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
-          set -x
-
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
@@ -30,10 +28,15 @@ jobs:
         run: |
           set -x
 
-          echo "Testing host: $VPS_HOST"
+          echo "Host length: ${#VPS_HOST}"
 
+          echo "Host bytes:"
+          printf '%s' "$VPS_HOST" | od -An -t x1
+
+          echo "Testing DNS..."
           getent hosts "$VPS_HOST"
 
+          echo "Testing port 22..."
           timeout 10 bash -c "</dev/tcp/$VPS_HOST/22"
 
           echo "Port 22 is reachable"
@@ -47,9 +50,6 @@ jobs:
 
           ssh-keyscan -T 10 -H "$VPS_HOST" > ~/.ssh/known_hosts
 
-          echo "Known hosts:"
-          cat ~/.ssh/known_hosts
-
           echo "Starting SSH..."
 
           ssh \
@@ -60,4 +60,4 @@ jobs:
             -o ConnectTimeout=10 \
             -o BatchMode=yes \
             "$VPS_USER@$VPS_HOST" \
-            "echo SSH_OK"
+            "echo SSH_OK; hostname; docker --version"
