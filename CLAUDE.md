@@ -53,11 +53,21 @@ cd frontend && npm run build
 **`npm run lint` and `npm run typecheck` both abort** — no flat ESLint config was ever committed
 and there is no root tsconfig. Their failure says nothing about your change.
 
-There are **zero tests**, and CI does not run any. The one CI job,
-`.github/workflows/docker.yml`, fires on every push to `master` or `development` and on PRs to
-`master`: it builds both images (`mvn clean package -DskipTests` and `npm run build`) and pushes
-them to GHCR. So it catches a compile error or a broken build and nothing subtler — and note that
-pushing to `development` publishes a `:dev` image. Do not invent a gate that is not on this page.
+There are **zero tests**, and CI does not run any. `.github/workflows/docker.yml` has two jobs.
+
+`build-and-push` fires on every push to `master` or `development`, on PRs to `master`, and on a
+manual `workflow_dispatch`. It builds both images (`mvn clean package -DskipTests` and
+`npm run build`) and pushes them to GHCR — `:latest` from `master`, `:dev` from `development`.
+So it catches a compile error or a broken build and nothing subtler.
+
+`deploy` is the one that matters. It is guarded by
+`github.ref == 'refs/heads/master' && github.event_name == 'push'`, so it is skipped on a
+`development` push, on a pull request and on a manual dispatch — but **a push to `master` is a
+production deployment**. It SSHes into the VPS, pulls the new images and runs
+`docker compose -f compose.prod.yaml up -d backend frontend nginx`. Treat pushing `master` as a
+release, not as a save.
+
+Do not invent a gate that is not on this page.
 
 ## Subagents
 
@@ -98,3 +108,4 @@ The full list is in `AGENTS.md`. These are the ones that cause real harm if brok
 ## Git
 
 `master` is production-ready, `development` is the active branch. Work on `development`.
+Pushing `master` deploys to the VPS — see `## The gates`. Merge into it deliberately.
