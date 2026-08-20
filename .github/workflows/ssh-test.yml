@@ -22,21 +22,12 @@ jobs:
 
           echo "Private key is valid"
 
-      - name: Test DNS and port
+      - name: Test port 22
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          set -x
+          echo "Testing SSH port..."
 
-          echo "Host length: ${#VPS_HOST}"
-
-          echo "Host bytes:"
-          printf '%s' "$VPS_HOST" | od -An -t x1
-
-          echo "Testing DNS..."
-          getent hosts "$VPS_HOST"
-
-          echo "Testing port 22..."
           timeout 10 bash -c "</dev/tcp/$VPS_HOST/22"
 
           echo "Port 22 is reachable"
