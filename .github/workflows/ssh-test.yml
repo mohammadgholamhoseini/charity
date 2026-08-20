@@ -22,11 +22,22 @@ jobs:
 
           echo "Private key is valid"
 
+      - name: Debug VPS_HOST
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          echo "VPS_HOST length: ${#VPS_HOST}"
+          echo "VPS_HOST first 3 chars: ${VPS_HOST:0:3}"
+          echo "VPS_HOST last 3 chars: ${VPS_HOST: -3}"
+
+          echo "VPS_HOST bytes:"
+          printf '%s' "$VPS_HOST" | od -An -t x1
+
       - name: Test port 22
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          echo "Testing TCP connection to $VPS_HOST:22"
+          echo "Testing TCP connection to VPS port 22..."
 
           nc -vz -w 10 "$VPS_HOST" 22
 
