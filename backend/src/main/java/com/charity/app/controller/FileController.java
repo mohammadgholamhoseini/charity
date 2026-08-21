@@ -19,12 +19,20 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/public/files")
 @RequiredArgsConstructor
 public class FileController {
+
+    /**
+     * The only content types served inline. Everything else -- office documents included -- gets
+     * {@code Content-Disposition: attachment}.
+     */
+    private static final List<MediaType> INLINE_TYPES =
+            List.of(MediaType.valueOf("image/*"), MediaType.APPLICATION_PDF);
 
     private final FileStorageService storage;
 
@@ -35,6 +43,11 @@ public class FileController {
      * {@code Content-Disposition: attachment}, which meant no uploaded image would ever render in an
      * {@code <img>} tag or in a social/messenger link preview -- both of which the redesign depends
      * on. Images and PDFs are now served inline with their real content type.
+     *
+     * <p>Inline is an allowlist, not the absence of a blocklist. {@code docx} and {@code xlsx} are
+     * accepted uploads now and {@code MediaTypeFactory} gives them their real OOXML content types,
+     * which are on nobody's list here -- so they download as attachments, which is the only sane
+     * thing a browser can do with them anyway. Anything else new lands on the same side by default.
      */
     @GetMapping("/{filename}")
     public ResponseEntity<Resource> download(@PathVariable String filename) throws IOException {
@@ -45,8 +58,7 @@ public class FileController {
 
         MediaType contentType = MediaTypeFactory.getMediaType(filename)
                 .orElse(MediaType.APPLICATION_OCTET_STREAM);
-        boolean inline = "image".equals(contentType.getType())
-                || MediaType.APPLICATION_PDF.equals(contentType);
+        boolean inline = INLINE_TYPES.stream().anyMatch(allowed -> allowed.includes(contentType));
 
         ContentDisposition disposition = ContentDisposition
                 .builder(inline ? "inline" : "attachment")

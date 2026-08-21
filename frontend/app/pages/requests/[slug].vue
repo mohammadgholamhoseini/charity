@@ -141,6 +141,16 @@ useJsonLd().requestDetail(request.value!)
           </p>
         </section>
 
+        <!-- documents -->
+        <section v-if="request.documents?.length" class="card p-6 flex flex-col gap-5">
+          <h2 class="text-[19px] font-bold">مدارک</h2>
+          <DocumentList :documents="request.documents" />
+          <p class="text-[13px] leading-7 text-muted border-t border-surface-3 pt-4">
+            این مدارک را مرکز ثبت‌کننده بارگذاری کرده و مسئولیت صحت آن‌ها با همان مرکز است.
+            فایل‌ها در زبانه تازه باز می‌شوند.
+          </p>
+        </section>
+
         <!-- status lifecycle -->
         <section class="card-flat p-6 flex flex-col gap-4">
           <h2 class="text-[19px] font-bold">وضعیت و دسته‌بندی</h2>

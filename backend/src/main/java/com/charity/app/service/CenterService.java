@@ -7,6 +7,7 @@ import com.charity.app.common.error.ValidationException;
 import com.charity.app.mapper.CenterMapper;
 import com.charity.app.model.Category;
 import com.charity.app.model.Center;
+import com.charity.app.model.CenterDocument;
 import com.charity.app.model.City;
 import com.charity.app.model.User;
 import com.charity.app.model.enums.CenterStatus;
@@ -37,6 +38,8 @@ public class CenterService {
     private final CityRepository cities;
     private final RequestRepository requests;
     private final RequestService requestService;
+    /** Only for the reference-checked unlink in {@link #delete}; documents are not managed here. */
+    private final DocumentService documents;
     private final CenterMapper mapper;
     private final CurrentUser currentUser;
     private final PasswordEncoder passwordEncoder;
@@ -272,12 +275,24 @@ public class CenterService {
                     ("این مرکز %d درخواست ثبت‌شده دارد و قابل حذف نیست. "
                             + "برای خارج کردن آن از سایت، وضعیت مرکز را غیرفعال کنید.").formatted(owned));
         }
+        // The centre's documents go with it. The rows would otherwise fail the center_documents
+        // foreign key and surface as a 500 with raw SQL in the body -- the same failure mode
+        // category deletion had before it learned to detach itself. Clearing the collection lets
+        // orphanRemoval delete the rows; the files behind them are the part no cascade knows about,
+        // so they are unlinked afterwards, each one only if nothing else still names it.
+        List<String> documentFiles = center.getDocuments().stream()
+                .map(CenterDocument::getStoredFilename)
+                .toList();
+        center.getDocuments().clear();
+
         User user = center.getUser();
         center.setUser(null);
         centers.delete(center);
+        centers.flush();
         if (user != null) {
             users.delete(user);
         }
+        documentFiles.forEach(documents::unlinkIfUnreferenced);
     }
 
     // ------------------------------------------------------------------ internals

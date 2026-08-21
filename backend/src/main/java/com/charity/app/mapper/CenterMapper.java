@@ -5,6 +5,7 @@ import com.charity.app.model.Category;
 import com.charity.app.model.Center;
 import com.charity.app.payload.CategoryRef;
 import com.charity.app.payload.CenterCard;
+import com.charity.app.payload.CenterDocumentResponse;
 import com.charity.app.payload.CenterPublicProfile;
 import com.charity.app.payload.CenterRef;
 import com.charity.app.payload.CenterResponse;
@@ -28,6 +29,7 @@ public class CenterMapper {
 
     private final CategoryMapper categoryMapper;
     private final LocationMapper locationMapper;
+    private final DocumentMapper documentMapper;
     private final AppUrls urls;
 
     /** Embedded in a request card or detail sidebar. */
@@ -79,6 +81,7 @@ public class CenterMapper {
                 urls.fileUrl(center.getLogoUrl()),
                 locationMapper.toRef(center.getCity()),
                 sortedCategories(center),
+                documents(center),
                 activeRequestCount,
                 urls.iso(center.getUpdatedAt()));
     }
@@ -103,9 +106,19 @@ public class CenterMapper {
                 center.getStatus() == null ? null : center.getStatus().label(),
                 locationMapper.toRef(center.getCity()),
                 sortedCategories(center),
+                documents(center),
                 activeRequestCount,
                 urls.iso(center.getCreatedAt()),
                 urls.iso(center.getUpdatedAt()));
+    }
+
+    /**
+     * Both callers of this run inside a {@code @Transactional} service method, so the lazy
+     * collection is still attached. {@link CenterCard} and {@link CenterRef} do not call it, which
+     * is what keeps the centres listing free of an N+1.
+     */
+    private List<CenterDocumentResponse> documents(Center center) {
+        return documentMapper.toCenterDocuments(center.getDocuments());
     }
 
     /**

@@ -5,6 +5,7 @@ import com.charity.app.model.enums.RequestStatus;
 import com.charity.app.model.enums.Urgency;
 import com.charity.app.payload.*;
 import com.charity.app.service.CenterService;
+import com.charity.app.service.DocumentService;
 import com.charity.app.service.FileStorageService;
 import com.charity.app.service.RequestAnnouncementService;
 import com.charity.app.service.RequestService;
@@ -28,6 +29,7 @@ public class CenterController {
     private final CenterService centers;
     private final RequestService requests;
     private final RequestAnnouncementService announcements;
+    private final DocumentService documents;
     private final FileStorageService storage;
 
     // ---------------------------------------------------------------- profile
@@ -132,9 +134,44 @@ public class CenterController {
         return announcements.reannounce(id, true);
     }
 
+    /**
+     * Attaches documents to one of this centre's requests.
+     *
+     * <p>Allowed in every status, {@code COMPLETED} and an admin takedown included -- see
+     * {@link com.charity.app.service.DocumentService}. Nothing here consults
+     * {@code RequestStatusPolicy}: attaching a document is not a status transition.
+     *
+     * @param title honoured only when exactly one file is posted
+     */
     @PostMapping("/requests/{id}/documents")
-    public RequestDetailResponse uploadDocuments(@PathVariable Long id,
-                                                 @RequestParam("files") List<MultipartFile> files) {
-        return requests.addDocuments(id, storage.storeAll(files));
+    public RequestDetailResponse uploadRequestDocuments(@PathVariable Long id,
+                                                        @RequestParam("files") List<MultipartFile> files,
+                                                        @RequestParam("categoryId") Long categoryId,
+                                                        @RequestParam(value = "title", required = false) String title) {
+        return documents.uploadToRequest(id, categoryId, title, files);
+    }
+
+    /** Refused with 409 while an admin's takedown is in force; allowed in every other status. */
+    @DeleteMapping("/requests/{requestId}/documents/{documentId}")
+    public ResponseEntity<Void> deleteRequestDocument(@PathVariable Long requestId,
+                                                      @PathVariable Long documentId) {
+        documents.deleteRequestDocumentByCenter(requestId, documentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------------------------------------------------------------- own documents
+
+    /** The centre's own paperwork -- licence, articles, accounts. Public on its centre page. */
+    @PostMapping("/me/documents")
+    public CenterResponse uploadOwnDocuments(@RequestParam("files") List<MultipartFile> files,
+                                             @RequestParam("categoryId") Long categoryId,
+                                             @RequestParam(value = "title", required = false) String title) {
+        return documents.uploadToOwnCenter(categoryId, title, files);
+    }
+
+    @DeleteMapping("/me/documents/{documentId}")
+    public ResponseEntity<Void> deleteOwnDocument(@PathVariable Long documentId) {
+        documents.deleteOwnCenterDocument(documentId);
+        return ResponseEntity.noContent().build();
     }
 }

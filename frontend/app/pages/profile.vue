@@ -164,6 +164,15 @@ async function uploadLogo(event: Event) {
   }
 }
 
+/**
+ * The centre's own paperwork. Public, like the banking details above it and for the same
+ * reason: a visitor deciding whether to trust a centre has nothing else to go on.
+ */
+function onDocumentRemoved(documentId: number) {
+  if (!center.value) return
+  center.value.documents = (center.value.documents ?? []).filter(doc => doc.id !== documentId)
+}
+
 /* ----------------------------------------------------------------- load */
 
 onMounted(async () => {
@@ -299,5 +308,20 @@ useHead({ title: 'پروفایل من — یاری‌جو' })
         </button>
       </div>
     </form>
+
+    <!-- Its own card, outside the profile form: uploading is immediate and has nothing to do
+         with pressing «ذخیره تغییرات». -->
+    <section v-if="!loading && !auth.isAdmin.value" class="card-flat p-6">
+      <DocumentUploader
+        scope="CENTER"
+        heading="مدارک مرکز"
+        description="مجوز فعالیت، اساسنامه و صورت‌های مالی. این مدارک در صفحه عمومی مرکز نمایش داده می‌شود."
+        :documents="center?.documents ?? []"
+        :endpoint="ep.centerDocuments"
+        :delete-endpoint="ep.centerDocument"
+        @uploaded="center = $event as CenterResponse"
+        @removed="onDocumentRemoved"
+      />
+    </section>
   </div>
 </template>

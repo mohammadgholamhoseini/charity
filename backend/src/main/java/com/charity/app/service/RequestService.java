@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
@@ -310,14 +309,16 @@ public class RequestService {
         softDelete(loadById(id));
     }
 
-    @Transactional
-    public RequestDetailResponse addDocuments(Long id, List<String> filenames) {
-        Request request = ownedByCurrentCenter(id);
-        List<String> documents = new ArrayList<>(request.getDocuments());
-        documents.addAll(filenames);
-        request.setDocuments(documents);
-        return mapper.toDetail(requests.save(request), 0, true);
-    }
+    /*
+     * addDocuments lived here and is now DocumentService.
+     *
+     * It appended bare filenames to a JSON column, which is what a document had to be when it was
+     * a string. A document now carries a category, a title, a size and an uploader, and -- more to
+     * the point -- attaching one must be possible on a COMPLETED request and on one an admin has
+     * taken down, neither of which this class's ownership-plus-status paths would ever allow.
+     * Keeping it here would have meant either weakening those paths or growing a second set beside
+     * them. See D4 in the documents plan.
+     */
 
     /** Used when an admin deactivates a whole centre. */
     @Transactional

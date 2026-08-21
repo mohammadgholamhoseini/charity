@@ -1,6 +1,5 @@
 package com.charity.app.model;
 
-import com.charity.app.common.JsonListConverter;
 import com.charity.app.common.JsonMapConverter;
 import com.charity.app.model.enums.RequestStatus;
 import com.charity.app.model.enums.UserRole;
@@ -80,10 +79,26 @@ public class Request {
     @Builder.Default
     private Map<String, Object> details = new HashMap<>();
 
-    @Convert(converter = JsonListConverter.class)
-    @Column(name = "documents_json", columnDefinition = "TEXT")
+    /**
+     * Supporting paperwork, publicly served alongside the request.
+     *
+     * <p>Was a JSON array of bare filenames in {@code documents_json}, which could carry no
+     * category, title, size or timestamp and could not be joined or counted. The column is still
+     * there and still populated for old rows -- {@code RequestDocumentBackfill} copies it into this
+     * table on startup and a later migration drops it -- but nothing reads it through the entity
+     * any more. Hibernate's {@code validate} objects to missing columns, never to extra ones.
+     *
+     * <p>Ordering here is by {@code sortOrder} alone; the category grouping that {@code D6} asks
+     * for is applied in {@code DocumentMapper}, where a join is available. A JPA {@code @OrderBy}
+     * reaching through {@code category.} would have to be resolved when the collection loads,
+     * including on the fetch-joined announcement query, and that is the one query in this codebase
+     * that must never fail at runtime.
+     */
+    @OneToMany(mappedBy = "request", fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC, id ASC")
     @Builder.Default
-    private List<String> documents = new ArrayList<>();
+    private List<RequestDocument> documents = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

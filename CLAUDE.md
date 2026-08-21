@@ -73,7 +73,7 @@ Do not invent a gate that is not on this page.
 
 ## Subagents
 
-Five specialists live in `.claude/agents/`. None pins a model, so all follow the session's.
+Six specialists live in `.claude/agents/`. None pins a model, so all follow the session's.
 
 | Agent | Use it for | Writes? |
 |---|---|---|
@@ -82,6 +82,7 @@ Five specialists live in `.claude/agents/`. None pins a model, so all follow the
 | `frontend` | Nuxt, SSR, Nitro caching, styling, routing | Yes |
 | `tester` | Writing tests and reporting coverage gaps | Yes |
 | `reviewer` | Reviewing a change for bugs, security, performance, drift — CRITICAL/HIGH/MEDIUM/LOW | **No — by instruction** |
+| `tasks` | Reading and writing the Trello board — proposing the next card, working one up into a brief, recording an outcome | Board only — **never the code** |
 
 `architect` and `reviewer` have no `Write` or `Edit`. That is a guardrail, not a wall: they do
 carry `Bash`, which can write, so their read-only behaviour is a rule they keep rather than one
@@ -91,6 +92,12 @@ the tool list enforces. `Bash` is there for git and inspection.
 re-derives what this session already knows, so it costs *more* tokens than working inline. What
 it buys is a clean main context and an independent perspective. That trade is worth it for broad
 exploration, cross-cutting changes, and review — and not worth it for a one-file edit.
+
+`tasks` is the board, not an orchestrator. It cannot ask you anything and it cannot invoke another
+agent — subagents do neither — so it *proposes* a card and stops. Approval and dispatch stay in the
+main session: `tasks` → you approve → `architect` (when the change earns one) → `backend`/`frontend`
+→ `reviewer` → `tasks` again to close the card. Its credentials come from `~/.trello.env`, outside
+the repository on purpose; `.claude/scripts/README-trello.md` covers setup.
 
 There is no separate database agent: schema work belongs to `backend`, because in this repo a
 migration never arrives alone. It always trails an entity change.
@@ -111,3 +118,24 @@ The full list is in `AGENTS.md`. These are the ones that cause real harm if brok
 
 `master` is production-ready, `development` is the active branch. Work on `development`.
 Pushing `master` deploys to the VPS — see `## The gates`. Merge into it deliberately.
+
+**A commit that closes a card names it.** Not one card per commit — that rule breaks in both
+directions and pretending otherwise just produces dishonest history. `62394d0` closed three cards
+at once because all three touched one component and splitting them would have meant three commits
+that do not stand alone; conversely a card like "write tests" is obviously many commits. What is
+worth keeping is the *trace*, in both directions:
+
+```
+Trello: https://trello.com/c/NsEILCEA
+```
+
+as a trailer in the commit message — repeat the line when a commit closes more than one card —
+and the commit recorded back on the card. The wrapper does both halves:
+
+```bash
+bash .claude/scripts/trello.sh trailer <cardId>      # before committing: prints the trailer line
+bash .claude/scripts/trello.sh link <cardId> <sha>   # after committing: comments the sha on the card
+```
+
+There is deliberately **no `commit-msg` hook enforcing this**. Plenty of commits have no card —
+this paragraph does not — and a hook that has to be bypassed weekly teaches people to bypass it.

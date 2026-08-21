@@ -277,6 +277,32 @@
   .chip[data-urgency="HIGH"]   { background: #fbe4e8; color: #9b1c31; }
   .chip[data-urgency="URGENT"] { background: #c4234f; color: #ffffff; }
 
+  /* The file-type badge on a document row. Written out longhand for the same reason the
+     status chips are: `bg-${extension}` is a class Tailwind never sees, so it emits no CSS
+     at all. The attribute is set from the file name, and anything unrecognised falls through
+     to the base rule rather than rendering unstyled. */
+  .doc-ext {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 46px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: #e9f0fc;
+    color: #576e96;
+  }
+  .doc-ext[data-ext="pdf"]  { background: #fbe4e8; color: #9b1c31; }
+  .doc-ext[data-ext="docx"] { background: #dee9fc; color: #1f5fc0; }
+  .doc-ext[data-ext="xlsx"] { background: #dcefe8; color: #1e6e57; }
+  .doc-ext[data-ext="jpg"]  { background: #e3eaf7; color: #254f8e; }
+  .doc-ext[data-ext="jpeg"] { background: #e3eaf7; color: #254f8e; }
+  .doc-ext[data-ext="png"]  { background: #e3eaf7; color: #254f8e; }
+  .doc-ext[data-ext="webp"] { background: #e3eaf7; color: #254f8e; }
+
   .chip-dark {
     background: var(--color-ink);
     color: var(--color-onink);

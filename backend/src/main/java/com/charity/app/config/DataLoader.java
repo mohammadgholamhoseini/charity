@@ -2,6 +2,7 @@ package com.charity.app.config;
 
 import com.charity.app.config.seed.CategorySeeder;
 import com.charity.app.config.seed.LocationSeeder;
+import com.charity.app.config.seed.RequestDocumentBackfill;
 import com.charity.app.config.seed.SlugBackfill;
 import com.charity.app.model.Notice;
 import com.charity.app.model.User;
@@ -18,8 +19,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Brings a database up to a usable state on startup: reference data, the initial admin, and any
- * slugs the migrations left for the application to compute.
+ * Brings a database up to a usable state on startup: reference data, the initial admin, and the two
+ * backfills the migrations left for the application to do -- slugs, because they need Persian-aware
+ * text handling, and old document arrays, because unpacking JSON in portable SQL is not possible.
  */
 @Slf4j
 @Component
@@ -29,6 +31,7 @@ public class DataLoader implements ApplicationRunner {
     private final CategorySeeder categorySeeder;
     private final LocationSeeder locationSeeder;
     private final SlugBackfill slugBackfill;
+    private final RequestDocumentBackfill requestDocumentBackfill;
     private final UserRepository users;
     private final NoticeRepository notices;
     private final PasswordEncoder passwordEncoder;
@@ -43,6 +46,9 @@ public class DataLoader implements ApplicationRunner {
         seedFooterNotice();
         seedAdmin();
         slugBackfill.backfill();
+        // Moves the old documents_json arrays into request_documents. Idempotent; a no-op once the
+        // column is empty, and a no-op again once V13 drops it.
+        requestDocumentBackfill.backfill();
     }
 
     private void seedFooterNotice() {

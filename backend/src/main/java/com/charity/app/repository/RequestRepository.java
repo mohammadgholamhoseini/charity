@@ -52,12 +52,23 @@ public interface RequestRepository extends JpaRepository<Request, Long>, JpaSpec
      * <p>Written as JPQL rather than {@code @EntityGraph} on purpose. Entity-graph attribute paths
      * are strings that are not checked until the query runs, and a typo there has already cost this
      * project a production 500. A bad path in this query fails at context startup instead.
+     *
+     * <p>{@code r.documents} and their categories are fetched for the same reason: the template
+     * sends one attachment per document and captions it with its category name. Add a field to the
+     * template, add it here.
+     *
+     * <p>{@code DISTINCT} is not decoration. Fetch-joining a collection multiplies the result rows,
+     * and this method returns an {@code Optional} -- without it, the first request carrying two
+     * documents would make Spring Data throw {@code NonUniqueResultException} and take every
+     * announcement down with it.
      */
     @Query("""
-           SELECT r FROM Request r
+           SELECT DISTINCT r FROM Request r
            LEFT JOIN FETCH r.center c
            LEFT JOIN FETCH c.city
            LEFT JOIN FETCH r.category
+           LEFT JOIN FETCH r.documents d
+           LEFT JOIN FETCH d.category
            WHERE r.id = :id
            """)
     Optional<Request> findForMessaging(@Param("id") Long id);

@@ -2,6 +2,7 @@ package com.charity.app.controller;
 
 import com.charity.app.common.Paging;
 import com.charity.app.model.Province;
+import com.charity.app.model.enums.DocumentScope;
 import com.charity.app.model.enums.RequestStatus;
 import com.charity.app.model.enums.Urgency;
 import com.charity.app.payload.*;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,8 @@ public class AdminController {
     private final RequestAnnouncementService announcements;
     private final CenterService centers;
     private final CategoryService categories;
+    private final DocumentService documents;
+    private final DocumentCategoryService documentCategories;
     private final NoticeService notices;
     private final ProvinceService provinces;
     private final CityService cities;
@@ -149,6 +153,74 @@ public class AdminController {
     @DeleteMapping("/centers/{id}")
     public ResponseEntity<Void> deleteCenter(@PathVariable Long id) {
         centers.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------------------------------------------------------------- documents
+
+    /**
+     * Attaches documents to a centre. This is what the create-centre form calls once the centre
+     * itself exists -- creation stays JSON, so the two arrive in two calls.
+     *
+     * @param title honoured only when exactly one file is posted
+     */
+    @PostMapping("/centers/{id}/documents")
+    public CenterResponse uploadCenterDocuments(@PathVariable Long id,
+                                                @RequestParam("files") List<MultipartFile> files,
+                                                @RequestParam("categoryId") Long categoryId,
+                                                @RequestParam(value = "title", required = false) String title) {
+        return documents.uploadToCenter(id, categoryId, title, files);
+    }
+
+    @DeleteMapping("/centers/{centerId}/documents/{documentId}")
+    public ResponseEntity<Void> deleteCenterDocument(@PathVariable Long centerId,
+                                                     @PathVariable Long documentId) {
+        documents.deleteCenterDocumentByAdmin(centerId, documentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Removes a document from any request, in any status. The moderation remedy for a scan that
+     * names the beneficiary: the row and the file both go, which is why there is no admin upload
+     * to match it -- request paperwork is the centre's to supply, and an admin's to take down.
+     */
+    @DeleteMapping("/requests/{requestId}/documents/{documentId}")
+    public ResponseEntity<Void> deleteRequestDocument(@PathVariable Long requestId,
+                                                      @PathVariable Long documentId) {
+        documents.deleteRequestDocumentByAdmin(requestId, documentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------------------------------------------------------------- document categories
+
+    @GetMapping("/document-categories")
+    public List<DocumentCategoryResponse> listDocumentCategories(@RequestParam DocumentScope scope) {
+        return documentCategories.listByScope(scope);
+    }
+
+    @PostMapping("/document-categories")
+    public DocumentCategoryResponse createDocumentCategory(
+            @Valid @RequestBody DocumentCategoryRequest request) {
+        return documentCategories.create(request);
+    }
+
+    @PutMapping("/document-categories/{id}")
+    public DocumentCategoryResponse updateDocumentCategory(
+            @PathVariable Long id, @Valid @RequestBody DocumentCategoryRequest request) {
+        return documentCategories.update(id, request);
+    }
+
+    /**
+     * Deactivating is nearly always the better move -- it clears the category out of every upload
+     * picker while documents already filed under it keep rendering.
+     *
+     * @param replacementId required when any document still uses this category, and it must share
+     *                      the category's scope; the documents are moved rather than orphaned
+     */
+    @DeleteMapping("/document-categories/{id}")
+    public ResponseEntity<Void> deleteDocumentCategory(@PathVariable Long id,
+                                                       @RequestParam(required = false) Long replacementId) {
+        documentCategories.delete(id, replacementId);
         return ResponseEntity.noContent().build();
     }
 

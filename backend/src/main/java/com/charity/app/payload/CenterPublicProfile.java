@@ -8,6 +8,10 @@ import java.util.List;
  *
  * <p>Banking details are deliberately public: there is no online payment, so a visitor who wants to
  * help contacts the centre and pays it directly. Account fields (username, email) are not.
+ *
+ * <p>{@code documents} is the centre's own paperwork -- licence, articles, accounts -- and is
+ * public by decision. {@link CenterCard} and {@link CenterRef} carry none of it: the listing would
+ * pay an N+1 for something no card renders.
  */
 public record CenterPublicProfile(Long id,
                                   String name,
@@ -23,6 +27,7 @@ public record CenterPublicProfile(Long id,
                                   String logoUrl,
                                   CityRef city,
                                   List<CategoryRef> categories,
+                                  List<CenterDocumentResponse> documents,
                                   long activeRequestCount,
                                   OffsetDateTime updatedAt) {
 }
