@@ -83,8 +83,18 @@ const deleting = ref(false)
 const staging = computed(() => !props.endpoint)
 const stagedCount = computed(() => staged.value.reduce((sum, batch) => sum + batch.files.length, 0))
 const totalCount = computed(() => props.documents.length + stagedCount.value)
+/**
+ * The confirmation is about the beneficiary, so it belongs to request documents and nowhere else.
+ * A centre's own paperwork -- مجوز فعالیت, اساسنامه, صورت مالی -- names the organisation, never a
+ * مددجو, and asking an admin creating a centre to certify that a licence scan does not identify a
+ * beneficiary is a box that means nothing. A checkbox nobody can fail teaches people to tick
+ * without reading, which costs us the one place the question is real.
+ */
+const needsConfirmation = computed(() => props.scope === 'REQUEST')
+
 const canPick = computed(() =>
-  confirmed.value && Boolean(categoryId.value) && !props.disabled && !uploading.value)
+  (!needsConfirmation.value || confirmed.value)
+  && Boolean(categoryId.value) && !props.disabled && !uploading.value)
 
 /** Grouped the way the public page groups them, so the centre sees what a visitor will see. */
 const groups = computed(() => {
@@ -262,35 +272,6 @@ async function confirmDelete() {
       {{ readonlyReason }}
     </p>
 
-    <!-- picked, not yet posted -->
-    <div v-if="staged.length" class="flex flex-col gap-2">
-      <span class="label mb-0">فایل‌های آماده ارسال</span>
-      <ul class="flex flex-col gap-2">
-        <template v-for="(batch, batchIndex) in staged" :key="batchIndex">
-          <li
-            v-for="(file, fileIndex) in batch.files"
-            :key="`${batchIndex}-${fileIndex}`"
-            class="flex items-center gap-3 text-[13px] p-2.5 rounded-[10px]"
-            style="background: var(--color-surface-2)"
-          >
-            <Paperclip :size="16" :stroke-width="1.75" class="shrink-0 text-muted" aria-hidden="true" />
-            <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
-            <span class="shrink-0 text-muted">{{ batch.categoryName }}</span>
-            <span class="shrink-0 text-muted">{{ fileSize(file.size) }}</span>
-            <button
-              type="button"
-              class="shrink-0 text-danger"
-              :aria-label="`حذف ${file.name}`"
-              @click="removeStaged(batchIndex, fileIndex)"
-            >
-              <X :size="16" :stroke-width="2" aria-hidden="true" />
-            </button>
-          </li>
-        </template>
-      </ul>
-      <p class="help">این فایل‌ها پس از ثبت نهایی بارگذاری می‌شوند.</p>
-    </div>
-
     <!-- picker -->
     <div class="flex flex-col gap-4 border-t border-surface-3 pt-5">
       <div class="flex flex-col">
@@ -319,9 +300,13 @@ async function confirmDelete() {
         hint="فقط زمانی ثبت می‌شود که تنها یک فایل انتخاب کرده باشید."
       />
 
-      <!-- The mandatory confirmation. Documents are served publicly, so this is where the
-           centre states that what it is about to publish identifies nobody. -->
-      <label class="flex items-start gap-3 text-[13px] leading-7 text-body cursor-pointer">
+      <!-- Mandatory for request documents. They are served publicly and are the only ones that
+           could carry a مددجو's name, so this is where the centre states that what it is about to
+           publish identifies nobody. See `needsConfirmation`. -->
+      <label
+        v-if="needsConfirmation"
+        class="flex items-start gap-3 text-[13px] leading-7 text-body cursor-pointer"
+      >
         <input
           v-model="confirmed"
           type="checkbox"
@@ -348,7 +333,7 @@ async function confirmDelete() {
         <span v-if="uploading && progress.total > 1" class="text-[13px] text-muted">
           دسته {{ num(progress.done + 1) }} از {{ num(progress.total) }}
         </span>
-        <span v-else-if="!confirmed" class="help">
+        <span v-else-if="needsConfirmation && !confirmed" class="help">
           برای بارگذاری، ابتدا تأییدیه بالا را علامت بزنید.
         </span>
       </div>
@@ -359,6 +344,37 @@ async function confirmDelete() {
         خودکار در چند مرحله بارگذاری می‌شود.
       </p>
       <p class="help">مدارک بارگذاری‌شده به‌صورت عمومی روی سایت نمایش داده می‌شوند.</p>
+    </div>
+
+    <!-- Picked but not yet posted. It sits below the picker on purpose: this list is the
+         result of pressing «انتخاب فایل», and a result that renders above the control that
+         produced it reads as though it were already there. -->
+    <div v-if="staged.length" class="flex flex-col gap-2">
+      <span class="label mb-0">فایل‌های آماده ارسال</span>
+      <ul class="flex flex-col gap-2">
+        <template v-for="(batch, batchIndex) in staged" :key="batchIndex">
+          <li
+            v-for="(file, fileIndex) in batch.files"
+            :key="`${batchIndex}-${fileIndex}`"
+            class="flex items-center gap-3 text-[13px] p-2.5 rounded-[10px]"
+            style="background: var(--color-surface-2)"
+          >
+            <Paperclip :size="16" :stroke-width="1.75" class="shrink-0 text-muted" aria-hidden="true" />
+            <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
+            <span class="shrink-0 text-muted">{{ batch.categoryName }}</span>
+            <span class="shrink-0 text-muted">{{ fileSize(file.size) }}</span>
+            <button
+              type="button"
+              class="shrink-0 text-danger"
+              :aria-label="`حذف ${file.name}`"
+              @click="removeStaged(batchIndex, fileIndex)"
+            >
+              <X :size="16" :stroke-width="2" aria-hidden="true" />
+            </button>
+          </li>
+        </template>
+      </ul>
+      <p class="help">این فایل‌ها پس از ثبت نهایی بارگذاری می‌شوند.</p>
     </div>
 
     <UiConfirm

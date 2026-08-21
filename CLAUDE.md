@@ -73,7 +73,7 @@ Do not invent a gate that is not on this page.
 
 ## Subagents
 
-Five specialists live in `.claude/agents/`. None pins a model, so all follow the session's.
+Six specialists live in `.claude/agents/`. None pins a model, so all follow the session's.
 
 | Agent | Use it for | Writes? |
 |---|---|---|
@@ -82,6 +82,7 @@ Five specialists live in `.claude/agents/`. None pins a model, so all follow the
 | `frontend` | Nuxt, SSR, Nitro caching, styling, routing | Yes |
 | `tester` | Writing tests and reporting coverage gaps | Yes |
 | `reviewer` | Reviewing a change for bugs, security, performance, drift — CRITICAL/HIGH/MEDIUM/LOW | **No — by instruction** |
+| `tasks` | Reading and writing the Trello board — proposing the next card, working one up into a brief, recording an outcome | Board only — **never the code** |
 
 `architect` and `reviewer` have no `Write` or `Edit`. That is a guardrail, not a wall: they do
 carry `Bash`, which can write, so their read-only behaviour is a rule they keep rather than one
@@ -91,6 +92,12 @@ the tool list enforces. `Bash` is there for git and inspection.
 re-derives what this session already knows, so it costs *more* tokens than working inline. What
 it buys is a clean main context and an independent perspective. That trade is worth it for broad
 exploration, cross-cutting changes, and review — and not worth it for a one-file edit.
+
+`tasks` is the board, not an orchestrator. It cannot ask you anything and it cannot invoke another
+agent — subagents do neither — so it *proposes* a card and stops. Approval and dispatch stay in the
+main session: `tasks` → you approve → `architect` (when the change earns one) → `backend`/`frontend`
+→ `reviewer` → `tasks` again to close the card. Its credentials come from `~/.trello.env`, outside
+the repository on purpose; `.claude/scripts/README-trello.md` covers setup.
 
 There is no separate database agent: schema work belongs to `backend`, because in this repo a
 migration never arrives alone. It always trails an entity change.
