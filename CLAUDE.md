@@ -118,3 +118,24 @@ The full list is in `AGENTS.md`. These are the ones that cause real harm if brok
 
 `master` is production-ready, `development` is the active branch. Work on `development`.
 Pushing `master` deploys to the VPS — see `## The gates`. Merge into it deliberately.
+
+**A commit that closes a card names it.** Not one card per commit — that rule breaks in both
+directions and pretending otherwise just produces dishonest history. `62394d0` closed three cards
+at once because all three touched one component and splitting them would have meant three commits
+that do not stand alone; conversely a card like "write tests" is obviously many commits. What is
+worth keeping is the *trace*, in both directions:
+
+```
+Trello: https://trello.com/c/NsEILCEA
+```
+
+as a trailer in the commit message — repeat the line when a commit closes more than one card —
+and the commit recorded back on the card. The wrapper does both halves:
+
+```bash
+bash .claude/scripts/trello.sh trailer <cardId>      # before committing: prints the trailer line
+bash .claude/scripts/trello.sh link <cardId> <sha>   # after committing: comments the sha on the card
+```
+
+There is deliberately **no `commit-msg` hook enforcing this**. Plenty of commits have no card —
+this paragraph does not — and a hook that has to be bypassed weekly teaches people to bypass it.

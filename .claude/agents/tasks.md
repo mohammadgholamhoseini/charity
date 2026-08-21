@@ -29,11 +29,33 @@ session, which will act on it and relay it to the user.
 ## The board
 
 ```
-board  «yariju»       5ea57882f0a1b77daef8908a
-list   Things To Do   5ea57883a9cd1c30d0f009da
-list   Doing          5ea578833edf611c0aa4a358
-list   Done           5ea57883de262b01d47d6483
+board  «yariju»              5ea57882f0a1b77daef8908a
+list   Things To Do          5ea57883a9cd1c30d0f009da
+list   Doing                 5ea578833edf611c0aa4a358
+list   Done (development)    5ea57883de262b01d47d6483
+list   Released (master)     6a8843dbafba348e4e862042
 ```
+
+**`Done (development)` is not the end of the line.** It means the code is committed on
+`development` and nothing more. A card reaches `Released (master)` only when the change is
+actually live on the site, which happens when `master` is pushed and the VPS redeploys. Never move
+a card straight to `Released`, and never treat `Done` as "the user can see it".
+
+Labels, by colour:
+
+| | | |
+|---|---|---|
+| red | `Bug` | something is broken |
+| green | `Feature` | new work |
+| purple | `Question` | not yet a decision |
+| orange | `Blocked` | waiting on something outside the code |
+| blue | `Backend` | |
+| yellow | `Frontend` | |
+| black | `Infra` | deployment, migrations, Docker |
+
+Type and area are separate axes — a card usually carries one of each. `Blocked` goes on top of
+whatever else the card already has; it is a state, not a category, and the card stays where it is
+so it remains visible.
 
 Everything goes through the wrapper. Do not call `api.trello.com` yourself — the wrapper is what
 keeps the token out of URLs, out of `ps`, and out of shell history.
@@ -46,6 +68,8 @@ bash .claude/scripts/trello.sh add <listId> <name> [desc]  # create
 bash .claude/scripts/trello.sh move <cardId> <listId>      # between lists
 bash .claude/scripts/trello.sh comment <cardId> <text>     # progress note
 bash .claude/scripts/trello.sh archive <cardId>            # close
+bash .claude/scripts/trello.sh trailer <cardId>           # the `Trello:` line for a commit message
+bash .claude/scripts/trello.sh link <cardId> <sha>        # comment a commit onto its card
 ```
 
 If `check` fails, say so plainly and stop. Do not guess at credentials, do not suggest putting a
@@ -98,7 +122,11 @@ acted on without a second round of discovery.
 Only when the invocation tells you the work is finished and verified. Never infer completion from
 an agent's optimism.
 
-- Move the card to **Done**.
+- Move the card to **`Done (development)`** — not `Released (master)`. See the board section.
+- Record the commit both ways. `trello.sh trailer <cardId>` prints the `Trello:` line that goes in
+  the commit message; `trello.sh link <cardId> <sha>` comments the commit back onto the card. One
+  commit may close several cards, and one card may take several commits — link whatever actually
+  happened rather than forcing a one-to-one story.
 - Add a comment saying what was actually done, naming the commit if there is one, and the gate
   that was run (`mvn spring-boot:run -Dspring-boot.run.profiles=local`, or
   `cd frontend && npm run build`). Both are the only automated checks this repo has — there are
@@ -112,10 +140,17 @@ Real leftovers, not speculation. A card earns its place when it is something a p
 otherwise forget and would want back: a follow-up migration, a deferred cleanup with a known cost,
 a bug found while doing something else.
 
-Write the title in Persian, matching the board's voice — short and concrete. Put the detail in the
-description, and make it self-contained: file paths, the reason it was deferred, and what "done"
-would look like. A card that only makes sense to someone who was in the room is a card that will
-be deleted unread in a month.
+**Write cards in English** — title and description both. The owner asked for that, and it is the
+right call for a board whose descriptions are full of file paths, class names and SQL: a Persian
+sentence wrapped around `RequestDocumentBackfill.existsByRequestId` renders as a bidirectional
+mess in Trello, and the reader has to reverse it in their head.
+
+The board still carries older Persian cards written by hand. Leave them exactly as they are —
+they are the owner's own words, and rewriting someone's notes is not tidying.
+
+Keep the title short and concrete. Put the detail in the description, and make it self-contained:
+file paths, the reason it was deferred, and what "done" would look like. A card that only makes
+sense to someone who was in the room is a card that will be deleted unread in a month.
 
 Do not file: things already covered by an existing card (check first — read `Things To Do` before
 adding), vague quality worries, or anything you have not confirmed by reading the code.
