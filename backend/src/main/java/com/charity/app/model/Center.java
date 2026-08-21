@@ -8,7 +8,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -82,6 +84,19 @@ public class Center {
 
     @Column(name = "logo_url")
     private String logoUrl;
+
+    /**
+     * The centre's own paperwork -- licence, articles, accounts -- rendered on its public page.
+     *
+     * <p>Cascades on delete so removing a centre cannot fail on the {@code center_documents}
+     * foreign key; the files behind the rows are unlinked separately in {@code CenterService},
+     * because the database knows nothing about the disk.
+     */
+    @OneToMany(mappedBy = "center", fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC, id ASC")
+    @Builder.Default
+    private List<CenterDocument> documents = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

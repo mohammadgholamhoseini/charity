@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ep } from '~/api/endpoints'
+import { uploadDocumentBatches } from '~/composables/useDocuments'
+import type { StagedDocumentBatch } from '~/composables/useDocuments'
 import type { CategoryResponse, CenterResponse, CityRef, Page } from '~/types/api'
 
 definePageMeta({ layout: 'dashboard', middleware: 'auth', role: 'ADMIN' })
@@ -17,6 +19,22 @@ const saving = ref(false)
 
 const selected = ref<CenterResponse | null>(null)
 const deleteTarget = ref<CenterResponse | null>(null)
+
+/**
+ * Documents picked while creating a centre. The create endpoint is JSON -- its Persian field
+ * errors are surfaced per field and turning it into a multipart call would change that envelope
+ * for every field on the form -- so the files wait here until the centre has an id.
+ */
+const stagedDocuments = ref<StagedDocumentBatch[]>([])
+const uploader = ref<{ clearStaged: () => void } | null>(null)
+
+const centerDocumentEndpoint = computed(() =>
+  (selected.value ? ep.adminCenterDocuments(selected.value.id) : null))
+
+const centerDocumentDeleteEndpoint = computed(() => {
+  const center = selected.value
+  return center ? (documentId: number) => ep.adminCenterDocument(center.id, documentId) : null
+})
 
 const form = reactive({
   username: '', password: '', email: '',
@@ -52,6 +70,8 @@ onMounted(async () => {
 
 function startCreate() {
   selected.value = null
+  stagedDocuments.value = []
+  uploader.value?.clearStaged()
   Object.assign(form, {
     username: '', password: '', email: '',
     centerName: '', fullName: '', cityId: null, categoryIds: [],
@@ -62,6 +82,7 @@ function startCreate() {
 
 function startEdit(center: CenterResponse) {
   selected.value = center
+  stagedDocuments.value = []
   Object.assign(form, {
     username: center.username ?? '', password: '', email: center.email ?? '',
     centerName: center.name, fullName: center.fullName ?? '',
@@ -107,7 +128,7 @@ async function save() {
       })
     }
     else {
-      await $api(ep.adminCenters, {
+      const created = await $api<CenterResponse>(ep.adminCenters, {
         method: 'POST',
         body: {
           username: form.username.trim(), password: form.password, email: form.email.trim(),
@@ -122,6 +143,30 @@ async function save() {
           active: form.active,
         },
       })
+
+      if (stagedDocuments.value.length) {
+        try {
+          await uploadDocumentBatches<CenterResponse>(
+            $api,
+            ep.adminCenterDocuments(created.id),
+            stagedDocuments.value,
+          )
+          stagedDocuments.value = []
+          uploader.value?.clearStaged()
+        }
+        catch (error) {
+          // The centre itself was created and is a perfectly good record -- documents are never
+          // mandatory, so there is nothing to roll back. The form stays open on that centre so
+          // the upload can be retried against the id we now know.
+          selected.value = created
+          stagedDocuments.value = []
+          uploader.value?.clearStaged()
+          toast.error(apiErrorMessage(error))
+          toast.info('مرکز ساخته شد، اما بارگذاری مدارک ناتمام ماند. از همین فرم دوباره تلاش کنید.')
+          await load()
+          return
+        }
+      }
     }
     toast.success('مرکز ذخیره شد.')
     startCreate()
@@ -129,6 +174,12 @@ async function save() {
   }
   catch (error) { toast.error(apiErrorMessage(error)) }
   finally { saving.value = false }
+}
+
+/** The API answered 204, so the row is gone; dropping it locally saves a refetch. */
+function onCenterDocumentRemoved(documentId: number) {
+  if (!selected.value) return
+  selected.value.documents = (selected.value.documents ?? []).filter(doc => doc.id !== documentId)
 }
 
 async function confirmDelete() {
@@ -317,6 +368,24 @@ useHead({ title: 'مراکز خیریه — پنل ادمین' })
             revealable
             required
             hint="حداقل ۸ نویسه. مرکز پس از ورود می‌تواند آن را از صفحه پروفایل خود تغییر دهد."
+          />
+        </div>
+
+        <!-- In create mode this stages files and `save()` posts them once the centre has an id;
+             in edit mode it posts straight away and manages what is already there. -->
+        <div class="border-t border-surface-3 pt-5">
+          <DocumentUploader
+            ref="uploader"
+            :key="selected?.id ?? 'new'"
+            scope="CENTER"
+            heading="مدارک مرکز"
+            description="مجوز فعالیت، اساسنامه و صورت‌های مالی مرکز. روی صفحه عمومی مرکز نمایش داده می‌شوند."
+            :documents="selected?.documents ?? []"
+            :endpoint="centerDocumentEndpoint"
+            :delete-endpoint="centerDocumentDeleteEndpoint"
+            @update:staged="stagedDocuments = $event"
+            @uploaded="selected = $event as CenterResponse"
+            @removed="onCenterDocumentRemoved"
           />
         </div>
 

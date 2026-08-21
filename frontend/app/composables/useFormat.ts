@@ -17,6 +17,10 @@ const dateFormat = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
   timeZone: 'Asia/Tehran',
 })
 
+// One fraction digit is enough for a file size and keeps «۱٫۲ مگابایت» from turning into a
+// number nobody reads.
+const decimalFormat = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 })
+
 const shortDateFormat = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
   year: 'numeric',
   month: '2-digit',
@@ -33,6 +37,15 @@ export function useFormat() {
     /** An amount in toman, the unit the site quotes in. */
     toman: (value: number | null | undefined) =>
       value == null ? '—' : `${numberFormat.format(value)} تومان`,
+
+    /** «۱٫۲ مگابایت» — the size of an uploaded document, in Persian digits like everything else. */
+    fileSize: (bytes: number | null | undefined) => {
+      if (bytes == null) return '—'
+      if (bytes < 1024) return `${numberFormat.format(bytes)} بایت`
+      const kilobytes = bytes / 1024
+      if (kilobytes < 1024) return `${numberFormat.format(Math.round(kilobytes))} کیلوبایت`
+      return `${decimalFormat.format(kilobytes / 1024)} مگابایت`
+    },
 
     /** «۱۹ مرداد ۱۴۰۵» */
     date: (iso: string | null | undefined) =>

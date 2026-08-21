@@ -65,6 +65,14 @@ useJsonLd().centerProfile(center.value!)
           {{ center.description }}
         </p>
 
+        <section v-if="center.documents?.length" class="card p-6 flex flex-col gap-5">
+          <h2 class="text-[19px] font-bold">مدارک مرکز</h2>
+          <DocumentList :documents="center.documents" />
+          <p class="text-[13px] leading-7 text-muted border-t border-surface-3 pt-4">
+            مدارک را خود مرکز بارگذاری کرده است. فایل‌ها در زبانه تازه باز می‌شوند.
+          </p>
+        </section>
+
         <h2 class="text-[22px] font-extrabold">
           درخواست‌های این مرکز
           <span class="text-[14px] font-normal text-muted">({{ num(requests?.totalElements ?? 0) }})</span>

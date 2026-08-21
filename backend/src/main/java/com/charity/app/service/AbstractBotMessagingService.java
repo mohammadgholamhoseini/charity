@@ -2,6 +2,7 @@ package com.charity.app.service;
 
 import com.charity.app.common.AppUrls;
 import com.charity.app.model.Request;
+import com.charity.app.model.RequestDocument;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.client.RestTemplate;
 
@@ -66,15 +67,38 @@ public abstract class AbstractBotMessagingService implements MessagingService {
             if (request.getImageUrl() != null && !request.getImageUrl().isBlank()) {
                 trySend("sendPhoto", "photo", request.getImageUrl(), "📸 " + request.getTitle());
             }
-            List<String> documents = request.getDocuments();
+            List<RequestDocument> documents = request.getDocuments();
             if (documents != null) {
-                documents.forEach(doc -> trySend("sendDocument", "document", doc, "📎 " + doc));
+                documents.forEach(doc ->
+                        trySend("sendDocument", "document", doc.getStoredFilename(), caption(doc)));
             }
             return messageId;
         } catch (Exception e) {
             log.error("Failed to announce request {} on {}", request.getId(), getName(), e);
             return null;
         }
+    }
+
+    /**
+     * The caption on an attachment. This used to be the raw stored UUID, which told a channel
+     * reader nothing at all about what they had just been sent: the category name first, then
+     * whatever human-readable name the document has.
+     *
+     * <p>Reading {@code category} here is what makes the fetch join in
+     * {@code RequestRepository.findForMessaging} mandatory -- this runs on the {@code @Async}
+     * listener's thread, where the entity is detached and an uninitialised proxy throws into the
+     * catch-all above and posts nothing.
+     */
+    private static String caption(RequestDocument document) {
+        String label = document.getTitle() != null && !document.getTitle().isBlank()
+                ? document.getTitle()
+                : document.getOriginalFilename();
+        if (label == null || label.isBlank()) {
+            label = document.getStoredFilename();
+        }
+        String category = document.getCategory() == null ? null : document.getCategory().getName();
+        // trySend turns the stored filename into a public URL itself; only the caption is built here.
+        return category == null ? "📎 " + label : "📎 " + category + " — " + label;
     }
 
     protected String buildMessageText(Request request) {

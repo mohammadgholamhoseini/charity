@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ep } from '~/api/endpoints'
-import type { CategoryResponse, CenterResponse, Page, RequestStatus, RequestSummary, Urgency } from '~/types/api'
+import { documentLabel } from '~/composables/useDocuments'
+import type { CategoryResponse, CenterResponse, DocumentFile, Page, RequestDetail, RequestStatus, RequestSummary, Urgency } from '~/types/api'
 
 definePageMeta({ layout: 'dashboard', middleware: 'auth', role: 'ADMIN' })
 
@@ -186,6 +187,62 @@ async function confirmDelete() {
   }
 }
 
+
+/* ------------------------------------------------------- documents (moderation) */
+
+/**
+ * Admin-side document removal, and only removal: uploading to a request belongs to the centre
+ * that owns it.
+ *
+ * `RequestSummary` carries no documents on purpose -- putting them in the listing payload would
+ * cost an N+1 across every card on `/requests` -- so the detail is fetched once, for the single
+ * row the admin opened, and never per row.
+ *
+ * The delete is unconditional here. The 409 a centre meets while its request is under an admin
+ * takedown exists to stop a centre reversing a moderation decision, and none of that applies to
+ * the admin doing the moderating.
+ */
+const documentsTarget = ref<RequestSummary | null>(null)
+const documentsDetail = ref<RequestDetail | null>(null)
+const documentsLoading = ref(false)
+const documentDeleteTarget = ref<DocumentFile | null>(null)
+
+async function openDocuments(request: RequestSummary) {
+  documentsTarget.value = request
+  documentsDetail.value = null
+  documentsLoading.value = true
+  try {
+    documentsDetail.value = await $api<RequestDetail>(ep.adminRequest(request.id))
+  }
+  catch (error) { toast.error(apiErrorMessage(error)) }
+  finally { documentsLoading.value = false }
+}
+
+function closeDocuments() {
+  documentsTarget.value = null
+  documentsDetail.value = null
+  documentDeleteTarget.value = null
+}
+
+async function confirmDeleteDocument() {
+  const request = documentsTarget.value
+  const doc = documentDeleteTarget.value
+  if (!request || !doc) return
+  saving.value = true
+  try {
+    await $api(ep.adminRequestDocument(request.id, doc.id), { method: 'DELETE' })
+    // 204, so the row is gone; dropping it locally beats refetching the whole detail.
+    if (documentsDetail.value) {
+      documentsDetail.value.documents = (documentsDetail.value.documents ?? [])
+        .filter(item => item.id !== doc.id)
+    }
+    toast.success('مدرک حذف شد.')
+    documentDeleteTarget.value = null
+  }
+  catch (error) { toast.error(apiErrorMessage(error)) }
+  finally { saving.value = false }
+}
+
 useHead({ title: 'درخواست‌ها — پنل ادمین' })
 </script>
 
@@ -296,6 +353,9 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
                 >
                   انتشار در کانال
                 </button>
+                <button type="button" class="text-accent hover:text-accent-600" @click="openDocuments(request)">
+                  مدارک
+                </button>
                 <NuxtLink
                   :to="`/requests/${encodeURIComponent(request.slug)}`"
                   target="_blank"
@@ -392,6 +452,54 @@ useHead({ title: 'درخواست‌ها — پنل ادمین' })
       :busy="saving"
       @confirm="confirmDelete"
       @close="deleteTarget = null"
+    />
+
+    <!-- documents: read and delete, no upload -->
+    <UiModal
+      :open="Boolean(documentsTarget)"
+      title="مدارک درخواست"
+      size="md"
+      @close="closeDocuments"
+    >
+      <div class="flex flex-col gap-5">
+        <p v-if="documentsTarget" class="text-[14px] text-muted">
+          {{ documentsTarget.title }} · {{ documentsTarget.center?.name }} ·
+          <span class="ltr">{{ documentsTarget.code }}</span>
+        </p>
+
+        <UiSkeleton v-if="documentsLoading" :lines="4" />
+
+        <UiEmptyState
+          v-else-if="!documentsDetail?.documents?.length"
+          title="این درخواست مدرکی ندارد"
+        />
+
+        <template v-else>
+          <DocumentList
+            :documents="documentsDetail.documents"
+            deletable
+            @delete="documentDeleteTarget = $event"
+          />
+          <p class="help">
+            بارگذاری مدرک بر عهده مرکز ثبت‌کننده است؛ از این صفحه فقط حذف انجام می‌شود.
+          </p>
+        </template>
+
+        <div class="flex items-center gap-3 border-t border-surface-3 pt-5">
+          <button type="button" class="btn btn-secondary" @click="closeDocuments">بستن</button>
+        </div>
+      </div>
+    </UiModal>
+
+    <UiConfirm
+      :open="Boolean(documentDeleteTarget)"
+      title="حذف مدرک"
+      :message="`«${documentDeleteTarget ? documentLabel(documentDeleteTarget) : ''}» حذف می‌شود. فایل آن برای همیشه از روی سرور پاک می‌شود و این کار برگشت‌پذیر نیست.`"
+      confirm-label="حذف کن"
+      tone="danger"
+      :busy="saving"
+      @confirm="confirmDeleteDocument"
+      @close="documentDeleteTarget = null"
     />
   </div>
 </template>

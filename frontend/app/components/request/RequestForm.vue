@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { StagedDocumentBatch } from '~/composables/useDocuments'
 import type { CategoryRef, RequestDetail, Urgency } from '~/types/api'
 
 /**
@@ -20,7 +21,20 @@ const props = defineProps<{
   editing?: boolean
 }>()
 
-const emit = defineEmits<{ submit: [payload: Record<string, unknown>, publish: boolean] }>()
+/**
+ * The third argument carries files the centre picked here.
+ *
+ * In create mode there is no request id yet, so nothing can be uploaded from inside this form —
+ * the files are staged and handed to the page, which creates the request first and posts them
+ * against the new id. In edit mode the uploader lives on the page instead, outside this form,
+ * so it stays reachable for a COMPLETED request or one under an admin takedown, where this form
+ * is not usable at all.
+ */
+const emit = defineEmits<{
+  submit: [payload: Record<string, unknown>, publish: boolean, documents: StagedDocumentBatch[]]
+}>()
+
+const stagedDocuments = ref<StagedDocumentBatch[]>([])
 
 const form = reactive({
   title: props.initial?.title ?? '',
@@ -62,7 +76,7 @@ function buildPayload() {
 
 function send(publish: boolean) {
   if (!validate()) return
-  emit('submit', buildPayload(), publish)
+  emit('submit', buildPayload(), publish, stagedDocuments.value)
 }
 </script>
 
@@ -135,9 +149,23 @@ function send(publish: boolean) {
       placeholder="توضیح دهید نیاز چیست، چرا ضروری است و مرکز چه بررسی‌ای انجام داده است."
     />
 
+    <!-- Create mode only: there is no request id to attach a document to yet, so the files are
+         staged here and the page posts them once the request exists. On the edit page the
+         uploader sits outside this form. -->
+    <div v-if="!editing" class="border-t border-surface-3 pt-6">
+      <DocumentUploader
+        scope="REQUEST"
+        heading="مدارک درخواست"
+        description="مدارک پس از ثبت درخواست بارگذاری می‌شوند."
+        @update:staged="stagedDocuments = $event"
+      />
+    </div>
+
     <p class="help">
       شهر و اطلاعات تماس از پروفایل مرکز شما نمایش داده می‌شود. نام و مشخصات مددجو در هیچ‌جا
-      ثبت و منتشر نمی‌شود.
+      ثبت و منتشر نمی‌شود. مدارکی هم که بارگذاری می‌کنید در صفحه عمومی درخواست و در کانال‌های
+      اطلاع‌رسانی منتشر می‌شود؛ پیش از بارگذاری مطمئن شوید نام، کد ملی، نشانی و دیگر مشخصات
+      هویتی مددجو روی آن‌ها دیده نمی‌شود.
     </p>
 
     <div class="flex flex-wrap items-center gap-3 border-t border-surface-3 pt-6">

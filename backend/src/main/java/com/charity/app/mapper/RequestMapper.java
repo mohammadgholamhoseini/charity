@@ -5,6 +5,7 @@ import com.charity.app.model.Request;
 import com.charity.app.model.enums.RequestStatus;
 import com.charity.app.model.enums.UserRole;
 import com.charity.app.payload.RequestDetailResponse;
+import com.charity.app.payload.RequestDocumentResponse;
 import com.charity.app.payload.RequestSummary;
 import com.charity.app.service.MessagingService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class RequestMapper {
 
     private final CategoryMapper categoryMapper;
     private final CenterMapper centerMapper;
+    private final DocumentMapper documentMapper;
     private final AppUrls urls;
     private final List<MessagingService> channels;
 
@@ -75,7 +77,7 @@ public class RequestMapper {
                 categoryMapper.toRef(request.getCategory()),
                 centerMapper.toRef(request.getCenter(), centerActiveRequests),
                 urls.fileUrl(request.getImageUrl()),
-                documentUrls(request),
+                documents(request),
                 request.getDetails() == null ? Map.of() : request.getDetails(),
                 metaTitle(request),
                 metaDescription(request),
@@ -104,11 +106,13 @@ public class RequestMapper {
         return channels.stream().noneMatch(channel -> channel.isEnabled() && !channel.alreadyPosted(request));
     }
 
-    private List<String> documentUrls(Request request) {
-        if (request.getDocuments() == null) {
-            return List.of();
-        }
-        return request.getDocuments().stream().map(urls::fileUrl).toList();
+    /**
+     * Only ever reached from a {@code @Transactional} service method, so the lazy collection is
+     * still attached. {@code RequestSummary} deliberately carries nothing of this -- resolving it
+     * for every card on the listing would be an N+1 across the whole page.
+     */
+    private List<RequestDocumentResponse> documents(Request request) {
+        return documentMapper.toRequestDocuments(request.getDocuments());
     }
 
     /** Admin override wins; otherwise build something reasonable from the title and centre. */

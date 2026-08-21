@@ -6,7 +6,8 @@
  * building two layouts would just be two places to fix every future change.
  *
  * Icons come from lucide-vue-next, which was already a dependency and until now unused. They are
- * imported one by one rather than through the barrel so the bundle only carries these ten.
+ * imported one by one rather than through the barrel so the bundle only carries the ones named
+ * here.
  *
  * Each is decorative: the label next to it says the same thing, so they are all aria-hidden and
  * nothing here depends on an icon being understood. `LogOut` is the only directional glyph, and
@@ -17,6 +18,7 @@ import {
   Building2,
   ClipboardList,
   FilePlus2,
+  FileText,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -39,6 +41,7 @@ const centerNav = [
 const adminNav = [
   { label: 'داشبورد', to: '/dashboard/admin', icon: LayoutDashboard },
   { label: 'دسته‌بندی‌ها', to: '/dashboard/admin/categories', icon: Tags },
+  { label: 'دسته‌بندی مدارک', to: '/dashboard/admin/document-categories', icon: FileText },
   { label: 'مراکز خیریه', to: '/dashboard/admin/centers', icon: Building2 },
   { label: 'درخواست‌ها', to: '/dashboard/admin/requests', icon: ClipboardList },
   { label: 'اطلاعیه‌ها', to: '/dashboard/admin/announcements', icon: Megaphone },

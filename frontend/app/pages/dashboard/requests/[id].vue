@@ -32,6 +32,24 @@ onMounted(async () => {
   }
 })
 
+/**
+ * Uploading is allowed in every status this page can show -- including COMPLETED, and including
+ * a request an admin has taken down: supplying the documents an admin asked for is how a centre
+ * answers a takedown. Deleting is the one thing a takedown blocks, and the API answers 409, so
+ * the buttons render disabled with the reason rather than failing on click.
+ */
+const documentDeleteEndpoint = (documentId: number) => ep.centerRequestDocument(id, documentId)
+
+const documentsLockedReason = computed(() =>
+  (request.value?.lockedByAdmin
+    ? 'این درخواست توسط ادمین غیرفعال شده است؛ تا زمان رفع محدودیت حذف مدرک ممکن نیست. بارگذاری مدرک تازه همچنان انجام می‌شود.'
+    : null))
+
+function onDocumentRemoved(documentId: number) {
+  if (!request.value) return
+  request.value.documents = (request.value.documents ?? []).filter(doc => doc.id !== documentId)
+}
+
 async function submit(payload: Record<string, unknown>) {
   submitting.value = true
   try {
@@ -82,6 +100,22 @@ useHead({ title: 'ویرایش درخواست — یاری‌جو' })
         editing
         @submit="submit"
       />
+
+      <!-- Outside the form on purpose: the form is unusable for a COMPLETED request and for one
+           under an admin takedown, and both of those still accept documents. -->
+      <section class="card-flat p-6 lg:p-8">
+        <DocumentUploader
+          scope="REQUEST"
+          heading="مدارک درخواست"
+          description="مدارک این درخواست در صفحه عمومی آن نمایش داده می‌شود و همراه اعلان کانال‌ها ارسال می‌شود."
+          :documents="request.documents ?? []"
+          :endpoint="ep.centerRequestDocuments(id)"
+          :delete-endpoint="documentDeleteEndpoint"
+          :readonly-reason="documentsLockedReason"
+          @uploaded="request = $event as RequestDetail"
+          @removed="onDocumentRemoved"
+        />
+      </section>
     </template>
 
     <UiEmptyState v-else title="درخواست یافت نشد" />

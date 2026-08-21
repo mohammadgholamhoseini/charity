@@ -32,6 +32,53 @@ export interface CategoryResponse extends CategoryRef {
   updatedAt: string | null
 }
 
+/** Which of the two admin-managed document category lists a category belongs to. */
+export type DocumentScope = 'REQUEST' | 'CENTER'
+
+/** A document category as it is embedded in a document — enough to group a flat list. */
+export interface DocumentCategoryRef {
+  id: number
+  name: string
+  slug: string
+  scope: DocumentScope
+}
+
+/** The full category record: the admin table and the upload pickers read this. */
+export interface DocumentCategoryResponse {
+  id: number
+  scope: DocumentScope
+  name: string
+  slug: string
+  description: string | null
+  sortOrder: number
+  active: boolean
+  updatedAt: string | null
+}
+
+/**
+ * One uploaded document.
+ *
+ * `url` is absolute — the API builds it with AppUrls.fileUrl, exactly like `logoUrl` and
+ * `imageUrl`. It goes straight into an `href`; prefixing the files route onto it yields a
+ * broken path. The stored filename is never exposed.
+ *
+ * The two responses are separate records on the backend so they can diverge; today they are
+ * the same shape, so the browser reads one type under two names.
+ */
+export interface DocumentFile {
+  id: number
+  url: string
+  title: string | null
+  originalFilename: string | null
+  contentType: string | null
+  sizeBytes: number | null
+  category: DocumentCategoryRef
+  uploadedAt: string | null
+}
+
+export type RequestDocument = DocumentFile
+export type CenterDocument = DocumentFile
+
 export interface CityRef {
   id: number
   name: string
@@ -70,6 +117,8 @@ export interface CenterPublicProfile extends CenterCard {
   address: string | null
   cardNumber: string | null
   sheba: string | null
+  /** The centre's own paperwork — licence, articles, accounts. Public by decision. */
+  documents: CenterDocument[]
   updatedAt: string | null
 }
 
@@ -84,6 +133,7 @@ export interface CenterResponse extends CenterCard {
   sheba: string | null
   status: 'APPROVED' | 'INACTIVE'
   statusLabel: string
+  documents: CenterDocument[]
   createdAt: string | null
   updatedAt: string | null
 }
@@ -121,7 +171,12 @@ export interface RequestDetail extends RequestSummary {
   isActive: boolean
   statusNote: string | null
   imageUrl: string | null
-  documents: string[]
+  /**
+   * Flat and ordered by category sort order, then position. This was a list of bare URLs; it
+   * now carries a category per item so the browser can group without a second request. A
+   * breaking change taken in one release rather than shipped beside a second field.
+   */
+  documents: RequestDocument[]
   details: Record<string, unknown>
   metaTitle: string | null
   metaDescription: string | null

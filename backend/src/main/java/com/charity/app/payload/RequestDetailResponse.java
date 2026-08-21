@@ -21,6 +21,10 @@ import java.util.Map;
  *                     never for the public
  * @param lockedByAdmin an admin's takedown is in force, so the owning centre cannot restore this
  *                      one itself -- the panel uses it to explain rather than offer a 403
+ * @param documents    supporting paperwork, flat and ordered by category sort order then position.
+ *                     Was a list of bare URLs; it now carries a category reference per item so the
+ *                     browser can group without a second request. A breaking change, taken in one
+ *                     release rather than shipped alongside a second field
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record RequestDetailResponse(Long id,
@@ -42,7 +46,7 @@ public record RequestDetailResponse(Long id,
                                     CategoryRef category,
                                     CenterRef center,
                                     String imageUrl,
-                                    List<String> documents,
+                                    List<RequestDocumentResponse> documents,
                                     Map<String, Object> details,
                                     String metaTitle,
                                     String metaDescription,

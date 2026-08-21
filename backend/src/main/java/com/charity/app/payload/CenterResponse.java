@@ -31,6 +31,7 @@ public record CenterResponse(Long id,
                              String statusLabel,
                              CityRef city,
                              List<CategoryRef> categories,
+                             List<CenterDocumentResponse> documents,
                              long activeRequestCount,
                              OffsetDateTime createdAt,
                              OffsetDateTime updatedAt) {

@@ -18,6 +18,9 @@ export const ep = {
   provinces: '/public/provinces',
   cities: '/public/cities',
   announcements: '/public/announcements',
+  // Both panels read their upload pickers from here — the list is active-only and the
+  // same for an admin and a centre, so there is no panel-side copy of it.
+  documentCategories: '/public/document-categories',
   sitemapIndex: '/public/sitemap/index',
   sitemapRequests: '/public/sitemap/requests',
   sitemapCenters: '/public/sitemap/centers',
@@ -37,6 +40,10 @@ export const ep = {
   centerRequestStatus: (id: number) => `/center/requests/${id}/status`,
   centerRequestAnnounce: (id: number) => `/center/requests/${id}/announce`,
   centerRequestDocuments: (id: number) => `/center/requests/${id}/documents`,
+  centerRequestDocument: (requestId: number, documentId: number) =>
+    `/center/requests/${requestId}/documents/${documentId}`,
+  centerDocuments: '/center/me/documents',
+  centerDocument: (id: number) => `/center/me/documents/${id}`,
 
   // admin panel
   adminRequests: '/admin/requests',
@@ -50,8 +57,17 @@ export const ep = {
   adminCenterActivate: (id: number) => `/admin/centers/${id}/activate`,
   adminCenterDeactivate: (id: number) => `/admin/centers/${id}/deactivate`,
   adminCenterPassword: (id: number) => `/admin/centers/${id}/password`,
+  adminCenterDocuments: (id: number) => `/admin/centers/${id}/documents`,
+  adminCenterDocument: (centerId: number, documentId: number) =>
+    `/admin/centers/${centerId}/documents/${documentId}`,
+  // Admin has delete only on a request's documents — uploading one belongs to the centre
+  // that owns the request, and moderation is the reason this endpoint exists.
+  adminRequestDocument: (requestId: number, documentId: number) =>
+    `/admin/requests/${requestId}/documents/${documentId}`,
   adminCategories: '/admin/categories',
   adminCategory: (id: number) => `/admin/categories/${id}`,
+  adminDocumentCategories: '/admin/document-categories',
+  adminDocumentCategory: (id: number) => `/admin/document-categories/${id}`,
   adminNotices: '/admin/notices',
   adminNotice: (id: number) => `/admin/notices/${id}`,
   adminProvinces: '/admin/provinces',
