@@ -305,11 +305,98 @@ through its bundled ICU — verified in the running container, which has no
 `NUXT_PUBLIC_INDEXABLE` must stay `"false"` anywhere that is not production, otherwise
 two identical sites compete for the same queries.
 
+## Production (the VPS)
+
+`compose.prod.yaml` and `nginx/default.conf` are in the repo as **mirrors of what runs at
+`/opt/yariju/charity`, not as the source of truth**. The `deploy` job copies no files — it
+SSHes in, pulls the images from GHCR and runs `up -d backend frontend nginx` against the
+copies already on the server. An edit here reaches production only when the same edit is
+made there by hand. `.env` is never committed; build it from `.env.prod.example`.
+
+The topology differs from `compose.yaml` in the one way that matters:
+
+```
+browser ──https──> nginx ──┬── /api/ ──> backend:8082
+                           └── /     ──> frontend:3000
+```
+
+Backend and frontend only `expose`; nginx is the sole thing on a host port. **`/api/` does
+not pass through Nuxt here.** The local claim that the frontend's own `/api` route strips
+`Origin` is true of `compose.yaml` and false of production.
+
+- **`CORS_ORIGINS` must name the site origin exactly, scheme included.** nginx redirects
+  http to https, so the browser always sends `Origin: https://yariju.com`, and nginx hands
+  it to Spring untouched. `http://yariju.com` matched nothing and answered **403 to every
+  `POST /api/auth/login`** — for weeks, on production only, while both local branches were
+  fine. Diagnosing it is unusually slow because CORS rejects *before* authentication runs:
+  `users.failed_attempts` stays at `0`, no account is locked, and nothing in the logs
+  implicates the credentials. **A 403 on login is a CORS symptom, not a password one** —
+  `/api/auth/**` is `permitAll` and CSRF is disabled, so nothing else in the chain can
+  produce it.
+- **`APP_BASE_URL` needs the same `https://`.** It builds the absolute URLs for uploaded
+  files, so an `http://` value gets every image blocked as mixed content — pictures vanish
+  while the pages themselves look fine.
+- **MySQL publishes `127.0.0.1:3307` only**, and must stay that way. Reach it from a GUI
+  client through an SSH tunnel to the VPS, then `127.0.0.1:3307`; set
+  `serverTimezone=Asia/Tehran` in the client or every timestamp reads shifted. Before this
+  binding existed, `docker compose -f compose.prod.yaml port mysql 3306` answered
+  `invalid IP:0`.
+- **The deploy names only `backend`, `frontend` and `nginx`.** `mysql` and `certbot` are
+  never recreated by it, so a push to `master` cannot disturb the database or the
+  certificates — and cannot fix them either.
+- **TLS renews itself now, and did not used to.** The certificate was first issued with
+  `authenticator = manual` and `pref_challs = dns-01`, which cannot run unattended —
+  `certbot renew` refuses with *"An authentication script must be provided with
+  `--manual-auth-hook` when using the manual plugin non-interactively"*. There was no cron
+  either, so the site was on course to go dark the day the certificate expired. The
+  renewal config now says `authenticator = webroot` with `webroot_path = /var/www/certbot`,
+  which is the path nginx already serves `/.well-known/acme-challenge/` from, and
+  `/etc/cron.d/certbot-renew` runs `renew-cert.sh` twice a day. dns-01 bought nothing here:
+  it is only required for wildcards, and this certificate names `yariju.com` and
+  `www.yariju.com` explicitly. **After changing anything about TLS, prove it with
+  `docker compose -f compose.prod.yaml run --rm certbot renew --dry-run`** — it exercises
+  the whole challenge path against the staging API without touching the live certificate
+  or the issuance quota, and it is the only thing that distinguishes a renewal that works
+  from one that merely looks configured.
+- **nginx's `client_max_body_size` on `/api/` must stay above the backend's
+  `MAX_REQUEST_SIZE`** (default 40MB); it is 45M. Whichever limit is tighter is the one
+  that answers, and Spring answers better: `GlobalExceptionHandler` turns
+  `MaxUploadSizeExceededException` into a 413 carrying the app's Persian error body, where
+  nginx emits a raw HTML error page the frontend cannot parse. It was 20M, which silently
+  swallowed multi-file uploads — `POST /api/center/requests/{id}/documents` takes an
+  unbounded `List<MultipartFile>` and each file may be 10MB, so three ordinary documents
+  were refused with no usable message.
+
 ## Git
 
 - `master` — production-ready
 - `development` — active branch
 - Remote: `github.com/mohammadgholamhoseini/charity.git`
+
+**`master` is permanently "ahead" of `development`, and the number means nothing.**
+`git rev-list --left-right --count origin/master...origin/development` read 19 on master's
+side in August 2026, and it grows by one with every release. Those 19 were: five
+`Merge branch 'development'` commits, which exist only on master by construction; thirteen
+`Create/Update ssh-test.yml` commits made directly on master through the GitHub web UI for
+a throwaway workflow that `b023b69` then deleted outright; and two `Update docker.yml`
+whose content reached `development` by other routes. Net contribution to the tree: zero.
+
+**The count is not the check. The diff is:**
+
+```bash
+git diff origin/master origin/development --stat
+```
+
+Empty output means the trees agree and there is nothing to back-merge, however alarming
+the count looks. This has been verified once — do not re-investigate the backlog each
+time. Merging `master` into `development` to "catch up" on an empty diff only adds another
+empty merge commit. Back-merge only when that diff actually shows something.
+
+Those thirteen `ssh-test.yml` commits are also the cautionary tale: they were pushed
+straight to `master`, and **a push to `master` is a production deployment** (see
+`## Production (the VPS)`). Iterate on a workflow from `development` with
+`workflow_dispatch`, which builds without deploying.
+
 
 ## Known issues
 

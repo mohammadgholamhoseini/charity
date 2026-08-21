@@ -1,0 +1,131 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# A MIRROR OF WHAT RUNS ON THE VPS. NOT THE SOURCE OF TRUTH.
+#
+# The `deploy` job in .github/workflows/docker.yml never copies a file to the
+# server. It SSHes in, pulls the images from GHCR and runs `up -d backend
+# frontend nginx` against the copy that already lives at /opt/yariju/charity.
+# Editing this file therefore changes nothing until the same edit is made there
+# by hand -- and a stale copy here is worse than no copy, because it gets
+# trusted. Change both, or neither.
+#
+# Only the directives have to match. The comments are unique to this copy and
+# are most of the reason it is worth keeping in the repo at all.
+#
+# .env is deliberately not in the repo (see .gitignore). Every ${VAR} below is
+# read from /opt/yariju/charity/.env -- start from .env.prod.example.
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  mysql:
+    image: mysql:8.4
+    ports:
+      # Loopback only: the database is not reachable from the internet, and must not
+      # become so. Reaching it from a GUI client means an SSH tunnel to the VPS and
+      # then 127.0.0.1:3307 -- see AGENTS.md.
+      #
+      # This binding is absent from compose.yaml's local equivalent by accident of
+      # history, not design; before it was added here, `docker compose port mysql 3306`
+      # answered `invalid IP:0` and nothing outside the compose network could connect.
+      - "127.0.0.1:3307:3306"
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Tehran
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${BACKEND_IMAGE:-charity-backend:master}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Tehran&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
+      # THIS IS ON THE CRITICAL PATH OF EVERY LOGIN, and the comment in compose.yaml
+      # that says otherwise describes the local topology only. Here nginx proxies
+      # /api/ straight to backend:8082 (see nginx/default.conf), so the browser's
+      # Origin header arrives at Spring untouched.
+      #
+      # It must name the site origin exactly, scheme included -- CorsConfiguration
+      # compares the whole string. nginx redirects http to https, so the browser
+      # always sends `Origin: https://yariju.com`; a value of `http://yariju.com`
+      # matched nothing and answered 403 to every POST /api/auth/login. That failure
+      # is a quiet one: CORS rejects before authentication runs, so
+      # users.failed_attempts stays at 0 and nothing implicates the credentials.
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      # Scheme matters here too. This builds the absolute URLs for uploaded files, so
+      # an http:// value on an https site gets every image blocked as mixed content --
+      # the pictures vanish while the pages themselves look fine.
+      APP_BASE_URL: ${APP_BASE_URL}
+      APP_SITE_URL: ${APP_SITE_URL}
+      APP_TIMEZONE: Asia/Tehran
+      FILE_UPLOAD_DIR: /app/uploads
+      TZ: Asia/Tehran
+      SPRINGDOC_ENABLED: "false"
+    volumes:
+      # Without this every deploy would wipe every uploaded image while leaving the
+      # database rows pointing at them.
+      - backend_uploads:/app/uploads
+    expose:
+      # `expose`, not `ports`: the API is reachable only through nginx, never on a
+      # host port of its own.
+      - "8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-charity-frontend:master}
+    restart: unless-stopped
+    environment:
+      NUXT_API_ORIGIN: http://backend:8082
+      NUXT_PUBLIC_SITE_URL: ${APP_SITE_URL}
+      # The only deployment permitted to be indexed.
+      NUXT_PUBLIC_INDEXABLE: "true"
+      TZ: Asia/Tehran
+    expose:
+      - "3000"
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - frontend
+      - backend
+
+  certbot:
+    # Not started by the deploy job, which names only backend, frontend and nginx.
+    # Renewal is driven from outside compose: /etc/cron.d/certbot-renew runs
+    # renew-cert.sh twice a day, which calls `run --rm certbot renew` and then reloads
+    # nginx. See the TLS bullet in AGENTS.md before touching any of it.
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+
+volumes:
+  mysql_data:
+  backend_uploads:

@@ -2,11 +2,11 @@
 
 ## Read `AGENTS.md` first
 
-**`AGENTS.md` is the source of truth for this project's domain rules.** It is ~300 lines and
+**`AGENTS.md` is the source of truth for this project's domain rules.** It is ~405 lines and
 nearly every bullet records a bug that already shipped. Nothing in it is repeated here, on
 purpose — two copies of a rule become two contradictory rules within a few months.
 
-Read the section that matches what you are touching, not the whole file (~4,500 tokens):
+Read the section that matches what you are touching, not the whole file (~6,100 tokens):
 
 | Section | Approx. lines |
 |---|---|
@@ -15,7 +15,9 @@ Read the section that matches what you are touching, not the whole file (~4,500 
 | `## Backend` | 34–133 |
 | `## Frontend` | 134–245 |
 | `## Docker` | 246–307 |
-| `## Known issues` | 314–319 |
+| `## Production (the VPS)` | 308–369 |
+| `## Git` | 370–400 |
+| `## Known issues` | 401–406 |
 
 `ISSUES.md` is the last full audit, and it is **history rather than current state**: most Critical
 and High items are fixed, and some name files that no longer exist (`CharityCaseService.java`,
