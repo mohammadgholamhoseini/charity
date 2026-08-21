@@ -38,11 +38,23 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-charity_user}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-root}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
-      # The site reaches the API through the frontend's own /api route, which strips
-      # Origin, so this list governs only direct browser access to port 81 (Swagger, a
-      # REST client). It still has to name the real site URL: leaving it at the built-in
-      # default is what made the dev deployment answer 403 to every login.
+      # In *this* file the site reaches the API through the frontend's own /api route, which
+      # strips Origin, so the list governs only direct browser access to port 81 (Swagger, a
+      # REST client). Do not carry that reasoning to the VPS. compose.prod.yaml puts nginx in
+      # front, and `location /api/ { proxy_pass http://backend:8082; }` hands Spring the
+      # browser's Origin untouched -- so in production this list sits on the critical path of
+      # every single login.
+      #
+      # Either way it has to name the real site origin *exactly*, scheme included, because
+      # CorsConfiguration compares the whole origin string. Leaving it at the built-in default
+      # is what made the dev deployment answer 403 to every login; `http://` on a site whose
+      # nginx redirects to `https://` is what did the same to production for weeks. That failure
+      # is a quiet one to diagnose: CORS rejects the POST before authentication ever runs, so
+      # users.failed_attempts stays 0 and nothing suggests the credentials were even read.
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      # Scheme matters here too. This builds the absolute URLs for uploaded files, so an http
+      # value on a site served over https gets every image blocked as mixed content -- the
+      # pictures vanish while the pages themselves look fine.
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:81}
       APP_SITE_URL: ${APP_SITE_URL:-http://localhost}
       APP_TIMEZONE: Asia/Tehran
