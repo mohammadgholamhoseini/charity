@@ -373,6 +373,31 @@ not pass through Nuxt here.** The local claim that the frontend's own `/api` rou
 - `development` — active branch
 - Remote: `github.com/mohammadgholamhoseini/charity.git`
 
+**`master` is permanently "ahead" of `development`, and the number means nothing.**
+`git rev-list --left-right --count origin/master...origin/development` read 19 on master's
+side in August 2026, and it grows by one with every release. Those 19 were: five
+`Merge branch 'development'` commits, which exist only on master by construction; thirteen
+`Create/Update ssh-test.yml` commits made directly on master through the GitHub web UI for
+a throwaway workflow that `b023b69` then deleted outright; and two `Update docker.yml`
+whose content reached `development` by other routes. Net contribution to the tree: zero.
+
+**The count is not the check. The diff is:**
+
+```bash
+git diff origin/master origin/development --stat
+```
+
+Empty output means the trees agree and there is nothing to back-merge, however alarming
+the count looks. This has been verified once — do not re-investigate the backlog each
+time. Merging `master` into `development` to "catch up" on an empty diff only adds another
+empty merge commit. Back-merge only when that diff actually shows something.
+
+Those thirteen `ssh-test.yml` commits are also the cautionary tale: they were pushed
+straight to `master`, and **a push to `master` is a production deployment** (see
+`## Production (the VPS)`). Iterate on a workflow from `development` with
+`workflow_dispatch`, which builds without deploying.
+
+
 ## Known issues
 
 `ISSUES.md` is a full audit. Most critical and high items are now fixed, but note:
