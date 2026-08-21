@@ -358,9 +358,14 @@ not pass through Nuxt here.** The local claim that the frontend's own `/api` rou
   the whole challenge path against the staging API without touching the live certificate
   or the issuance quota, and it is the only thing that distinguishes a renewal that works
   from one that merely looks configured.
-- **nginx caps `/api/` uploads at 20M**, below the backend's `MAX_REQUEST_SIZE` default of
-  40MB. nginx is the tighter of the two, so it is the one that decides: an upload in
-  between is refused with a 413 that Spring never sees.
+- **nginx's `client_max_body_size` on `/api/` must stay above the backend's
+  `MAX_REQUEST_SIZE`** (default 40MB); it is 45M. Whichever limit is tighter is the one
+  that answers, and Spring answers better: `GlobalExceptionHandler` turns
+  `MaxUploadSizeExceededException` into a 413 carrying the app's Persian error body, where
+  nginx emits a raw HTML error page the frontend cannot parse. It was 20M, which silently
+  swallowed multi-file uploads — `POST /api/center/requests/{id}/documents` takes an
+  unbounded `List<MultipartFile>` and each file may be 10MB, so three ordinary documents
+  were refused with no usable message.
 
 ## Git
 
