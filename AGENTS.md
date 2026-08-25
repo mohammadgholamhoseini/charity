@@ -102,12 +102,23 @@ Key domain notes:
   its own. `RequestSummary.announced` is what the panel keys the button on; it is computed by
   asking the enabled channels, not by reading `bale_posted`, so a disabled Telegram does not leave
   every row looking forever unannounced.
-- **A request has no city, deadline, contact details or beneficiary name.** The city and
+- **A request has no city, deadline or contact details of its own.** The city and
   phone belong to the centre and are read from there — `?city=` and `?province=` filter
   through `request → center → city`, which is where `requests.city_id` was backfilled from
-  in V2 anyway. The beneficiary is never named: the bot used to print
-  `details.beneficiaryName` into a public channel while the site and the privacy page both
-  promised it was never published.
+  in V2 anyway.
+- **Naming the beneficiary is the centre's call, not the platform's.** There is no field for a
+  beneficiary's name, phone or address, and deliberately never will be — such a detail can only
+  ever arrive inside content the centre itself authors: the free-text description, or a document
+  it uploads to a request. In August 2026 the project owner made publishing it **optional**: the
+  centre decides, the centre carries the responsibility, and the centre must hold the
+  beneficiary's **written consent** first. `frontend/app/pages/privacy.vue` states exactly that,
+  `RequestForm.vue` reminds the centre beside the description field, and `DocumentUploader.vue`
+  makes it the checkbox that gates a request upload. This **reverses** the older absolute rule,
+  so do not "fix" it back. The bot printing `details.beneficiaryName` into a public channel was a
+  bug because the privacy page promised the opposite at the time — not because a centre may never
+  name anyone. What is still forbidden is the platform *asking for* or *storing* beneficiary
+  identity in its own columns. The consent gate is a promise the centre makes, never a validation
+  the platform performs — there is nothing to check server-side and no attempt to.
 - Deletion is **soft** (`deleted_at`), so a removed request answers **410**, not 404. A centre
   cannot delete a `COMPLETED` request at all; an admin can.
 - A request's slug is frozen once published; changing it records the old one in
@@ -253,6 +264,30 @@ branch builds without switching or pushing.
 ./docker-build.sh all           # or: dev | master
 docker compose up -d
 ```
+
+**`docker compose up` on its own never picks up new code**, and this failed silently for five
+days: master had the documents feature merged and deployed, the live site showed it, and
+`localhost` did not. Nothing looked broken — both containers were `Up` and `healthy`, and the
+images were simply older than the merge. There was no way to notice, because an image carried no
+record of the commit it came from.
+
+It does now. `docker-build.sh` stamps `charity.commit` onto every image, and `./docker-status.sh`
+reads it back and compares each running container against its branch tip:
+
+```bash
+./docker-status.sh              # exits 1 if anything is behind
+```
+
+Run it whenever `localhost` and reality disagree, and after merging into `master`. An image built
+from the working tree is labelled `<sha>-dirty`; the status script strips the suffix and still
+compares the base commit, because an image built from the working tree of an old commit is just
+as stale as any other.
+
+**Do not "fix" the missing `build:` by adding one** — for `master` especially. The build context
+is this working tree, which is nearly always sitting on `development`, so a `build:` section
+would produce an image tagged `master` containing `development`'s code. That is worse than stale:
+stale is merely old, this would be a lie. Building `master` from a detached worktree of the
+committed branch is the whole reason `docker-build.sh` exists.
 
 | Service | Branch | Host port | Notes |
 |---|---|---|---|

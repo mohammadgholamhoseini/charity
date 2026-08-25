@@ -106,8 +106,11 @@ migration never arrives alone. It always trails an entity change.
 
 The full list is in `AGENTS.md`. These are the ones that cause real harm if broken:
 
-- **A request carries no beneficiary name, contact detail, city or deadline.** Location and phone
-  are read through `request → center → city`. The privacy page promises this.
+- **A request carries no contact detail, city or deadline of its own.** Location and phone are
+  read through `request → center → city`.
+- **The platform never asks for or stores beneficiary identity.** Whether to *name* a beneficiary
+  inside the free-text description is the centre's own call, under written consent — that changed
+  in August 2026 and `AGENTS.md` records why. Do not restore the old absolute rule.
 - **`COMPLETED` is terminal.** Admin's `COMPLETED → INACTIVE` is the single exception.
 - **An admin's takedown outranks a centre**, via `requests.deactivated_by`.
 - **Deletion is soft** — a removed request answers **410**.

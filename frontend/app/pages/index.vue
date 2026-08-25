@@ -41,12 +41,14 @@ useSeo({
         <!-- The LCP element on this page. Nothing above it blocks rendering except
              the preloaded, self-hosted font. -->
         <h1 class="text-[32px] lg:text-[56px] font-extrabold leading-[1.35]">
-          هر درخواست، یک زندگی واقعی است — نه یک شماره.
+          به مهر، میهن خویش را کنیم آباد.
         </h1>
 
+        <!-- The h1 is a slogan and carries no keyword, so "مراکز خیریه" here and the
+             title/description in useSeo above are what say what this site is. -->
         <p class="text-[17px] lg:text-[18px] leading-[2.1] text-body max-w-[520px]">
-          یاری‌جو درخواست‌های ثبت‌شده توسط مراکز خیریه معتبر را در یک جا منتشر می‌کند.
-          هر مورد را ببینید، جزئیات نیاز را بخوانید و برای همکاری مستقیماً با مرکز ثبت‌کننده تماس بگیرید.
+          در یاری‌جو، نیازهای واقعی را مراکز خیریه می‌نویسند تا یاری شما زودتر به آن برسد
+          و میهن، به مهرِ همین دست‌ها آباد شود.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-3">
