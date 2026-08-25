@@ -44,13 +44,11 @@ useSeo({
           به مهر، میهن خویش را کنیم آباد.
         </h1>
 
-        <!-- The h1 is a slogan, so it carries no keyword and does not say what the site is.
-             Both jobs moved here and into useSeo above -- keep "مراکز خیریه" and the
-             contact-the-centre instruction in this paragraph if it is ever reworded. -->
+        <!-- The h1 is a slogan and carries no keyword, so "مراکز خیریه" here and the
+             title/description in useSeo above are what say what this site is. -->
         <p class="text-[17px] lg:text-[18px] leading-[2.1] text-body max-w-[520px]">
-          یاری‌جو برای همین است: مراکز خیریه نیازهایی را که از نزدیک دیده‌اند اینجا می‌نویسند
-          تا یاری شما زودتر به آن برسد. بخوانید و مستقیم با خودِ مرکز تماس بگیرید؛
-          میهن را همین دست‌ها آباد می‌کند.
+          در یاری‌جو، نیازهای واقعی را مراکز خیریه می‌نویسند تا یاری شما زودتر به آن برسد
+          و میهن، به مهرِ همین دست‌ها آباد شود.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-3">
