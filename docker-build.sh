@@ -121,6 +121,19 @@ build_branch() {
     source_dir="$WORK_DIR"
   fi
 
+  # کامیتی که image از آن ساخته می‌شود، به‌صورت label داخل خودِ image می‌ماند. بدون این،
+  # هیچ راهی نیست بفهمیم کانتینرِ در حال اجرا چند روز از برنچش عقب است — و دقیقاً همین
+  # باعث شد master محلی پنج روز کدِ قدیمی سرو کند بی‌آنکه چیزی خراب به نظر برسد.
+  # `docker-status.sh` همین label را می‌خواند.
+  local source_commit
+  if [[ "$source_mode" == "working-tree" ]]; then
+    source_commit="$(git -C "$repo" rev-parse --short HEAD)"
+    [[ -n "$(git -C "$repo" status --short)" ]] && source_commit="${source_commit}-dirty"
+  else
+    source_commit="$(git -C "$repo" rev-parse --short "$branch")"
+  fi
+  echo "     commit: $source_commit"
+
   cleanup() {
     if [[ -n "${WORK_DIR:-}" && -d "$WORK_DIR" ]]; then
       git -C "$repo" worktree remove --force "$WORK_DIR" 2>/dev/null || true
@@ -136,6 +149,7 @@ build_branch() {
     --tag "charity-backend:$tag" \
     --label "charity.branch=$branch" \
     --label "charity.source=$source_mode" \
+    --label "charity.commit=$source_commit" \
     -f "$(wpath "$source_dir/backend/Dockerfile.$tag")" \
     "$(wpath "$source_dir/backend")"
 
@@ -144,6 +158,7 @@ build_branch() {
     --tag "charity-frontend:$tag" \
     --label "charity.branch=$branch" \
     --label "charity.source=$source_mode" \
+    --label "charity.commit=$source_commit" \
     -f "$(wpath "$source_dir/frontend/Dockerfile.$tag")" \
     "$(wpath "$source_dir/frontend")"
 

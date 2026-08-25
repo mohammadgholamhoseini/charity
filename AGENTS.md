@@ -265,6 +265,30 @@ branch builds without switching or pushing.
 docker compose up -d
 ```
 
+**`docker compose up` on its own never picks up new code**, and this failed silently for five
+days: master had the documents feature merged and deployed, the live site showed it, and
+`localhost` did not. Nothing looked broken — both containers were `Up` and `healthy`, and the
+images were simply older than the merge. There was no way to notice, because an image carried no
+record of the commit it came from.
+
+It does now. `docker-build.sh` stamps `charity.commit` onto every image, and `./docker-status.sh`
+reads it back and compares each running container against its branch tip:
+
+```bash
+./docker-status.sh              # exits 1 if anything is behind
+```
+
+Run it whenever `localhost` and reality disagree, and after merging into `master`. An image built
+from the working tree is labelled `<sha>-dirty`; the status script strips the suffix and still
+compares the base commit, because an image built from the working tree of an old commit is just
+as stale as any other.
+
+**Do not "fix" the missing `build:` by adding one** — for `master` especially. The build context
+is this working tree, which is nearly always sitting on `development`, so a `build:` section
+would produce an image tagged `master` containing `development`'s code. That is worse than stale:
+stale is merely old, this would be a lie. Building `master` from a detached worktree of the
+committed branch is the whole reason `docker-build.sh` exists.
+
 | Service | Branch | Host port | Notes |
 |---|---|---|---|
 | `frontend-master` | master | 80 | Nuxt SSR on 3000, the only deployment that may be indexed |
