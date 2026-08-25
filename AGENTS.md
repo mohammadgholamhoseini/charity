@@ -102,12 +102,21 @@ Key domain notes:
   its own. `RequestSummary.announced` is what the panel keys the button on; it is computed by
   asking the enabled channels, not by reading `bale_posted`, so a disabled Telegram does not leave
   every row looking forever unannounced.
-- **A request has no city, deadline, contact details or beneficiary name.** The city and
+- **A request has no city, deadline or contact details of its own.** The city and
   phone belong to the centre and are read from there — `?city=` and `?province=` filter
   through `request → center → city`, which is where `requests.city_id` was backfilled from
-  in V2 anyway. The beneficiary is never named: the bot used to print
-  `details.beneficiaryName` into a public channel while the site and the privacy page both
-  promised it was never published.
+  in V2 anyway.
+- **Naming the beneficiary is the centre's call, not the platform's.** There is no field for a
+  beneficiary's name, phone or address, and deliberately never will be — the only place such a
+  detail can appear is inside the free-text description the centre writes. In August 2026 the
+  project owner made publishing it **optional**: the centre decides, the centre carries the
+  responsibility, and the centre must hold the beneficiary's **written consent** first.
+  `frontend/app/pages/privacy.vue` states exactly that, and `RequestForm.vue` reminds the centre
+  beside the description field. This **reverses** the older absolute rule, so do not "fix" it
+  back. The bot printing `details.beneficiaryName` into a public channel was a bug because the
+  privacy page promised the opposite at the time — not because a centre may never name anyone.
+  What is still forbidden is the platform *asking for* or *storing* beneficiary identity in its
+  own columns, and any feature that would surface it beyond the text the centre wrote.
 - Deletion is **soft** (`deleted_at`), so a removed request answers **410**, not 404. A centre
   cannot delete a `COMPLETED` request at all; an admin can.
 - A request's slug is frozen once published; changing it records the old one in
