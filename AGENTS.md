@@ -107,16 +107,18 @@ Key domain notes:
   through `request → center → city`, which is where `requests.city_id` was backfilled from
   in V2 anyway.
 - **Naming the beneficiary is the centre's call, not the platform's.** There is no field for a
-  beneficiary's name, phone or address, and deliberately never will be — the only place such a
-  detail can appear is inside the free-text description the centre writes. In August 2026 the
-  project owner made publishing it **optional**: the centre decides, the centre carries the
-  responsibility, and the centre must hold the beneficiary's **written consent** first.
-  `frontend/app/pages/privacy.vue` states exactly that, and `RequestForm.vue` reminds the centre
-  beside the description field. This **reverses** the older absolute rule, so do not "fix" it
-  back. The bot printing `details.beneficiaryName` into a public channel was a bug because the
-  privacy page promised the opposite at the time — not because a centre may never name anyone.
-  What is still forbidden is the platform *asking for* or *storing* beneficiary identity in its
-  own columns, and any feature that would surface it beyond the text the centre wrote.
+  beneficiary's name, phone or address, and deliberately never will be — such a detail can only
+  ever arrive inside content the centre itself authors: the free-text description, or a document
+  it uploads to a request. In August 2026 the project owner made publishing it **optional**: the
+  centre decides, the centre carries the responsibility, and the centre must hold the
+  beneficiary's **written consent** first. `frontend/app/pages/privacy.vue` states exactly that,
+  `RequestForm.vue` reminds the centre beside the description field, and `DocumentUploader.vue`
+  makes it the checkbox that gates a request upload. This **reverses** the older absolute rule,
+  so do not "fix" it back. The bot printing `details.beneficiaryName` into a public channel was a
+  bug because the privacy page promised the opposite at the time — not because a centre may never
+  name anyone. What is still forbidden is the platform *asking for* or *storing* beneficiary
+  identity in its own columns. The consent gate is a promise the centre makes, never a validation
+  the platform performs — there is nothing to check server-side and no attempt to.
 - Deletion is **soft** (`deleted_at`), so a removed request answers **410**, not 404. A centre
   cannot delete a `COMPLETED` request at all; an admin can.
 - A request's slug is frozen once published; changing it records the old one in

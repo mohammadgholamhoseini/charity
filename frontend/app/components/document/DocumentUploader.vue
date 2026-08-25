@@ -301,8 +301,9 @@ async function confirmDelete() {
       />
 
       <!-- Mandatory for request documents. They are served publicly and are the only ones that
-           could carry a مددجو's name, so this is where the centre states that what it is about to
-           publish identifies nobody. See `needsConfirmation`. -->
+           could carry a مددجو's name, so this is where the centre takes responsibility for that:
+           it acknowledges the files go public, and certifies it holds written consent for any
+           identifying detail visible on them. See `needsConfirmation`. -->
       <label
         v-if="needsConfirmation"
         class="flex items-start gap-3 text-[13px] leading-7 text-body cursor-pointer"
@@ -314,7 +315,10 @@ async function confirmDelete() {
           style="accent-color: var(--color-accent)"
           :disabled="disabled"
         >
-        <span>تأیید می‌کنم مدارک بارگذاری‌شده حاوی نام و مشخصات هویتی مددجو نیست.</span>
+        <span>
+          تأیید می‌کنم این مدارک روی صفحهٔ عمومی درخواست منتشر می‌شود، و اگر نام یا مشخصات هویتی
+          مددجو روی آن‌ها دیده می‌شود، رضایت کتبی او را پیش از این گرفته‌ام.
+        </span>
       </label>
 
       <input
