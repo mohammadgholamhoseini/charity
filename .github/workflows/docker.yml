@@ -100,6 +100,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: read
+
     steps:
 
       - name: Prepare SSH
@@ -119,6 +123,51 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           ssh-keyscan -T 10 -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      # The VPS cannot reach ghcr.io at all. TCP to 140.82.121.33:443 never connects
+      # -- not a slow handshake, no connection -- while github.com, which lives in the
+      # same 140.82.121.x block, answers in 79ms. DNS is fine and resolves to the right
+      # address, and forcing that address with `curl --resolve` fails identically. So it
+      # is a point block on the registry, and no retry loop can outwait it; the five
+      # retries this job used to run just spent five minutes proving that twice.
+      #
+      # The two links that do work are the runner to ghcr (both are GitHub) and the
+      # runner to the VPS over SSH, which connected fine on every failed deploy. So the
+      # images travel down the SSH link instead of being pulled on the far side, and
+      # the VPS never talks to a registry again.
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Ship images to the VPS over SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          BACKEND_IMAGE: ${{ needs.build-and-push.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ needs.build-and-push.outputs.frontend_image }}
+        run: |
+          set -euo pipefail
+
+          docker pull "$BACKEND_IMAGE"
+          docker pull "$FRONTEND_IMAGE"
+
+          # `docker save` writes its layers uncompressed, so this is not re-compressing
+          # already-compressed data -- it roughly halves what crosses the wire. `docker
+          # load` detects the gzip on its own, which is why nothing gunzips on the far
+          # side. pipefail above matters here: without it a failed save or a dropped ssh
+          # would be masked by `docker load` exiting 0 on a truncated stream.
+          docker save "$BACKEND_IMAGE" "$FRONTEND_IMAGE" \
+            | gzip \
+            | ssh \
+                -i ~/.ssh/id_ed25519 \
+                -o IdentitiesOnly=yes \
+                -o StrictHostKeyChecking=yes \
+                -o ServerAliveInterval=30 \
+                -o ConnectTimeout=15 \
+                "$VPS_USER@$VPS_HOST" 'docker load'
 
       - name: Deploy
         env:
@@ -151,30 +200,21 @@ jobs:
           echo "Backend image:  $BACKEND_IMAGE"
           echo "Frontend image: $FRONTEND_IMAGE"
 
-          # ghcr.io is reachable from this VPS but not reliably. A pull can die on
-          # "TLS handshake timeout" while fetching the anonymous token, which docker
-          # then reports as "failed to authorize" - the wording points at credentials
-          # but the cause is the network, and there are no credentials involved: the
-          # packages are public and the token is anonymous. Under `set -e` a single
-          # flaky pull aborted the whole deploy, which is what happened on d97ffb5,
-          # where the backend pulled fine and the frontend timed out.
-          echo "Pulling images..."
+          # Nothing is pulled here any more -- the previous step loaded both images over
+          # SSH, because this machine cannot reach ghcr.io. This only checks they really
+          # arrived. Keep the check: it is what preserves the property the old retry loop
+          # had, that a delivery failure leaves the running containers untouched rather
+          # than half-recreating the site around a missing image.
+          echo "Checking the images arrived..."
 
-          pulled=0
-          for attempt in $(seq 1 5); do
-            if docker compose -f compose.prod.yaml pull backend frontend; then
-              pulled=1
-              break
+          for image in "$BACKEND_IMAGE" "$FRONTEND_IMAGE"; do
+            if ! docker image inspect "$image" >/dev/null 2>&1; then
+              echo "Image $image is not present on this host."
+              echo "The running containers have been left untouched."
+              exit 1
             fi
-            echo "Pull attempt $attempt failed. Retrying in 15s..."
-            sleep 15
+            echo "  present: $image"
           done
-
-          if [ "$pulled" -ne 1 ]; then
-            echo "Could not pull the images from ghcr.io after 5 attempts."
-            echo "The running containers have been left untouched."
-            exit 1
-          fi
 
           echo "Starting containers..."
           docker compose -f compose.prod.yaml up -d backend frontend nginx
