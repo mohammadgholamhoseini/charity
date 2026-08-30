@@ -15,9 +15,64 @@ env:
 
 jobs:
 
+  # The gate. Until this job existed the suite ran nowhere: the Maven build happens
+  # inside backend/Dockerfile.*, and both of those pass -DskipTests.
+  #
+  # Deliberately NOT solved by dropping that flag. Tests belong in their own job, for
+  # two reasons. Buildx caches layers, so a `RUN mvn test` layer is reused whenever its
+  # inputs are unchanged -- the tests would appear to pass without having run, which is
+  # worse than not running them. And it would tie every image build, dev included, to
+  # the full suite.
+  #
+  # Both halves run here because both are cheap and neither needs a service container:
+  # the backend tests build an H2 schema from the real Flyway migrations on the `local`
+  # profile, and the frontend suite is plain Vitest on node with no Nuxt runtime.
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Backend tests
+        working-directory: ./backend
+        run: mvn -B test
+
+      # `npm ci` rather than `npm install`: it installs exactly what the lockfile pins,
+      # which is the same thing Dockerfile.master builds from.
+      - name: Frontend tests
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm test
+
   build-and-push:
     name: Build and Push Images
     runs-on: ubuntu-latest
+
+    # No image is published from a commit whose tests fail -- not even :dev, which is
+    # what the development environment runs.
+    needs: test
 
     permissions:
       contents: read
@@ -93,7 +148,10 @@ jobs:
 
   deploy:
     name: Deploy to VPS
-    needs: build-and-push
+    # `test` is already implied through build-and-push, and it is named anyway: this is
+    # the job that puts code in front of visitors, so the gate it depends on should be
+    # readable here rather than inferred one hop away.
+    needs: [test, build-and-push]
 
     # فقط master را Deploy کن
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
