@@ -1,9 +1,11 @@
 package com.charity.app.model;
 
+import com.charity.app.common.Paging;
 import com.charity.app.model.enums.CenterStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -44,11 +46,17 @@ public class Center {
     /**
      * The categories this centre is allowed to publish in. A request's category is validated
      * against this set on every write.
+     *
+     * <p>Batched rather than fetch-joined. A collection in an {@code @EntityGraph} multiplies the
+     * result rows, which costs the paged listings their SQL {@code LIMIT} -- see the note in
+     * {@code CenterRepository}. {@link Paging#MAX_SIZE} is the batch size because it is the largest
+     * page the API will serve, so a full page of centres loads its categories in one statement.
      */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "center_categories",
             joinColumns = @JoinColumn(name = "center_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"))
+    @BatchSize(size = Paging.MAX_SIZE)
     @Builder.Default
     private Set<Category> categories = new HashSet<>();
 
@@ -91,10 +99,14 @@ public class Center {
      * <p>Cascades on delete so removing a centre cannot fail on the {@code center_documents}
      * foreign key; the files behind the rows are unlinked separately in {@code CenterService},
      * because the database knows nothing about the disk.
+     *
+     * <p>Batched for the same reason as {@link #categories}, and for one of its own: the admin
+     * centres listing renders documents for every row, which was a query per centre.
      */
     @OneToMany(mappedBy = "center", fetch = FetchType.LAZY,
             cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC, id ASC")
+    @BatchSize(size = Paging.MAX_SIZE)
     @Builder.Default
     private List<CenterDocument> documents = new ArrayList<>();
 

@@ -25,10 +25,29 @@ public interface CenterRepository extends JpaRepository<Center, Long> {
 
     boolean existsByName(String name);
 
-    @EntityGraph(attributePaths = {"city", "province", "categories"})
+    /*
+     * The two paged listings below fetch to-one associations only, and that restriction is the
+     * whole point rather than an oversight.
+     *
+     * Both graphs used to name `categories`, which is a collection. A collection fetch join
+     * multiplies the result rows, so Hibernate cannot express `LIMIT`/`OFFSET` in SQL and instead
+     * logs HHH90003004 and paginates in memory -- it read *every* centre row on every request and
+     * threw away all but a page of them. The listing looked correct throughout, and got linearly
+     * slower with each centre an admin created.
+     *
+     * `categories` and `documents` are now loaded by {@code @BatchSize} on the entity instead: one
+     * extra statement for the whole page rather than a join that breaks paging, and rather than the
+     * per-row queries that dropping the fetch on its own would have left behind. See Center.
+     *
+     * Nested to-one paths are named explicitly. `city.province` is read by CenterMapper through
+     * CityRef and was a lazy load per distinct city; `user` is read only by the admin response, for
+     * the username and email, so the public query does not join it.
+     */
+
+    @EntityGraph(attributePaths = {"city", "city.province", "province"})
     Page<Center> findByStatus(CenterStatus status, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"city", "province", "categories"})
+    @EntityGraph(attributePaths = {"city", "city.province", "province", "user"})
     Page<Center> findAllBy(Pageable pageable);
 
     @Query("SELECT c FROM Center c WHERE c.status = :status ORDER BY c.updatedAt DESC")

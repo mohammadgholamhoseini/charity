@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -84,6 +86,25 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleNotFound(Exception e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiError.of(messageOr(e, "مورد درخواستی یافت نشد"), "NOT_FOUND"));
+    }
+
+    /**
+     * A URL that matches no handler and no static resource. Plainly a 404, and it was answering 500.
+     *
+     * <p>Spring raises {@link NoResourceFoundException} for these, nothing mapped it, and so every
+     * mistyped path and every stale crawler hit fell through to {@link #handleUnexpected} -- logged
+     * at ERROR with a trace id, and answered with {@code INTERNAL_ERROR}. Nothing was exposed by it,
+     * but it cost the error log its meaning: "something broke" came to mean "someone typed a bad
+     * URL", and a 500 tells a crawler to come back later rather than to drop the link.
+     *
+     * <p>The exception's own message names the internal path it was looking for, so it is logged at
+     * debug and the response carries the same generic 404 body as any other missing resource.
+     */
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
+    public ResponseEntity<ApiError> handleNoRoute(Exception e) {
+        log.debug("No handler for request: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiError.of("مورد درخواستی یافت نشد", "NOT_FOUND"));
     }
 
     @ExceptionHandler(GoneException.class)
