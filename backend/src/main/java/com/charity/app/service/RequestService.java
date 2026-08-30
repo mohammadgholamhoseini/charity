@@ -252,22 +252,29 @@ public class RequestService {
     }
 
     private RequestDetailResponse applyStatusByCenter(Request request, RequestStatus target, String note) {
-        assertNotAdminTakedown(request, target);
+        assertNotAdminTakedown(request);
         return applyStatus(request, target, note, UserRole.CENTER);
     }
 
     /**
-     * Refuses to let a centre move a request an admin took down.
+     * Refuses to let a centre touch the status of a request an admin took down.
      *
      * <p>Deactivation is the only moderation tool an admin has short of deleting the request, and
      * until {@code deactivatedBy} existed a centre could republish straight over it -- and the old
      * publish path cleared {@code statusNote} on the way, so the mandatory reason vanished with it.
      * A centre's own withdrawal is untouched: it set the flag to CENTER and can undo it freely.
+     *
+     * <p>The check deliberately ignores the target status. It used to exempt {@code INACTIVE} on the
+     * grounds that deactivating something already deactivated changes nothing -- but it does. The
+     * transition is an identity, so the policy waves it through, and {@code applyStatus} then writes
+     * {@code deactivatedBy = CENTER} and replaces the admin's mandatory reason with the centre's own
+     * note. Two calls to {@code POST /api/center/requests/{id}/status} therefore put the centre back
+     * over the takedown: the first relabels it, the second republishes it. Exempting nothing is what
+     * makes "an admin's takedown outranks a centre" true rather than nearly true.
      */
-    private void assertNotAdminTakedown(Request request, RequestStatus target) {
+    private void assertNotAdminTakedown(Request request) {
         if (request.getStatus() == RequestStatus.INACTIVE
-                && request.getDeactivatedBy() == UserRole.ADMIN
-                && target != RequestStatus.INACTIVE) {
+                && request.getDeactivatedBy() == UserRole.ADMIN) {
             throw new ForbiddenException(
                     "این درخواست توسط ادمین غیرفعال شده است و تنها ادمین می‌تواند وضعیت آن را تغییر دهد");
         }

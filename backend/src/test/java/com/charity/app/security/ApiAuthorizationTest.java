@@ -1,6 +1,5 @@
 package com.charity.app.security;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -78,26 +78,28 @@ class ApiAuthorizationTest {
         }
 
         /**
-         * KNOWN FAILURE -- an unknown path currently answers 500.
-         *
-         * <p>Spring raises {@code NoResourceFoundException} for a URL no handler and no static
-         * resource matches. {@code GlobalExceptionHandler} has no mapping for it, so it lands in
-         * the catch-all {@code @ExceptionHandler(Exception.class)}: the caller gets
-         * {@code INTERNAL_ERROR} with a trace id, and every mistyped URL and stale crawler hit is
-         * logged at ERROR as an unhandled server error. Nothing is exposed by it, but the log
-         * signal that is supposed to mean "something broke" now mostly means "someone typed a bad
-         * URL", and a 500 tells a crawler to come back rather than to drop the link.
-         *
-         * <p>The fix is one handler mapping {@code NoResourceFoundException} (and
-         * {@code NoHandlerFoundException}) to the existing 404 body. Production code, so it belongs
-         * in its own commit; remove this annotation with it.
+         * Spring raises {@code NoResourceFoundException} for a URL that matches no handler and no
+         * static resource. Nothing mapped it, so it fell through to the catch-all
+         * {@code @ExceptionHandler(Exception.class)}: every mistyped path and every stale crawler
+         * hit answered {@code INTERNAL_ERROR} and was logged at ERROR with a trace id. Nothing was
+         * exposed by it, but it cost the error log its meaning -- and a 500 tells a crawler to come
+         * back later rather than to drop the link.
          */
-        @Disabled("known defect: an unknown path answers 500 via the catch-all, not 404")
         @Test
         @WithAnonymousUser
         @DisplayName("gets 404, not a server error, for an unknown path")
         void unknownPublicPathIsNotFound() throws Exception {
             mvc.perform(get("/api/public/no-such-thing")).andExpect(status().isNotFound());
+        }
+
+        @Test
+        @WithAnonymousUser
+        @DisplayName("the 404 body is the ordinary one, not the internal-error shape")
+        void unknownPathCarriesTheNormalNotFoundBody() throws Exception {
+            // A traceId in the body would mean it is still going through the catch-all.
+            mvc.perform(get("/api/public/no-such-thing"))
+                    .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                    .andExpect(jsonPath("$.traceId").doesNotExist());
         }
     }
 

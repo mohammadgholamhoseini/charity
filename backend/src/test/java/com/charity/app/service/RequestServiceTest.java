@@ -24,7 +24,6 @@ import com.charity.app.repository.RequestRepository;
 import com.charity.app.repository.RequestSlugHistoryRepository;
 import com.charity.app.security.CurrentUser;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -242,36 +241,33 @@ class RequestServiceTest {
         }
 
         /**
-         * KNOWN FAILURE -- this asserts the rule, and the rule is currently not enforced.
+         * The two-step escape this guard used to allow.
          *
-         * <p>Two calls to {@code POST /api/center/requests/{id}/status} put a centre back over an
-         * admin's takedown. The first sends {@code INACTIVE} on a request that is already INACTIVE:
-         * {@code assertNotAdminTakedown} exempts an INACTIVE target, the transition is an identity
-         * so the policy waves it through, and {@code applyStatus} then writes
-         * {@code deactivatedBy = CENTER} and replaces the admin's mandatory reason with the
-         * centre's note. The second call publishes, because the guard now sees a centre's own
-         * withdrawal.
-         *
-         * <p>The fix is one condition -- {@code assertNotAdminTakedown} should refuse any status
-         * call from a centre on an admin-deactivated request, INACTIVE target included -- but that
-         * is a change to production code rather than to a test, so it is left for its own commit
-         * and this stays disabled until then. Remove the annotation with the fix.
+         * <p>{@code assertNotAdminTakedown} once exempted an {@code INACTIVE} target, on the
+         * reasoning that deactivating something already deactivated changes nothing. It did: the
+         * transition is an identity so the policy waved it through, and {@code applyStatus} then
+         * wrote {@code deactivatedBy = CENTER} over the admin's flag and the centre's note over the
+         * admin's mandatory reason. One more call to {@code /submit} and the request was live again.
          */
-        @Disabled("known defect: a centre can relabel an admin's takedown as its own, then republish")
         @Test
         @DisplayName("a centre cannot overwrite an admin's takedown with one of its own")
         void centreCannotRelabelAnAdminTakedown() {
             Request takenDown = takenDownByAdmin(1L);
             existing(takenDown);
 
-            service.changeStatusByCenter(
-                    1L, new RequestStatusChangeDto(RequestStatus.INACTIVE, "our own note"));
+            assertThatThrownBy(() -> service.changeStatusByCenter(
+                    1L, new RequestStatusChangeDto(RequestStatus.INACTIVE, "our own note")))
+                    .as("re-deactivating an admin-deactivated request is refused outright")
+                    .isInstanceOf(ForbiddenException.class);
 
             assertThat(takenDown.getDeactivatedBy())
-                    .as("an admin's takedown must survive a centre re-deactivating the same request")
+                    .as("the admin's flag survives")
                     .isEqualTo(UserRole.ADMIN);
+            assertThat(takenDown.getStatusNote())
+                    .as("and so does the reason the admin had to give")
+                    .isEqualTo("removed by an admin for a stated reason");
             assertThatThrownBy(() -> service.publishByCenter(1L))
-                    .as("and the centre must still be locked out afterwards")
+                    .as("so the centre is still locked out afterwards")
                     .isInstanceOf(ForbiddenException.class);
         }
     }
